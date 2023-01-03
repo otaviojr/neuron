@@ -35,10 +35,18 @@ impl Display for Tensor {
   fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
     write!(f, "[")?;
     for i in 0..self.rows {
-        for j in 0..self.cols {
-              write!(f, "[{}]", self.get(i, j))?;
+      write!(f, "[")?;
+      for j in 0..self.cols {
+              write!(f, "{}", self.get(i, j))?;
+              if j < self.cols {
+                write!(f," ")?;
+              }
           }
-          writeln!(f)?;
+          if i < self.rows {
+            writeln!(f,"]")?;
+          } else {
+            write!(f,"]")?;
+          }
       }
       writeln!(f, "]")?;
 
