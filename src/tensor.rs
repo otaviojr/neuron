@@ -38,11 +38,11 @@ impl Display for Tensor {
       write!(f, "[")?;
       for j in 0..self.cols {
               write!(f, "{}", self.get(i, j))?;
-              if j < self.cols {
+              if j < self.cols-1 {
                 write!(f," ")?;
               }
           }
-          if i < self.rows {
+          if i < self.rows-1 {
             writeln!(f,"]")?;
           } else {
             write!(f,"]")?;
