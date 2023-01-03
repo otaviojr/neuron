@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, fmt::{Display,Formatter}};
 use std::ops::Mul;
 
 use rand_distr::{Normal, Distribution};
@@ -18,8 +18,8 @@ impl OperationError {
 
 impl Error for OperationError {}
 
-impl std::fmt::Display for OperationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for OperationError {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.message)
     }
 }
@@ -29,6 +29,19 @@ pub struct Tensor {
   cols: usize,
   
   data: Vec<f64>,
+}
+
+impl Display for Tensor {
+  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+      for i in 0..self.rows {
+          for j in 0..self.cols {
+              write!(f, "{} ", self.get(i, j))?;
+          }
+          writeln!(f)?;
+      }
+
+      Ok(())
+  }
 }
 
 impl Tensor {
