@@ -20,7 +20,7 @@ impl Neuron {
     let mut i = Some(input);
     for layer in self.layers.iter() {
       if let Some(i1) = i {
-        println!("Hidden layer = {}", i1);
+        println!("Hidden layer size = {}x{}", i1.rows(), i1.cols());
         i = layer.forward(&i1);
       }
     }
