@@ -13,11 +13,11 @@ impl Neuron {
     }
   }
 
-  pub fn new_random_tensor(rows: usize, cols: usize) -> Tensor {
+  pub fn new_random_tensor(&self, rows: usize, cols: usize) -> Tensor {
     Tensor::random(rows, cols, Box::new(MatrixMathCPU::new()))
   }
 
-  pub fn new_tensor(rows: usize, cols: usize) -> Tensor {
+  pub fn new_tensor(&self, rows: usize, cols: usize) -> Tensor {
     Tensor::zeros(rows, cols, Box::new(MatrixMathCPU::new()))
   }
 }
