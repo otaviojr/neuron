@@ -186,11 +186,7 @@ impl Tensor {
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = rand::thread_rng();
     
-    for i in 0..rows {
-      for j in 0..cols {
-        data[i * cols + j] = normal.sample(&mut rng);
-      }
-    }
+    data.iter_mut().for_each(|x| *x = normal.sample(&mut rng));
 
     Tensor {
       rows,
