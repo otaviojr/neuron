@@ -18,6 +18,9 @@ impl Neuron {
 
   pub fn forward(&self, input: Tensor) -> Option<Tensor> {
     let mut i = Some(input);
+    if let Some(ref i0) = i {
+      println!("Input layer size = {}x{}", i0.rows(), i0.cols());
+    }
     for layer in self.layers.iter() {
       if let Some(ref i1) = i {
         i = layer.forward(i1);
