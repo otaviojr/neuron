@@ -1,3 +1,8 @@
+use std::ops::Add;
+
+use rand::{Rng};
+use rand_distr::StandardNormal;
+
 use crate::math::Tensor;
 use crate::activations::Activation;
 
@@ -11,16 +16,18 @@ pub struct LinearLayer {
   activation: Box<dyn Activation>,
   nodes: usize,
   weights: Tensor,
-  bias: Tensor
+  bias: f64
 }
 
 impl LinearLayer {
   pub fn new(input_size: usize, nodes: usize, activation: Box<dyn Activation>) -> Self {
+    let mut rng = rand::thread_rng();
+
     LinearLayer {
       activation: activation,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
-      bias: Tensor::random(nodes,1)
+      bias: rng.sample(StandardNormal)
     }
   }
 }
@@ -31,7 +38,8 @@ impl Layer for LinearLayer {
   }
 
   fn forward(&self, input: &Tensor) -> Option<Tensor> {
-    None
+    let z1 = self.weights.mul(input).add_value(self.bias);
+    Some(self.activation.forward(&z1))
   }
 
   fn backward(&self, input: &Tensor) -> Option<Tensor> {

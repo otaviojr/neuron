@@ -189,8 +189,16 @@ impl Tensor {
     let start = Instant::now();
     data.iter_mut().for_each(|x| *x = rng.sample(StandardNormal));
     let elapsed = start.elapsed();
-    println!("Matrix loaded after: {} seconds", elapsed.as_secs());
+    println!("Random tensor loaded after: {} seconds", elapsed.as_secs());
 
+    Tensor {
+      rows,
+      cols,
+      data,
+    }
+  }
+
+  pub fn from_data(rows: usize, cols: usize, data: Vec<f64>) -> Self{
     Tensor {
       rows,
       cols,
@@ -216,6 +224,10 @@ impl Tensor {
     self.data[row * self.cols + col] = value;
   }
 
+  pub fn data(&self) -> &Vec<f64> {
+    self.data.as_ref()
+  }
+
   // Transpose the tensor
   pub fn transpose(&self) -> Tensor {
     return Neuron::matrix_math().transpose(self);
@@ -229,6 +241,10 @@ impl Tensor {
   //Dot Product between two tensors
   pub fn dot(&self, other: &Tensor) -> f64 {
     return Neuron::matrix_math().dot(self, other);
+  }
+
+  pub fn mul(&self, other: &Tensor) -> Tensor {
+    return Neuron::matrix_math().mul(&self, other);
   }
 }
 
@@ -247,15 +263,6 @@ impl Sub for Tensor {
 
   fn sub(self, other: Tensor) -> Tensor {
     return Neuron::matrix_math().sub(&self, &other);
-  }
-}
-
-//Multiply two tensors
-impl Mul for Tensor {
-  type Output = Tensor;
-
-  fn mul(self, other: Tensor) -> Tensor {
-    return Neuron::matrix_math().mul(&self, &other);
   }
 }
 
