@@ -131,7 +131,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::new(a.cols, a.rows);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     for i in 0..a.rows {
       for j in 0..a.cols {
