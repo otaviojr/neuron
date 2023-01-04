@@ -19,9 +19,11 @@ impl Neuron {
   pub fn forward(&self, input: Tensor) -> Option<Tensor> {
     let mut i = Some(input);
     for layer in self.layers.iter() {
-      if let Some(i1) = i {
-        println!("Hidden layer size = {}x{}", i1.rows(), i1.cols());
-        i = layer.forward(&i1);
+      if let Some(ref i1) = i {
+        i = layer.forward(i1);
+        if let Some(ref i2) = i {
+          println!("Hidden layer size = {}x{}", i2.rows(), i2.cols());
+        }
       }
     }
     i
