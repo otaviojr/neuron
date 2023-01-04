@@ -33,6 +33,22 @@ impl Neuron {
     i
   }
 
+  pub fn backward(&self, input: Tensor) -> Option<Tensor> {
+    let mut i = Some(input);
+    if let Some(ref i0) = i {
+      println!("Input layer size = {}x{}", i0.rows(), i0.cols());
+    }
+    for layer in self.layers.iter() {
+      if let Some(ref i1) = i {
+        i = layer.backward(i1);
+        if let Some(ref i2) = i {
+          println!("Hidden layer size = {}x{}", i2.rows(), i2.cols());
+        }
+      }
+    }
+    i
+  }
+
   pub fn matrix_math() -> Box<dyn MatrixMath> {
     Box::new(MatrixMathCPU { })
   }
