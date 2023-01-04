@@ -246,6 +246,11 @@ impl Tensor {
   pub fn mul(&self, other: &Tensor) -> Tensor {
     return Neuron::matrix_math().mul(&self, other);
   }
+
+  fn sub(self, other: &Tensor) -> Tensor {
+    return Neuron::matrix_math().sub(&self, other);
+  }
+
 }
 
 //Add two tensors
@@ -254,15 +259,6 @@ impl Add for Tensor {
 
   fn add(self, other: Tensor) -> Tensor {
     return Neuron::matrix_math().add(&self, &other);
-  }
-}
-
-//Subtract two tensors
-impl Sub for Tensor {
-  type Output = Tensor;
-
-  fn sub(self, other: Tensor) -> Tensor {
-    return Neuron::matrix_math().sub(&self, &other);
   }
 }
 

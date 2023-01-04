@@ -1,6 +1,7 @@
 pub mod math;
 pub mod layers;
 pub mod activations;
+pub mod cost;
 
 use math::{Tensor, MatrixMath, MatrixMathCPU};
 use layers::Layer;
