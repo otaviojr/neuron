@@ -182,22 +182,21 @@ impl Tensor {
 
   // Initialize this tensor with random values
   pub fn random(rows: usize, cols: usize) -> Self {
-    let mut t = Tensor {
-      rows,
-      cols,
-      data: vec![0.0; rows * cols],
-    };
-
+    let mut data = vec![0.0; rows * cols];
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = rand::thread_rng();
     
-    for i in 0..t.rows {
-      for j in 0..t.cols {
-        t.set(i, j, normal.sample(&mut rng));
+    for i in 0..rows {
+      for j in 0..cols {
+        data[i * cols + j] = normal.sample(&mut rng);
       }
     }
 
-    t
+    Tensor {
+      rows,
+      cols,
+      data,
+    }
   }
 
   pub fn rows(&self) -> usize {
