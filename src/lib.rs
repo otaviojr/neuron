@@ -21,6 +21,7 @@ impl Neuron {
     for layer in self.layers.iter() {
       if let Some(i1) = i {
         i = layer.forward(&i1);
+        println!("Hidden layer = {}", i);
       }
     }
     i
