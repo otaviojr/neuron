@@ -179,22 +179,22 @@ impl Display for Tensor {
 
 impl Tensor {
 
-  pub fn zeros(rows: usize, cols: usize, matrix: Box<dyn MatrixMath>) -> Self {
+  pub fn zeros(rows: usize, cols: usize, math: Box<dyn MatrixMath>) -> Self {
     Tensor {
         rows,
         cols,
         data: vec![0.0; rows * cols],
-        math: matrix
+        math: math
     }
   }
 
   // Initialize this tensor with random values
-  pub fn random(rows: usize, cols: usize, matrix: Box<dyn MatrixMath>) -> Self {
+  pub fn random(rows: usize, cols: usize, math: Box<dyn MatrixMath>) -> Self {
     let mut t = Tensor {
       rows,
       cols,
       data: vec![0.0; rows * cols],
-      math: matrix
+      math: math
     };
 
     let normal = Normal::new(0.0, 1.0).unwrap();
