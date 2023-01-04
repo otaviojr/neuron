@@ -1,6 +1,7 @@
 use std::{fmt::{Display,Formatter}};
 use std::ops::{Mul, Add, Sub, Div};
-use rand_distr::{Normal, Distribution};
+use rand::{Rng};
+use rand_distr::StandardNormal;
 use crate::Neuron;
 
 pub trait MatrixMath {
@@ -183,10 +184,9 @@ impl Tensor {
   // Initialize this tensor with random values
   pub fn random(rows: usize, cols: usize) -> Self {
     let mut data = vec![0.0; rows * cols];
-    let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = rand::thread_rng();
     
-    data.iter_mut().for_each(|x| *x = normal.sample(&mut rng));
+    data.iter_mut().for_each(|x| *x = rng.sample(StandardNormal));
 
     Tensor {
       rows,
