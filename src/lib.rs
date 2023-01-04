@@ -2,16 +2,18 @@ pub mod math;
 pub mod layers;
 pub mod activations;
 
-use math::{MatrixMath, MatrixMathCPU};
+use math::{Tensor, MatrixMath, MatrixMathCPU};
 use layers::Layer;
 
 pub struct Neuron {
+  input: Tensor,
   layers: Vec<Box<dyn Layer>>
 }
 
 impl Neuron {
-  pub fn new() -> Self {
+  pub fn new(input: Tensor) -> Self {
     Neuron {
+      input: input,
       layers: Vec::new()
     }
   }

@@ -200,6 +200,14 @@ impl Tensor {
     t
   }
 
+  pub fn rows(&self) -> usize {
+    self.rows
+  }
+
+  pub fn cols(&self) -> usize {
+    self.rows
+  }
+
   //Get a value from the tensor
   pub fn get(&self, row: usize, col: usize) -> f64 {
     self.data[row * self.cols + col]

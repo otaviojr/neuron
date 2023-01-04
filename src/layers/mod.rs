@@ -1,29 +1,40 @@
-use crate::math::{Tensor, MatrixMathCPU};
+use crate::math::Tensor;
 use crate::activations::Activation;
 
 pub trait Layer {
-  fn forward(&self, input: &Tensor) -> Tensor;
-  fn backward(&self, input: &Tensor) -> Tensor;
+  fn get_nodes(&self) -> usize;
+  fn forward(&self, input: &Tensor) -> Option<Tensor>;
+  fn backward(&self, input: &Tensor) -> Option<Tensor>;
 }
 
 pub struct LinearLayer {
-  activation: Box<dyn Activation>
+  activation: Box<dyn Activation>,
+  nodes: usize,
+  weights: Tensor,
+  bias: Tensor
 }
 
 impl LinearLayer {
-  pub fn new(activation: Box<dyn Activation>) -> Self {
+  pub fn new(input_size: usize, nodes: usize, activation: Box<dyn Activation>) -> Self {
     LinearLayer {
-      activation: activation
+      activation: activation,
+      nodes: nodes,
+      weights: Tensor::random(nodes,input_size),
+      bias: Tensor::random(nodes,1)
     }
   }
 }
 
 impl Layer for LinearLayer {
-  fn forward(&self, input: &Tensor) -> Tensor {
-    Tensor::random(0, 0)
+  fn get_nodes(&self) -> usize {
+    return self.nodes;
   }
 
-  fn backward(&self, input: &Tensor) -> Tensor {
-    Tensor::random(0, 0)
+  fn forward(&self, input: &Tensor) -> Option<Tensor> {
+    None
+  }
+
+  fn backward(&self, input: &Tensor) -> Option<Tensor> {
+    None
   }
 }
