@@ -1,23 +1,27 @@
-use math::{Tensor,MatrixMathCPU};
-
 pub mod math;
+pub mod layers;
+pub mod activations;
+
+use math::{MatrixMath, MatrixMathCPU};
+use layers::Layer;
 
 pub struct Neuron {
-
+  layers: Vec<Box<dyn Layer>>
 }
 
 impl Neuron {
   pub fn new() -> Self {
     Neuron {
-
+      layers: Vec::new()
     }
   }
 
-  pub fn new_random_tensor(&self, rows: usize, cols: usize) -> Tensor {
-    Tensor::random(rows, cols, Box::new(MatrixMathCPU::new()))
+  pub fn matrix_math() -> Box<dyn MatrixMath> {
+    Box::new(MatrixMathCPU { })
   }
 
-  pub fn new_tensor(&self, rows: usize, cols: usize) -> Tensor {
-    Tensor::zeros(rows, cols, Box::new(MatrixMathCPU::new()))
+  pub fn add_layer(&mut self, layer: Box<dyn Layer>) -> &mut Self {
+    self.layers.push(layer);
+    self
   }
 }

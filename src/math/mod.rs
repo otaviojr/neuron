@@ -1,7 +1,7 @@
 use std::{fmt::{Display,Formatter}};
 use std::ops::{Mul, Add, Sub, Div};
-
 use rand_distr::{Normal, Distribution};
+use crate::Neuron;
 
 pub trait MatrixMath {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor;
@@ -17,21 +17,15 @@ pub trait MatrixMath {
 #[derive(Copy, Clone)]
 pub struct MatrixMathCPU;
 
-impl MatrixMathCPU {
-  pub fn new() -> Self {
-    MatrixMathCPU {  }
-  }
-}
-
 impl MatrixMath for MatrixMathCPU {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0, Box::new(*self));
+        return Tensor::zeros(0,0);
       }
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
+      let mut result = Tensor::zeros(a.rows, a.cols);
 
       // Perform element-wise addition
       for i in 0..a.data.len() {
@@ -44,11 +38,11 @@ impl MatrixMath for MatrixMathCPU {
   fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0, Box::new(*self));
+        return Tensor::zeros(0,0);
       }
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
+      let mut result = Tensor::zeros(a.rows, a.cols);
 
       // Perform element-wise subtraction
       for i in 0..a.data.len() {
@@ -61,11 +55,11 @@ impl MatrixMath for MatrixMathCPU {
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {
     // Check that the tensors are compatible for multiplication
     if a.cols != b.rows {
-      return Tensor::zeros(0,0, Box::new(*self));
+      return Tensor::zeros(0,0);
     }
 
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, b.cols, Box::new(*self));
+    let mut result = Tensor::zeros(a.rows, b.cols);
 
     // Perform matrix multiplication
     for i in 0..a.rows {
@@ -84,11 +78,11 @@ impl MatrixMath for MatrixMathCPU {
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0, Box::new(*self));
+        return Tensor::zeros(0,0);
       }
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
+      let mut result = Tensor::zeros(a.rows, a.cols);
 
       // Perform element-wise division
       for i in 0..a.data.len() {
@@ -118,7 +112,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn transpose(&self, a: &Tensor) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.cols, a.rows, Box::new(*self));
+    let mut result = Tensor::zeros(a.cols, a.rows);
 
     // Transpose the matrix
     for i in 0..a.rows {
@@ -132,7 +126,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
+    let mut result = Tensor::zeros(a.rows, a.cols);
 
     for i in 0..a.rows {
       for j in 0..a.cols {
@@ -151,8 +145,6 @@ pub struct Tensor {
   cols: usize,
   
   data: Vec<f64>,
-
-  math: Box<dyn MatrixMath>,
 }
 
 impl Display for Tensor {
@@ -180,22 +172,20 @@ impl Display for Tensor {
 
 impl Tensor {
 
-  pub fn zeros(rows: usize, cols: usize, math: Box<dyn MatrixMath>) -> Self {
+  pub fn zeros(rows: usize, cols: usize) -> Self {
     Tensor {
         rows,
         cols,
         data: vec![0.0; rows * cols],
-        math: math
     }
   }
 
   // Initialize this tensor with random values
-  pub fn random(rows: usize, cols: usize, math: Box<dyn MatrixMath>) -> Self {
+  pub fn random(rows: usize, cols: usize) -> Self {
     let mut t = Tensor {
       rows,
       cols,
       data: vec![0.0; rows * cols],
-      math: math
     };
 
     let normal = Normal::new(0.0, 1.0).unwrap();
@@ -222,17 +212,17 @@ impl Tensor {
 
   // Transpose the tensor
   pub fn transpose(&self) -> Tensor {
-    return self.math.transpose(self);
+    return Neuron::matrix_math().transpose(self);
   }
 
   // Add a number to all rows and columns in the tensor
   pub fn add_value(&mut self, value: f64) -> Tensor {
-    return self.math.add_value(&self, value);
+    return Neuron::matrix_math().add_value(&self, value);
   }
 
   //Dot Product between two tensors
   pub fn dot(&self, other: &Tensor) -> f64 {
-    return self.math.dot(self, other)
+    return Neuron::matrix_math().dot(self, other);
   }
 }
 
@@ -241,7 +231,7 @@ impl Add for Tensor {
   type Output = Tensor;
 
   fn add(self, other: Tensor) -> Tensor {
-    return self.math.add(&self, &other);
+    return Neuron::matrix_math().add(&self, &other);
   }
 }
 
@@ -250,7 +240,7 @@ impl Sub for Tensor {
   type Output = Tensor;
 
   fn sub(self, other: Tensor) -> Tensor {
-    return self.math.sub(&self, &other);
+    return Neuron::matrix_math().sub(&self, &other);
   }
 }
 
@@ -259,7 +249,7 @@ impl Mul for Tensor {
   type Output = Tensor;
 
   fn mul(self, other: Tensor) -> Tensor {
-    return self.math.mul(&self, &other);
+    return Neuron::matrix_math().mul(&self, &other);
   }
 }
 
@@ -268,6 +258,6 @@ impl Div for Tensor {
   type Output = Tensor;
 
   fn div(self, other: Tensor) -> Tensor {
-    return self.math.div(&self, &other);
+    return Neuron::matrix_math().div(&self, &other);
   }
 }
