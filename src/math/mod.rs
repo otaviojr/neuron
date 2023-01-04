@@ -14,6 +14,7 @@ pub trait MatrixMath {
   fn add_value(&self, a: &Tensor, b: f64) -> Tensor;
 }
 
+#[derive(Copy, Clone)]
 pub struct MatrixMathCPU;
 
 impl MatrixMathCPU {
@@ -26,11 +27,11 @@ impl MatrixMath for MatrixMathCPU {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0);
+        return Tensor::zeros(0,0, Box::new(*self));
       }
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
 
       // Perform element-wise addition
       for i in 0..a.data.len() {
@@ -43,11 +44,11 @@ impl MatrixMath for MatrixMathCPU {
   fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0);
+        return Tensor::zeros(0,0, Box::new(*self));
       }
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
 
       // Perform element-wise subtraction
       for i in 0..a.data.len() {
@@ -60,11 +61,11 @@ impl MatrixMath for MatrixMathCPU {
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {
     // Check that the tensors are compatible for multiplication
     if a.cols != b.rows {
-      return Tensor::zeros(0,0);
+      return Tensor::zeros(0,0, Box::new(*self));
     }
 
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, b.cols);
+    let mut result = Tensor::zeros(a.rows, b.cols, Box::new(*self));
 
     // Perform matrix multiplication
     for i in 0..a.rows {
@@ -83,11 +84,11 @@ impl MatrixMath for MatrixMathCPU {
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0);
+        return Tensor::zeros(0,0, Box::new(*self));
       }
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
 
       // Perform element-wise division
       for i in 0..a.data.len() {
@@ -117,7 +118,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn transpose(&self, a: &Tensor) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.cols, a.rows);
+    let mut result = Tensor::zeros(a.cols, a.rows, Box::new(*self));
 
     // Transpose the matrix
     for i in 0..a.rows {
@@ -131,7 +132,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::zeros(a.rows, a.cols, Box::new(*self));
 
     for i in 0..a.rows {
       for j in 0..a.cols {
