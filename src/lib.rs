@@ -1,3 +1,6 @@
+#[cfg(feature = "simd_support")]
+extern crate rand;
+
 pub mod math;
 pub mod layers;
 pub mod activations;
