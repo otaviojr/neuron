@@ -179,7 +179,7 @@ impl Display for Tensor {
 
 impl Tensor {
 
-  pub fn new(rows: usize, cols: usize) -> Self {
+  pub fn zeros(rows: usize, cols: usize) -> Self {
     Tensor {
         rows,
         cols,
@@ -189,17 +189,25 @@ impl Tensor {
   }
 
   // Initialize this tensor with random values
-  pub fn random(&mut self) -> &mut Tensor {
+  pub fn random(rows: usize, cols: usize) -> Self {
+
+    let mut t = Tensor {
+      rows,
+      cols,
+      data: vec![0.0; rows * cols],
+      math: Box::new(MatrixMathCPU::new())
+    };
+
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = rand::thread_rng();
     
-    for i in 0..self.rows {
-      for j in 0..self.cols {
-        self.set(i, j, normal.sample(&mut rng));
+    for i in 0..t.rows {
+      for j in 0..t.cols {
+        t.set(i, j, normal.sample(&mut rng));
       }
     }
 
-    self
+    t
   }
 
   //Get a value from the tensor
