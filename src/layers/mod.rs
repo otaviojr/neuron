@@ -38,7 +38,7 @@ impl Layer for LinearLayer {
   }
 
   fn forward(&self, input: &Tensor) -> Option<Tensor> {
-    println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.col());
+    println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.cols());
     let z1 = self.weights.mul(input).add_value(self.bias);
     Some(self.activation.forward(&z1))
   }
