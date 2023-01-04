@@ -1,4 +1,4 @@
-use std::{fmt::{Display,Formatter}};
+use std::{fmt::{Display,Formatter}, time::Instant};
 use std::ops::{Mul, Add, Sub, Div};
 use rand::{Rng};
 use rand_distr::StandardNormal;
@@ -186,7 +186,10 @@ impl Tensor {
     let mut data = vec![0.0; rows * cols];
     let mut rng = rand::thread_rng();
     
+    let start = Instant::now();
     data.iter_mut().for_each(|x| *x = rng.sample(StandardNormal));
+    let elapsed = start.elapsed();
+    println!("Matrix loaded after: {} seconds", elapsed.as_secs());
 
     Tensor {
       rows,
