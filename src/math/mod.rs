@@ -189,7 +189,7 @@ impl Tensor {
   }
 
   // Initialize this tensor with random values
-  pub fn random(&mut self) {
+  pub fn random(&mut self) -> &mut Tensor {
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = rand::thread_rng();
     
@@ -198,6 +198,8 @@ impl Tensor {
         self.set(i, j, normal.sample(&mut rng));
       }
     }
+
+    self
   }
 
   //Get a value from the tensor
