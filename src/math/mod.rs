@@ -211,7 +211,7 @@ impl Tensor {
   }
 
   pub fn cols(&self) -> usize {
-    self.rows
+    self.cols
   }
 
   //Get a value from the tensor
