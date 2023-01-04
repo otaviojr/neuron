@@ -16,7 +16,7 @@ impl Neuron {
     }
   }
 
-  fn forward(&self, input: Tensor) -> Option<Tensor> {
+  pub fn forward(&self, input: Tensor) -> Option<Tensor> {
     let mut i = Some(input);
     for layer in self.layers.iter() {
       if let Some(i1) = i {
