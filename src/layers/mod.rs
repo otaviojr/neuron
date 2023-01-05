@@ -1,7 +1,5 @@
-use std::ops::Add;
-
 use rand::{Rng};
-use rand_distr::StandardNormal;
+use rand_distr::{Uniform};
 
 use crate::math::Tensor;
 use crate::activations::Activation;
@@ -30,7 +28,7 @@ impl LinearLayer {
       activation: activation,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
-      bias: rng.sample(StandardNormal),
+      bias: rng.sample(Uniform::new(0.0, 1.0)),
       last_input: None,
       last_z1: None
     }
