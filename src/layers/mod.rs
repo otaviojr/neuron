@@ -55,13 +55,12 @@ impl Layer for LinearLayer {
 
   fn backward(&mut self, input: &Tensor) -> Option<Tensor> {
     if let Some(ref z1) = self.last_z1 {
-      println!("activation derivative size = {}x{}", self.activation.backward(z1).rows(), self.activation.backward(z1).cols());
       let dz = input.mul_wise(&self.activation.backward(z1));
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       if let Some(ref input) = self.last_input {
         let dw = dz.mul(&input.transpose());
-        let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("dw size = {}x{}", dw.rows(), dw.cols());
+        let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
         return Some(self.weights.transpose().mul(&dz))
       }
