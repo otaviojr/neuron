@@ -65,6 +65,8 @@ impl Layer for LinearLayer {
         println!("db size = {}x{}", db.rows(), db.cols());
 
         self.weights.add(&dw.div_value(input.cols() as f64));
+        let dbf = db.data().to_owned().into_iter().reduce(|count, value| count + value ).unwrap();
+        self.bias = self.bias + ( dbf/ input.cols() as f64);
 
         return Some(self.weights.transpose().mul(&dz))
       }
