@@ -3,16 +3,12 @@ use crate::math::Tensor;
 pub struct Functions;
 
 impl Functions{
-  pub fn binary_cross_entropy_loss(predictions: &Tensor, targets: &Tensor) -> Tensor {
-    let cost = Tensor::zeros(targets.rows(), targets.cols());
-    
-    //let mut loss = 0.0;
-    //for (prediction, target) in predictions.iter().zip(targets.iter()) {
-    //    loss += target * prediction.ln() + (1.0 - target) * (1.0 - prediction).ln();
-    //}
-    //-loss / predictions.len() as f32
-  
-    cost
+  pub fn binary_cross_entropy_loss(predictions: &Tensor, targets: &Tensor) -> f64 {
+    let mut loss = 0.0;
+    for (prediction, target) in predictions.data().to_owned().iter().zip(targets.data().to_owned().iter()) {
+        loss += target * prediction.ln() + (1.0 - target) * (1.0 - prediction).ln();
+    }
+    -loss / predictions.data().len() as f64
   }
   
   pub fn binary_cross_entropy_loss_derivative(predictions: &Tensor, targets: &Tensor) -> Tensor {  
