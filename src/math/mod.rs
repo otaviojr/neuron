@@ -77,7 +77,7 @@ impl MatrixMath for MatrixMathCPU {
       return result;
     } else if (a.rows == b.cols){
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, b.cols);
+      let mut result = Tensor::zeros(a.cols, b.rows);
 
       // Perform matrix multiplication
       for i in 0..b.rows {
