@@ -7,7 +7,7 @@ impl Functions{
     let mut loss = 0.0;
 
     for (prediction, target) in predictions.data().iter().zip(targets.data().iter()) {
-        loss -= ((target * prediction.ln()) + ((1.0 - target) * (1.0 - prediction).ln()));
+        loss += -((target * prediction.ln()) + ((1.0 - target) * (1.0 - prediction).ln()));
     }
 
     return -loss / targets.data().len() as f64;
