@@ -1,4 +1,5 @@
 use crate::math::Tensor;
+use std::f64::consts::E;
 
 pub trait Activation {
   fn forward(&self, value: &Tensor) -> Tensor;
@@ -39,7 +40,7 @@ impl Sigmoid {
 
 impl Activation for Sigmoid {
   fn forward(&self, value: &Tensor) -> Tensor {
-    let data:Vec<f64> = value.data().iter().map(|value| 1.0 / (1.0 + (-value).exp()) ).collect();
+    let data:Vec<f64> = value.data().iter().map(|value| 1.0 / (1.0 + E.powf(-value)) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     ret
   }
