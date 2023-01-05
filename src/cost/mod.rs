@@ -9,7 +9,9 @@ impl Functions{
     for (prediction, target) in predictions.data().iter().zip(targets.data().iter()) {
         let v = -((target * prediction.ln()) + ((1.0 - target) * (1.0 - prediction).ln()));
         println!("v={} for {} and {}",v, target, prediction);
-        loss += v;
+        if v.is_normal() {
+          loss += v;
+        }
     }
 
     -loss / targets.data().len() as f64

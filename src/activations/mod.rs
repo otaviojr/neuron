@@ -39,10 +39,8 @@ impl Sigmoid {
 
 impl Activation for Sigmoid {
   fn forward(&self, value: &Tensor) -> Tensor {
-    println!("Sigmoid for: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| 1.0 / (1.0 + (-value).exp()) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
-    println!("Result: {}", ret);
     ret
   }
 
