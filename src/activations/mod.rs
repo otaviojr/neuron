@@ -36,18 +36,23 @@ impl Sigmoid {
   pub fn new() -> Self {
     Sigmoid {  }
   }
+
+  fn sigmoid(value:f64) -> f64 {
+    let ret = 1.0 / (1.0 + E.powf(-value)); 
+    if ret.is_nan() {0.0} else {ret}
+  }
 }
 
 impl Activation for Sigmoid {
   fn forward(&self, value: &Tensor) -> Tensor {
-    let data:Vec<f64> = value.data().iter().map(|value| { let ret = 1.0 / (1.0 + E.powf(-value)); if ret.is_nan() {0.0} else {ret} } ).collect();
+    let data:Vec<f64> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     //println!("Sigmoid result: {}", ret);
     ret
   }
 
   fn backward(&self, value: &Tensor) -> Tensor {
-    let data:Vec<f64> = value.data().iter().map(|value| value * (1.0 - value) ).collect();
+    let data:Vec<f64> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) * (1.0 - Sigmoid::sigmoid(*value)) ).collect();
     Tensor::from_data(value.rows(), value.cols(), data)
   }
 }
