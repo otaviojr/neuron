@@ -5,7 +5,8 @@ pub struct Functions;
 impl Functions{
   pub fn binary_cross_entropy_loss(predictions: &Tensor, targets: &Tensor) -> f64 {
     let mut loss = 0.0;
-    for (prediction, target) in predictions.data().to_owned().iter().zip(targets.data().to_owned().iter()) {
+
+    for (prediction, target) in predictions.data().iter().zip(targets.data().iter()) {
         loss += target * prediction.ln() + (1.0 - target) * (1.0 - prediction).ln();
     }
     -loss / predictions.data().len() as f64
