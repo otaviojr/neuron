@@ -65,9 +65,9 @@ impl Layer for LinearLayer {
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
 
-        self.weights = self.weights.add(&dw.mul_value(0.005));
+        self.weights = self.weights.add(&dw.mul_value(0.1));
         let dbf = db.data().to_owned().into_iter().reduce(|count, value| count + value ).unwrap() / input.cols() as f64;
-        self.bias += dbf * 0.005;
+        self.bias += dbf * 0.01;
 
         return Some(self.weights.transpose().mul(&dz))
       }
