@@ -230,7 +230,6 @@ impl Tensor {
   }
 
   pub fn from_data(rows: usize, cols: usize, data: Vec<f64>) -> Self{
-    println!("Data Len = {} ; Correct Len = {}", data.len(), rows*cols);
     assert!(data.len() == rows*cols);
     Tensor {
       rows,
