@@ -56,11 +56,10 @@ impl MatrixMath for MatrixMathCPU {
   }
 
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, b.cols);
-
     // Check that the tensors are compatible for multiplication
     if a.cols == b.rows {
+      // Create a new tensor to store the result
+      let mut result = Tensor::zeros(a.rows, b.cols);
       // Perform matrix multiplication
       for i in 0..b.rows {
         for j in 0..a.cols {
@@ -73,6 +72,8 @@ impl MatrixMath for MatrixMathCPU {
         return result;
       }
     } else if a.rows == b.cols {
+      // Create a new tensor to store the result
+      let mut result = Tensor::zeros(b.rows, a.cols);
       // Perform matrix multiplication
       for i in 0..a.rows {
         for j in 0..b.cols {
