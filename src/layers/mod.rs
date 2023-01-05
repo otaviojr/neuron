@@ -46,7 +46,7 @@ impl Layer for LinearLayer {
     //println!("Input = {}", input);
     //println!("Weights = {}", self.weights);
     let z1 = self.weights.mul(input).add_value(self.bias);
-    println!("z1 = {}", z1);
+    //println!("z1 = {}", z1);
     let ret = Some(self.activation.forward(&z1));
     self.last_z1 = Some(z1);
     self.last_input = Some(Tensor::from_data(input.rows(), input.cols(), input.data().to_owned()));
