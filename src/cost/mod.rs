@@ -8,7 +8,7 @@ impl Functions{
 
     for (prediction, target) in predictions.data().iter().zip(targets.data().iter()) {
         let v = -((target * prediction.ln()) + ((1.0 - target) * (1.0 - prediction).ln()));
-        println!("v={} for {} and {}",v, target, prediction);
+        //println!("v={} for {} and {}",v, target, prediction);
         if v.is_normal() {
           loss += v;
         }
