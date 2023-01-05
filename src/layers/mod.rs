@@ -54,6 +54,7 @@ impl Layer for LinearLayer {
   }
 
   fn backward(&mut self, input: &Tensor) -> Option<Tensor> {
+    println!("da size = {}x{}", input.rows(), input.cols());
     if let Some(ref z1) = self.last_z1 {
       let dz = input.mul_wise(&self.activation.backward(z1));
       println!("dz size = {}x{}", dz.rows(), dz.cols());
