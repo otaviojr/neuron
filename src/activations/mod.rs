@@ -17,6 +17,7 @@ impl ReLU {
 
 impl Activation for ReLU {
   fn forward(&self, value: &Tensor) -> Tensor {
+    println!("ReLU for: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| {if *value > 0.0 { *value } else { 0.0 }} ).collect();
     Tensor::from_data(value.rows(), value.cols(), data)
   }
@@ -39,8 +40,10 @@ impl Sigmoid {
 
 impl Activation for Sigmoid {
   fn forward(&self, value: &Tensor) -> Tensor {
+    println!("Sigmoid for: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| 1.0 / (1.0 + (-value).exp()) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
+    println!("Result: {}", ret);
     ret
   }
 
