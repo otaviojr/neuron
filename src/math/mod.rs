@@ -15,6 +15,7 @@ pub trait MatrixMath {
 
   fn add_value(&self, a: &Tensor, b: f64) -> Tensor;
   fn div_value(&self, a: &Tensor, b: f64) -> Tensor;
+  fn mul_value(&self, a: &Tensor, b: f64) -> Tensor;
 }
 
 #[derive(Copy, Clone)]
@@ -170,6 +171,19 @@ impl MatrixMath for MatrixMathCPU {
     result
   }
 
+  fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(a.rows, a.cols);
+
+    for i in 0..a.rows {
+      for j in 0..a.cols {
+        let val = a.get(i, j);
+        result.set(i, j, val*value);
+      }
+    }
+
+    result
+  }
 }
 
 #[derive(Clone)]
@@ -275,6 +289,10 @@ impl Tensor {
     return Neuron::matrix_math().div_value(&self, value);
   }
 
+  pub fn mul_value(&self, value: f64) -> Tensor {
+    return Neuron::matrix_math().mul_value(&self, value);
+  }
+
   //Dot Product between two tensors
   pub fn dot(&self, other: &Tensor) -> f64 {
     return Neuron::matrix_math().dot(self, other);
@@ -292,7 +310,7 @@ impl Tensor {
     return Neuron::matrix_math().mul_wise(&self, other);
   }
 
-  fn sub(self, other: &Tensor) -> Tensor {
+  pub fn sub(&self, other: &Tensor) -> Tensor {
     return Neuron::matrix_math().sub(&self, other);
   }
 

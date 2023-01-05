@@ -59,13 +59,13 @@ impl Layer for LinearLayer {
       //println!("dz = {}", dz);
       if let Some(ref forward_input) = self.last_input {
         println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
-        let dw = dz.mul(&forward_input.transpose());
+        let dw = dz.mul(&forward_input.transpose()).div_value(input.cols() as f64);
         println!("dw size = {}x{}", dw.rows(), dw.cols());
         println!("dw = {}", dw);
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
 
-        self.weights.add(&dw.div_value(input.cols() as f64));
+        self.weights.sub(&dw.mul_value(0.2));
         let dbf = db.data().to_owned().into_iter().reduce(|count, value| count + value ).unwrap();
         self.bias += dbf / input.cols() as f64;
 
