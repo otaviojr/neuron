@@ -63,6 +63,9 @@ impl Layer for LinearLayer {
         println!("dw size = {}x{}", dw.rows(), dw.cols());
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
+
+        self.weights.add(&dw.div_value(input.cols() as f64));
+
         return Some(self.weights.transpose().mul(&dz))
       }
     }

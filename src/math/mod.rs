@@ -266,17 +266,21 @@ impl Tensor {
   }
 
   // Add a number to all rows and columns in the tensor
-  pub fn add_value(&mut self, value: f64) -> Tensor {
+  pub fn add_value(&self, value: f64) -> Tensor {
     return Neuron::matrix_math().add_value(&self, value);
   }
 
-  pub fn div_value(&mut self, value: f64) -> Tensor {
+  pub fn div_value(&self, value: f64) -> Tensor {
     return Neuron::matrix_math().div_value(&self, value);
   }
 
   //Dot Product between two tensors
   pub fn dot(&self, other: &Tensor) -> f64 {
     return Neuron::matrix_math().dot(self, other);
+  }
+
+  pub fn add(&self, other: &Tensor) -> Tensor {
+    return Neuron::matrix_math().mul(&self, other);
   }
 
   pub fn mul(&self, other: &Tensor) -> Tensor {
@@ -291,15 +295,6 @@ impl Tensor {
     return Neuron::matrix_math().sub(&self, other);
   }
 
-}
-
-//Add two tensors
-impl Add for Tensor {
-  type Output = Tensor;
-
-  fn add(self, other: Tensor) -> Tensor {
-    return Neuron::matrix_math().add(&self, &other);
-  }
 }
 
 //Divide two tensors
