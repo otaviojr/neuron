@@ -9,7 +9,8 @@ impl Functions{
     for (prediction, target) in predictions.data().iter().zip(targets.data().iter()) {
         loss += target * prediction.ln() + (1.0 - target) * (1.0 - prediction).ln();
     }
-    -loss / predictions.data().len() as f64
+
+    return -loss / targets.data().len() as f64;
   }
   
   pub fn binary_cross_entropy_loss_derivative(predictions: &Tensor, targets: &Tensor) -> Tensor {  
