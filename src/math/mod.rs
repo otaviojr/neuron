@@ -58,40 +58,24 @@ impl MatrixMath for MatrixMathCPU {
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {
     // Check that the tensors are compatible for multiplication
     if a.cols != b.rows {
+      return Tensor::zeros(0,0);
     }
 
-    if a.cols == b.rows {
-      // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, b.cols);
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(a.rows, b.cols);
 
-      // Perform matrix multiplication
-      for i in 0..a.rows {
-        for j in 0..b.cols {
-          let mut sum = 0.0;
-          for k in 0..a.cols {
-            sum += a.get(i, k) * b.get(k, j);
-          }
-          result.set(i, j, sum);
+    // Perform matrix multiplication
+    for i in 0..a.rows {
+      for j in 0..b.cols {
+        let mut sum = 0.0;
+        for k in 0..a.cols {
+          sum += a.get(i, k) * b.get(k, j);
         }
+        result.set(i, j, sum);
       }
-      return result;
-    } else if (a.rows == b.cols){
-      // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.cols, b.rows);
-
-      // Perform matrix multiplication
-      for i in 0..b.rows {
-        for j in 0..a.cols {
-          let mut sum = 0.0;
-          for k in 0..b.cols {
-            sum += a.get(j, k) * b.get(k, i);
-          }
-          result.set(i, j, sum);
-        }
-      }
-      return result;
     }
-    Tensor::zeros(0,0)
+
+    result
   }
 
   fn mul_wise(&self, a: &Tensor, b: &Tensor) -> Tensor {
