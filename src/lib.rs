@@ -40,7 +40,7 @@ impl Neuron {
     if let Some(ref i0) = i {
       println!("Input layer size = {}x{}", i0.rows(), i0.cols());
     }
-    for layer in self.layers.iter() {
+    for layer in self.layers.iter().rev() {
       if let Some(ref i1) = i {
         i = layer.lock().unwrap().backward(i1);
         if let Some(ref i2) = i {
