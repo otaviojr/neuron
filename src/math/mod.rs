@@ -299,7 +299,7 @@ impl Tensor {
   }
 
   pub fn add(&self, other: &Tensor) -> Tensor {
-    return Neuron::matrix_math().mul(&self, other);
+    return Neuron::matrix_math().add(&self, other);
   }
 
   pub fn mul(&self, other: &Tensor) -> Tensor {
