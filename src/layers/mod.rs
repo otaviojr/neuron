@@ -61,7 +61,7 @@ impl Layer for LinearLayer {
         println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
         let dw = dz.mul(&forward_input.transpose());
         println!("dw size = {}x{}", dw.rows(), dw.cols());
-        //println!("dw = {}", dw);
+        println!("dw = {}", dw);
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
 
