@@ -19,8 +19,8 @@ impl Neuron {
     }
   }
 
-  pub fn forward(&self, input: &Tensor) -> Option<Tensor> {
-    let mut i = Some(input.to_owned());
+  pub fn forward(&self, input: Tensor) -> Option<Tensor> {
+    let mut i = Some(input);
     if let Some(ref i0) = i {
       println!("Input layer size = {}x{}", i0.rows(), i0.cols());
     }
@@ -35,8 +35,8 @@ impl Neuron {
     i
   }
 
-  pub fn backward(&self, input: &Tensor) -> Option<Tensor> {
-    let mut i = Some(input.to_owned());
+  pub fn backward(&self, input: Tensor) -> Option<Tensor> {
+    let mut i = Some(input);
     if let Some(ref i0) = i {
       println!("Input layer size = {}x{}", i0.rows(), i0.cols());
     }
