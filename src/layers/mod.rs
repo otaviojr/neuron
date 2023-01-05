@@ -58,6 +58,7 @@ impl Layer for LinearLayer {
       let dz = input.mul_wise(&self.activation.backward(z1));
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       if let Some(ref input) = self.last_input {
+        println!("input size = {}x{}", input.rows(), input.cols());
         let it = input.transpose();
         println!("it size = {}x{}", it.rows(), it.cols());
         let dw = dz.mul(&it);
