@@ -54,7 +54,7 @@ impl Layer for LinearLayer {
 
   fn backward(&mut self, input: &Tensor) -> Option<Tensor> {
     if let Some(ref z1) = self.last_z1 {
-      let dz = self.weights.mul(&input).mul_wise(&self.activation.backward(z1));
+      let dz = input.mul_wise(&self.activation.backward(z1));
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
       if let Some(ref forward_input) = self.last_input {
@@ -65,11 +65,13 @@ impl Layer for LinearLayer {
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
 
+        let ret = Some(self.weights.transpose().mul(&dz));
+
         self.weights = self.weights.add(&dw.mul_value(0.1));
         let dbf = db.data().to_owned().into_iter().reduce(|count, value| count + value ).unwrap() / input.cols() as f64;
         self.bias += dbf * 0.01;
 
-        return Some(self.weights.transpose().mul(&dz))
+        return ret;
       }
     }
     None
