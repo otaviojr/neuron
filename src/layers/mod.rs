@@ -28,7 +28,7 @@ impl LinearLayer {
       activation: activation,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
-      bias: rng.sample(Uniform::new(0.0, 1.0)),
+      bias: rng.sample(Uniform::new(0.0, 0.0000000000005)),
       last_input: None,
       last_z1: None
     }
