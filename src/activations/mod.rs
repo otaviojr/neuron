@@ -40,7 +40,7 @@ impl Sigmoid {
 
 impl Activation for Sigmoid {
   fn forward(&self, value: &Tensor) -> Tensor {
-    let data:Vec<f64> = value.data().iter().map(|value| { let ret = 1.0 / (1.0 + E.powf(-value)); if ret.is_normal() {ret} else {0} } ).collect();
+    let data:Vec<f64> = value.data().iter().map(|value| { let ret = 1.0 / (1.0 + E.powf(-value)); if ret.is_normal() {ret} else {0.0} } ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     println!("Sigmoid result: {}", ret);
     ret
