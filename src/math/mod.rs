@@ -8,11 +8,13 @@ pub trait MatrixMath {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor;
+  fn mul_wise(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn dot(&self, a: &Tensor, b: &Tensor) -> f64;
   fn transpose(&self, a: &Tensor) -> Tensor;
 
   fn add_value(&self, a: &Tensor, b: f64) -> Tensor;
+  fn div_value(&self, a: &Tensor, b: f64) -> Tensor;
 }
 
 #[derive(Copy, Clone)]
@@ -76,6 +78,21 @@ impl MatrixMath for MatrixMathCPU {
     result
   }
 
+  fn mul_wise(&self, a: &Tensor, b: &Tensor) -> Tensor {
+    // Check that the tensors are compatible for multiplication
+    if a.rows != b.rows || a.cols != b.cols {
+      return Tensor::zeros(0,0);
+    }
+
+    let data: Vec<f64> = a.data()
+    .iter()
+    .zip(b.data().iter())
+    .map(|(v1, v2)| v1 * v2).collect();
+
+    
+    Tensor::from_data(a.rows, a.cols, data)
+  }
+
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       if a.cols != b.cols || a.rows != b.rows {
@@ -133,6 +150,20 @@ impl MatrixMath for MatrixMathCPU {
       for j in 0..a.cols {
         let val = a.get(i, j);
         result.set(i, j, val + value);
+      }
+    }
+
+    result
+  }
+
+  fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(a.rows, a.cols);
+
+    for i in 0..a.rows {
+      for j in 0..a.cols {
+        let val = a.get(i, j);
+        result.set(i, j, val/value);
       }
     }
 
@@ -238,6 +269,10 @@ impl Tensor {
     return Neuron::matrix_math().add_value(&self, value);
   }
 
+  pub fn div_value(&mut self, value: f64) -> Tensor {
+    return Neuron::matrix_math().div_value(&self, value);
+  }
+
   //Dot Product between two tensors
   pub fn dot(&self, other: &Tensor) -> f64 {
     return Neuron::matrix_math().dot(self, other);
@@ -245,6 +280,10 @@ impl Tensor {
 
   pub fn mul(&self, other: &Tensor) -> Tensor {
     return Neuron::matrix_math().mul(&self, other);
+  }
+
+  pub fn mul_wise(&self, other: &Tensor) -> Tensor {
+    return Neuron::matrix_math().mul_wise(&self, other);
   }
 
   fn sub(self, other: &Tensor) -> Tensor {

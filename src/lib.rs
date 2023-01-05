@@ -3,11 +3,13 @@ pub mod layers;
 pub mod activations;
 pub mod cost;
 
+use std::sync::Mutex;
+
 use math::{Tensor, MatrixMath, MatrixMathCPU};
 use layers::Layer;
 
 pub struct Neuron {
-  layers: Vec<Box<dyn Layer>>
+  layers: Vec<Box<Mutex<dyn Layer>>>
 }
 
 impl Neuron {
@@ -24,7 +26,7 @@ impl Neuron {
     }
     for layer in self.layers.iter() {
       if let Some(ref i1) = i {
-        i = layer.forward(i1);
+        i = layer.lock().unwrap().forward(i1);
         if let Some(ref i2) = i {
           println!("Hidden layer size = {}x{}", i2.rows(), i2.cols());
         }
@@ -40,7 +42,7 @@ impl Neuron {
     }
     for layer in self.layers.iter() {
       if let Some(ref i1) = i {
-        i = layer.backward(i1);
+        i = layer.lock().unwrap().backward(i1);
         if let Some(ref i2) = i {
           println!("Hidden layer size = {}x{}", i2.rows(), i2.cols());
         }
@@ -53,7 +55,7 @@ impl Neuron {
     Box::new(MatrixMathCPU { })
   }
 
-  pub fn add_layer(&mut self, layer: Box<dyn Layer>) -> &mut Self {
+  pub fn add_layer(&mut self, layer: Box<Mutex<dyn Layer>>) -> &mut Self {
     self.layers.push(layer);
     self
   }

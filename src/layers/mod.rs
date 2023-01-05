@@ -8,15 +8,18 @@ use crate::activations::Activation;
 
 pub trait Layer {
   fn get_nodes(&self) -> usize;
-  fn forward(&self, input: &Tensor) -> Option<Tensor>;
-  fn backward(&self, input: &Tensor) -> Option<Tensor>;
+  fn forward(&mut self, input: &Tensor) -> Option<Tensor>;
+  fn backward(&mut self, input: &Tensor) -> Option<Tensor>;
 }
 
 pub struct LinearLayer {
   activation: Box<dyn Activation>,
   nodes: usize,
   weights: Tensor,
-  bias: f64
+  bias: f64,
+
+  last_input: Option<Tensor>,
+  last_z1: Option<Tensor>
 }
 
 impl LinearLayer {
@@ -27,7 +30,9 @@ impl LinearLayer {
       activation: activation,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
-      bias: rng.sample(StandardNormal)
+      bias: rng.sample(StandardNormal),
+      last_input: None,
+      last_z1: None
     }
   }
 }
@@ -37,13 +42,28 @@ impl Layer for LinearLayer {
     return self.nodes;
   }
 
-  fn forward(&self, input: &Tensor) -> Option<Tensor> {
+  fn forward(&mut self, input: &Tensor) -> Option<Tensor> {
     println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.cols());
     let z1 = self.weights.mul(input).add_value(self.bias);
-    Some(self.activation.forward(&z1))
+    let ret = Some(self.activation.forward(&z1));
+
+    self.last_z1 = Some(z1);
+    self.last_input = Some(Tensor::from_data(input.rows(), input.cols(), input.data().to_owned()));
+    
+    ret
   }
 
-  fn backward(&self, input: &Tensor) -> Option<Tensor> {
+  fn backward(&mut self, input: &Tensor) -> Option<Tensor> {
+    if let Some(ref z1) = self.last_z1 {
+      let dz = input.mul_wise(&self.activation.backward(z1));
+      if let Some(ref input) = self.last_input {
+        let dw = dz.mul(&input.transpose());
+        let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
+        println!("dw size = {}x{}", dw.rows(), dw.cols());
+        println!("db size = {}x{}", db.rows(), db.cols());
+        return Some(self.weights.transpose().mul(&dz))
+      }
+    }
     None
   }
 }
