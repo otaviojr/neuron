@@ -208,13 +208,13 @@ impl MatrixMath for MatrixMathCPU {
     // Create a new tensor to store the result
     let mut result = Tensor::zeros(rows, cols);
 
-    if a.rows == rows && a.cols == 1 {
+    if a.rows == rows {
       for i in 0..a.rows {
         for j in 0..result.cols {
           result.set(i, j, a.get(i, 1));
         }
       }  
-    } else if a.cols == cols && a .rows == 1 {
+    } else if a.cols == cols {
       for i in 0..result.rows {
         for j in 0..a.cols {
           result.set(i, j, a.get(1, j));
