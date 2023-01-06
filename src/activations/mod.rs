@@ -60,3 +60,33 @@ impl Activation for Sigmoid {
     Tensor::from_data(value.rows(), value.cols(), data)
   }
 }
+
+pub struct Tanh {
+
+}
+
+impl Tanh {
+  pub fn new() -> Self {
+    Tanh {  }
+  }
+
+  fn tanh(value:f64) -> f64 {
+    let ret = (value.exp() - (-value).exp()) / ( value.exp() + (-value).exp()); 
+    if ret.is_nan() {0.0} else {ret}
+  }
+}
+
+impl Activation for Tanh {
+  fn forward(&self, value: &Tensor) -> Tensor {
+    println!("Sigmoid Entry: {}", value);
+    let data:Vec<f64> = value.data().iter().map(|value| Tanh::tanh(*value) ).collect();
+    let ret = Tensor::from_data(value.rows(), value.cols(), data);
+    println!("Sigmoid result: {}", ret);
+    ret
+  }
+
+  fn backward(&self, value: &Tensor) -> Tensor {
+    let data:Vec<f64> = value.data().iter().map(|value| 1.0 - Tanh::tanh(*value).powi(2) ).collect();
+    Tensor::from_data(value.rows(), value.cols(), data)
+  }
+}
