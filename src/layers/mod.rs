@@ -47,7 +47,9 @@ impl Layer for LinearLayer {
     //println!("Weights = {}", self.weights);
     let z1_1 = self.weights.mul(input);
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
-    let z1 = z1_1.add(&self.bias.broadcast(z1_1.rows(), z1_1.cols()));
+    let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
+    println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
+    let z1 = z1_1.add(&b_bias);
 
     //println!("z1 = {}", z1);
     let ret = Some(self.activation.forward(&z1));
