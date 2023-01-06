@@ -211,13 +211,13 @@ impl MatrixMath for MatrixMathCPU {
     if a.rows == rows {
       for i in 0..a.rows {
         for j in 0..result.cols {
-          result.set(i, j, a.get(i, 1));
+          result.set(i, j, a.get(i, 0));
         }
       }  
     } else if a.cols == cols {
       for i in 0..result.rows {
         for j in 0..a.cols {
-          result.set(i, j, a.get(1, j));
+          result.set(i, j, a.get(0, j));
         }
       }  
     }
