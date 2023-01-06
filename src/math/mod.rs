@@ -198,7 +198,7 @@ impl MatrixMath for MatrixMathCPU {
       for j in 0..a.cols {
         sum += a.get(i, j);
       }
-      result.set(i, 1, sum);
+      result.set(i, 0, sum);
     }
 
     result
