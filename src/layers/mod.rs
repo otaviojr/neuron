@@ -28,7 +28,7 @@ impl LinearLayer {
       activation: activation,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
-      bias: rng.sample(Uniform::new(-0.0005, 0.0005)),
+      bias: rng.sample(Uniform::new(0.000, 0.0005)),
       last_input: None,
       last_z1: None
     }
@@ -69,9 +69,9 @@ impl Layer for LinearLayer {
 
         let ret = Some(self.weights.transpose().mul(&dz));
 
-        self.weights = self.weights.add(&dw.mul_value(0.1));
+        self.weights = self.weights.sub(&dw.mul_value(0.1));
         let dbf = db.data().to_owned().into_iter().reduce(|count, value| count + value ).unwrap() / input.cols() as f64;
-        self.bias += dbf * 0.1;
+        self.bias -= dbf * 0.1;
 
         return ret;
       }
