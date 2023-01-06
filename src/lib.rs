@@ -40,9 +40,9 @@ impl Neuron {
     if let Some(ref i0) = i {
       println!("Input layer size = {}x{}", i0.rows(), i0.cols());
     }
-    for layer in self.layers.iter().rev() {
+    for (index,layer) in self.layers.iter().rev().enumerate() {
       if let Some(ref i1) = i {
-        i = layer.lock().unwrap().backward(i1);
+        i = layer.lock().unwrap().backward(i1, index==0);
         if let Some(ref i2) = i {
           println!("Hidden layer size = {}x{}", i2.rows(), i2.cols());
         }

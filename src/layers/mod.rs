@@ -7,7 +7,7 @@ use crate::activations::Activation;
 pub trait Layer {
   fn get_nodes(&self) -> usize;
   fn forward(&mut self, input: &Tensor) -> Option<Tensor>;
-  fn backward(&mut self, input: &Tensor) -> Option<Tensor>;
+  fn backward(&mut self, input: &Tensor, first: bool) -> Option<Tensor>;
 }
 
 pub struct LinearLayer {
@@ -59,9 +59,14 @@ impl Layer for LinearLayer {
     ret
   }
 
-  fn backward(&mut self, input: &Tensor) -> Option<Tensor> {
+  fn backward(&mut self, input: &Tensor, first: bool) -> Option<Tensor> {
     if let Some(ref z1) = self.last_z1 {
-      let dz = input.mul_wise(&self.activation.backward(z1));
+      let mut dz;
+      if first {
+        dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
+      } else {
+        dz = input.mul_wise(&self.activation.backward(z1));
+      }
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
       if let Some(ref forward_input) = self.last_input {
