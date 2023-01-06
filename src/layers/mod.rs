@@ -10,8 +10,13 @@ pub trait Layer {
   fn backward(&mut self, input: &Tensor, first: bool) -> Option<Tensor>;
 }
 
-pub struct LinearLayer {
+pub struct LayerConfig {
   activation: Box<dyn Activation>,
+  learn_rate: f64
+}
+
+pub struct LinearLayer {
+  config: LayerConfig,
   nodes: usize,
   weights: Tensor,
   bias: Tensor,
@@ -21,11 +26,11 @@ pub struct LinearLayer {
 }
 
 impl LinearLayer {
-  pub fn new(input_size: usize, nodes: usize, activation: Box<dyn Activation>) -> Self {
+  pub fn new(input_size: usize, nodes: usize, config: LayerConfig) -> Self {
     let mut rng = rand::thread_rng();
 
     LinearLayer {
-      activation: activation,
+      config: config,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
       bias: Tensor::zeros(nodes,1),
@@ -52,7 +57,7 @@ impl Layer for LinearLayer {
     let z1 = z1_1.add(&b_bias);
 
     //println!("z1 = {}", z1);
-    let ret = Some(self.activation.forward(&z1));
+    let ret = Some(self.config.activation.forward(&z1));
     self.last_z1 = Some(z1);
     self.last_input = Some(Tensor::from_data(input.rows(), input.cols(), input.data().to_owned()));
     
@@ -65,7 +70,7 @@ impl Layer for LinearLayer {
       if first {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       } else {
-        dz = input.mul_wise(&self.activation.backward(z1));
+        dz = input.mul_wise(&self.config.activation.backward(z1));
       }
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
@@ -79,9 +84,9 @@ impl Layer for LinearLayer {
 
         let ret = Some(self.weights.transpose().mul(&dz));
 
-        self.weights = self.weights.sub(&dw.mul_value(0.1));
+        self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
         let dbf = db.sum_row().div_value(forward_input.cols() as f64);
-        self.bias = self.bias.sub(&dbf.mul_value(0.1));
+        self.bias = self.bias.sub(&dbf.mul_value(self.config.learn_rate));
 
         return ret;
       }
