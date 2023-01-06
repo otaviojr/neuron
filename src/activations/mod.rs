@@ -41,7 +41,7 @@ impl Sigmoid {
   }
 
   fn sigmoid(value:f64) -> f64 {
-    let ret = 1.0 / (1.0 + E.powf(-value)); 
+    let ret = 1.0 / (1.0 + (-value).exp()); 
     if ret.is_nan() {0.0} else {ret}
   }
 }
