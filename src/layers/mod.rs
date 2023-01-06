@@ -11,8 +11,8 @@ pub trait Layer {
 }
 
 pub struct LayerConfig {
-  activation: Box<dyn Activation>,
-  learn_rate: f64
+  pub activation: Box<dyn Activation>,
+  pub learn_rate: f64
 }
 
 pub struct LinearLayer {
