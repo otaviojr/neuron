@@ -16,6 +16,9 @@ pub trait MatrixMath {
   fn add_value(&self, a: &Tensor, b: f64) -> Tensor;
   fn div_value(&self, a: &Tensor, b: f64) -> Tensor;
   fn mul_value(&self, a: &Tensor, b: f64) -> Tensor;
+
+  fn sum_row(&self, a:&Tensor) -> Tensor;
+  fn broadcast(&self, a: &Tensor, rows: usize, cols: usize) -> Tensor;
 }
 
 #[derive(Copy, Clone)]
@@ -185,6 +188,43 @@ impl MatrixMath for MatrixMathCPU {
 
     result
   }
+
+  fn sum_row(&self, a:&Tensor) -> Tensor {
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(a.rows, 1);
+
+    for i in 0..a.rows {
+      let mut sum: f64 = 0.0;
+      for j in 0..a.cols {
+        sum += a.get(i, j);
+      }
+      result.set(i, 1, sum);
+    }
+
+    result
+  }
+
+  fn broadcast(&self, a: &Tensor, rows: usize, cols: usize) -> Tensor {
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(rows, cols);
+
+    if a.rows == rows && a.cols == 1 {
+      for i in 0..a.rows {
+        for j in 0..result.cols {
+          result.set(i, j, a.get(i, 1));
+        }
+      }  
+    } else if a.cols == cols && a .rows == 1 {
+      for i in 0..result.rows {
+        for j in 0..a.cols {
+          result.set(i, j, a.get(1, j));
+        }
+      }  
+    }
+
+    result
+  }
+
 }
 
 #[derive(Clone)]
@@ -315,6 +355,13 @@ impl Tensor {
     return Neuron::matrix_math().sub(&self, other);
   }
 
+  pub fn sum_row(&self) -> Tensor {
+    return Neuron::matrix_math().sum_row(&self);
+  }
+
+  pub fn broadcast(&self, rows: usize, cols: usize) -> Tensor {
+    return Neuron::matrix_math().broadcast(&self, rows, cols);
+  }
 }
 
 //Divide two tensors

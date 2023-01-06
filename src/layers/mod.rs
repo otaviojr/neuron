@@ -14,7 +14,7 @@ pub struct LinearLayer {
   activation: Box<dyn Activation>,
   nodes: usize,
   weights: Tensor,
-  bias: f64,
+  bias: Tensor,
 
   last_input: Option<Tensor>,
   last_z1: Option<Tensor>
@@ -28,7 +28,7 @@ impl LinearLayer {
       activation: activation,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
-      bias: rng.sample(Uniform::new(0.000, 0.000005)),
+      bias: Tensor::random(nodes,1),
       last_input: None,
       last_z1: None
     }
@@ -45,7 +45,9 @@ impl Layer for LinearLayer {
     println!("Bias = {}", self.bias);
     //println!("Input = {}", input);
     //println!("Weights = {}", self.weights);
-    let z1 = self.weights.mul(input).add_value(self.bias);
+    let z1_1 = self.weights.mul(input);
+    let z1 = z1_1.add(&self.bias.broadcast(z1_1.rows(), z1_1.cols()));
+    
     //println!("z1 = {}", z1);
     let ret = Some(self.activation.forward(&z1));
     self.last_z1 = Some(z1);
@@ -61,7 +63,7 @@ impl Layer for LinearLayer {
       //println!("dz = {}", dz);
       if let Some(ref forward_input) = self.last_input {
         println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
-        let dw = dz.mul(&forward_input.transpose());
+        let dw = dz.mul(&forward_input.transpose()).div_value(input.cols() as f64);
         println!("dw size = {}x{}", dw.rows(), dw.cols());
         //println!("dw = {}", dw);
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
@@ -70,8 +72,8 @@ impl Layer for LinearLayer {
         let ret = Some(self.weights.transpose().mul(&dz));
 
         self.weights = self.weights.sub(&dw.mul_value(0.00000001));
-        let dbf = db.data().to_owned().into_iter().reduce(|count, value| count + value ).unwrap();
-        self.bias -= dbf * 0.00000001;
+        let dbf = db.sum_row().div_value(input.cols() as f64);
+        self.bias = self.bias.sub(&dbf);
 
         return ret;
       }
