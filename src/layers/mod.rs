@@ -28,7 +28,7 @@ impl LinearLayer {
       activation: activation,
       nodes: nodes,
       weights: Tensor::random(nodes,input_size),
-      bias: Tensor::random(nodes,1),
+      bias: Tensor::zeros(nodes,1),
       last_input: None,
       last_z1: None
     }
@@ -61,7 +61,7 @@ impl Layer for LinearLayer {
 
   fn backward(&mut self, input: &Tensor, first: bool) -> Option<Tensor> {
     if let Some(ref z1) = self.last_z1 {
-      let mut dz;
+      let dz;
       if first {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       } else {
