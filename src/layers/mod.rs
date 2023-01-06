@@ -79,9 +79,9 @@ impl Layer for LinearLayer {
 
         let ret = Some(self.weights.transpose().mul(&dz));
 
-        self.weights = self.weights.sub(&dw.mul_value(0.1));
+        self.weights = self.weights.sub(&dw.mul_value(0.5));
         let dbf = db.sum_row().div_value(forward_input.cols() as f64);
-        self.bias = self.bias.sub(&dbf.mul_value(0.1));
+        self.bias = self.bias.sub(&dbf.mul_value(0.5));
 
         return ret;
       }
