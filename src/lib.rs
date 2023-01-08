@@ -6,10 +6,10 @@ pub mod cost;
 use std::sync::Mutex;
 
 use math::{Tensor, MatrixMath, MatrixMathCPU};
-use layers::Layer;
+use layers::LayerPropagation;
 
 pub struct Neuron {
-  layers: Vec<Box<Mutex<dyn Layer>>>
+  layers: Vec<Box<Mutex<dyn LayerPropagation>>>
 }
 
 impl Neuron {
@@ -19,33 +19,21 @@ impl Neuron {
     }
   }
 
-  pub fn forward(&self, input: Tensor) -> Option<Tensor> {
+  pub fn forward(&self, input: Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let mut i = Some(input);
-    if let Some(ref i0) = i {
-      println!("Input layer size = {}x{}", i0.rows(), i0.cols());
-    }
     for layer in self.layers.iter() {
       if let Some(ref i1) = i {
         i = layer.lock().unwrap().forward(i1);
-        if let Some(ref i2) = i {
-          println!("Hidden layer size = {}x{}", i2.rows(), i2.cols());
-        }
       }
     }
     i
   }
 
-  pub fn backward(&self, input: Tensor) -> Option<Tensor> {
+  pub fn backward(&self, input: Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let mut i = Some(input);
-    if let Some(ref i0) = i {
-      println!("Input layer size = {}x{}", i0.rows(), i0.cols());
-    }
     for (index,layer) in self.layers.iter().rev().enumerate() {
       if let Some(ref i1) = i {
         i = layer.lock().unwrap().backward(i1, index==0);
-        if let Some(ref i2) = i {
-          println!("Hidden layer size = {}x{}", i2.rows(), i2.cols());
-        }
       }
     }
     i
@@ -55,7 +43,7 @@ impl Neuron {
     Box::new(MatrixMathCPU { })
   }
 
-  pub fn add_layer(&mut self, layer: Box<Mutex<dyn Layer>>) -> &mut Self {
+  pub fn add_layer(&mut self, layer: Box<Mutex<dyn LayerPropagation>>) -> &mut Self {
     self.layers.push(layer);
     self
   }
