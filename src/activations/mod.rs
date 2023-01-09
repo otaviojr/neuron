@@ -106,6 +106,8 @@ impl Activation for SoftMax {
 
     let mut output = Tensor::zeros(value.rows(), value.cols());
 
+    println!("SoftMax Activation Input = {:?}", value);
+
     let mut sums = Vec::new();
     for j in 0..value.cols(){
       let mut sum = 0.0;
