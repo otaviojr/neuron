@@ -277,7 +277,8 @@ impl LayerPropagation for FlattenLayer {
     }
 
     let t = Tensor::from_data(tmp.len(), 1, tmp);
-    println!("FlattenLayer Output (Forward) = {}x{}",t.rows(), t.cols());
+    println!("FlattenLayer Output Size (Forward) = {}x{}",t.rows(), t.cols());
+    println!("FlattenLayer Output (Forward) = {:?}",t);
     Some(vec![Box::new(t)])
   }
 
