@@ -209,12 +209,10 @@ impl LayerPropagation for ConvLayer {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
                     dw.set(y1,x1,activation.get(y,x) * i.get(y+y1, x+x1));
-                    println!("CNN dw (Backward) = {:?}", dw);
                     output.set(y + y1, x + x1, output.get(y + y1, x + x1) + (activation.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1)));
                   }
                 }
                 db += i.get(y,x);
-                println!("CNN db (Backward) = {:?}", dw);
               }
             }
             final_output.push(Box::new(output));
@@ -224,6 +222,9 @@ impl LayerPropagation for ConvLayer {
         final_dw.push(dw_channel);
         final_db.push(db);
       }  
+
+      println!("CNN final_dw (Backward) = {:?}", final_dw);
+      println!("CNN final_db (Backward) = {:?}", final_db);
 
       for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
         for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
@@ -239,7 +240,7 @@ impl LayerPropagation for ConvLayer {
     }
 
     println!("CNN Filters (Backward) = {:?}", self.filters);
-    
+
     println!("CNN Output (Backward) = {:?}", final_output);
     println!("CNN Output size (Backward) = {}x{}x{}", final_output[0].rows(), final_output[0].cols(), final_output.len());
 
