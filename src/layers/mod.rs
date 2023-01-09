@@ -174,7 +174,7 @@ impl LayerPropagation for ConvLayer {
 
     //println!("CNN Filter (Forward) = {:?}", output);
 
-    println!("CNN Weights (Forward) = {}x{}x{}", self.filters[0].rows(), self.filters[0].cols(), self.filters.len());
+    println!("CNN Weights (Forward) = {}x{}x{}", self.filters[0][0].rows(), self.filters[0][0].cols(), self.filters[0].len());
     println!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
 
 
