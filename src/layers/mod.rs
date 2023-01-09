@@ -230,9 +230,9 @@ impl LayerPropagation for ConvLayer {
         for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
           for y in 0.. fc.rows() {
             for x in 0.. fc.cols() {
-              //println!("dw={}",dw_channel.get(y,x) * self.config.learn_rate);
-              //fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
-              //*b = *b - (db * self.config.learn_rate); 
+              println!("UPDATE DW={}",dw_channel.get(y,x) * self.config.learn_rate);
+              fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
+              *b = *b - (db * self.config.learn_rate); 
             }
           }
         }
