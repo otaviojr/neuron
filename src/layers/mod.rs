@@ -236,7 +236,7 @@ impl LayerPropagation for ConvLayer {
     }
 
     //println!("CNN Filter (Backward) = {:?}", self.filters);
-    //println!("CNN Filter (Backward) = {:?}", final_output);
+    println!("CNN Output (Backward) = {:?}", final_output);
     println!("CNN Output size (Backward) = {}x{}x{}", final_output[0].rows(), final_output[0].cols(), final_output.len());
 
     Some(final_output)
