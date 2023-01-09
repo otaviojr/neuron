@@ -210,3 +210,32 @@ impl LayerPropagation for ConvLayer {
     Some(final_output)
   }
 }
+
+pub struct FlatLayer {
+}
+
+impl FlatLayer {
+  pub fn new(n_channels: usize, n_filters: usize, filter_size: usize, config: ConvLayerConfig) -> Self {
+    FlatLayer {
+    }
+  }
+}
+
+impl LayerPropagation for FlatLayer {
+  fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
+    let mut tmp = Vec::new();
+    for i in input.iter() {
+      for j in 0..i.rows() {
+        for k in 0..i.cols() {
+          tmp.push(i.get(j,k));
+        }
+      }
+    }
+
+    Some(vec![Box::new(Tensor::from_data(tmp.len(), 1, tmp))])
+  }
+
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
+    Some(input.clone())
+  }
+}
