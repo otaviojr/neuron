@@ -204,11 +204,12 @@ impl LayerPropagation for ConvLayer {
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
             for y in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
               for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
+                let activation = self.config.activation.backward(o).get(y,x);
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
                     println!("CNN Forward Output size (Backward) = {}x{}", o.rows(), o.cols());
-                    dw.set(y1,x1,self.config.activation.backward(o).get(y,x) * fi.get(y+y1, x+x1));
-                    output.set(y + y1, x + x1, self.config.activation.backward(o).get(y,x) * fc.get(y1,x1));
+                    dw.set(y1,x1,activation * fi.get(y+y1, x+x1));
+                    output.set(y + y1, x + x1, activation * fc.get(y1,x1));
                   }
                 }
                 db += i.get(y,x);
