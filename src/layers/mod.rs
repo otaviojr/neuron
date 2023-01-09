@@ -56,7 +56,9 @@ impl LayerPropagation for LinearLayer {
     let ret = Some(vec![Box::new(self.config.activation.forward(&z1))]);
     self.last_z1 = Some(z1);
     self.last_input = Some(vec![input.clone()]);
-    
+
+    println!("LinearLayer Output (Forward) = {:?}", ret);
+
     ret
   }
 
