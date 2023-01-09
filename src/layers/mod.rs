@@ -209,10 +209,12 @@ impl LayerPropagation for ConvLayer {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
                     dw.set(y1,x1,activation.get(y,x) * i.get(y+y1, x+x1));
+                    println!("CNN dw (Backward) = {:?}", dw);
                     output.set(y + y1, x + x1, output.get(y + y1, x + x1) + (activation.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1)));
                   }
                 }
                 db += i.get(y,x);
+                println!("CNN db (Backward) = {:?}", dw);
               }
             }
             final_output.push(Box::new(output));
