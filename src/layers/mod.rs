@@ -392,7 +392,9 @@ impl LayerPropagation for PoolingLayer {
       for i in input.iter() {
         for fi in fic.iter() {
           let mut result =  Tensor::zeros(fi.rows(), fi.cols());
+          let mut input_y = 0;
           for y in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
+            let mut input_x = 0;
             for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
               let mut max = 0.0;
               let mut max_x = 0;
@@ -407,8 +409,10 @@ impl LayerPropagation for PoolingLayer {
                   }
                 }
               }
-              result.set(y+max_y,x+max_x, i.get(max_y, max_x));
+              result.set(y+max_y,x+max_x, i.get(input_y, input_x));
+              input_x += 1;
             }
+            input_y += 1;
           }
           result_final.push(Box::new(result));  
         }
