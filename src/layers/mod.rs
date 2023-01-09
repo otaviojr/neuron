@@ -107,6 +107,7 @@ pub struct ConvLayer {
   bias: Vec<f64>,
 
   last_input: Option<Vec<Box<Tensor>>>,
+  last_z1: Option<Vec<Box<Tensor>>>,
 }
 
 impl ConvLayer {
@@ -128,7 +129,9 @@ impl ConvLayer {
       filters,
       filter_size,
       bias: vec![0.0; n_filters],
-      last_input: None
+
+      last_input: None,
+      last_z1: None
     }
   }
 }
@@ -139,6 +142,8 @@ impl LayerPropagation for ConvLayer {
     let result_height = ((input[0].rows() as f64 + 2.0* self.config.padding as f64 - self.filter_size.0 as f64)/self.config.stride as f64).floor() as usize + 1;
     let result_width = ((input[0].cols() as f64 + 2.0* self.config.padding as f64 - self.filter_size.1 as f64)/self.config.stride as f64).floor() as usize + 1;
     let mut result_final = Vec::new();
+
+    let mut last_z1 = Vec::new();
 
     for (f,b) in self.filters.iter().zip(self.bias.iter()) {
       let mut result_channels = Vec::new();
@@ -155,7 +160,9 @@ impl LayerPropagation for ConvLayer {
             result.set(y, x, sum);
           }
         }
-        result_channels.push(self.config.activation.forward(&result.add_value(*b)));
+        let z1 = result.add_value(*b);
+        result_channels.push(self.config.activation.forward(&z1));
+        last_z1.push(z1);
       }
       result_final.push(result_channels); 
     }

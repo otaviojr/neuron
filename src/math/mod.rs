@@ -85,9 +85,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn mul_wise(&self, a: &Tensor, b: &Tensor) -> Tensor {
     // Check that the tensors are compatible for multiplication
-    if a.rows != b.rows || a.cols != b.cols {
-      return Tensor::zeros(0,0);
-    }
+    assert!(a.rows == b.rows && a.cols == b.cols);
 
     let data: Vec<f64> = a.data()
     .iter()
