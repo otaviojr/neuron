@@ -418,7 +418,7 @@ impl LayerPropagation for PoolingLayer {
                   }
                 }
               }
-              result.set(y+max_y,x+max_x, i.get(input_y, input_x));
+              result.set(y+max_y,x+max_x, max*i.get(input_y, input_x));
               input_x += 1;
             }
             input_y += 1;
