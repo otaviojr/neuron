@@ -267,6 +267,9 @@ impl LayerPropagation for FlattenLayer {
     self.input_cols = input[0].cols();
     self.n_channels = input.len();
 
+    println!("FlattenLayer Input Size (Forward) = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
+    println!("FlattenLayer Input (Forward) = {:?}",input);
+
     let mut tmp = Vec::new();
     for i in input.iter() {
       for j in 0..i.rows() {
