@@ -339,7 +339,7 @@ impl LayerPropagation for PoolingLayer {
       output.push(Box::new(final_result));
     }
 
-    println!("PoolingLayer Output = {:?}", output);
+    //println!("PoolingLayer Output = {:?}", output);
 
     Some(output)
   }
