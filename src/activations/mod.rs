@@ -90,3 +90,50 @@ impl Activation for Tanh {
     Tensor::from_data(value.rows(), value.cols(), data)
   }
 }
+
+pub struct SoftMax {
+
+}
+
+impl SoftMax {
+  pub fn new() -> Self {
+    SoftMax {  }
+  }
+}
+
+impl Activation for SoftMax {
+  fn forward(&self, value: &Tensor) -> Tensor {
+
+    let mut output = Tensor::zeros(value.rows(), value.cols());
+
+    let mut sums = Vec::new();
+    for i in 0..value.cols(){
+      let mut sum = 0.0;
+      for j in 0..value.rows(){
+        sum += value.get(j,i).exp();
+      }
+      sums.push(sum);
+    }
+
+    for i in 0..value.cols(){
+      for j in 0..value.rows(){
+        output.set(j,i, value.get(j,i).exp() / sums.get(i).unwrap())
+      }
+    }
+
+    output
+  }
+
+  fn backward(&self, value: &Tensor) -> Tensor {
+    let softmax = self.forward(value);
+    let mut softmax_1 = Tensor::zeros(softmax.rows(), softmax.cols());
+    
+    for i in 0..softmax_1.rows(){
+      for j in 0.. softmax.cols(){
+        softmax_1.set(i,j,1.0 - softmax.get(i,j));
+      }
+    }
+
+    softmax.mul(&softmax_1)
+  }
+}
