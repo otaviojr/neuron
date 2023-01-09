@@ -178,6 +178,8 @@ impl LayerPropagation for ConvLayer {
 
     self.last_input = Some(input.clone());
 
+    println!("CNN Filter (Forward) = {:?}", output);
+
     Some(output)
   }
 
@@ -208,7 +210,7 @@ impl LayerPropagation for ConvLayer {
       }
     }
 
-    println!("CNN Filter = {:?}", final_output);
+    println!("CNN Filter (Backward) = {:?}", final_output);
 
     Some(final_output)
   }
