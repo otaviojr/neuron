@@ -107,17 +107,17 @@ impl Activation for SoftMax {
     let mut output = Tensor::zeros(value.rows(), value.cols());
 
     let mut sums = Vec::new();
-    for i in 0..value.cols(){
+    for j in 0..value.cols(){
       let mut sum = 0.0;
-      for j in 0..value.rows(){
-        sum += value.get(j,i).exp();
+      for i in 0..value.rows(){
+        sum += value.get(i,j).exp();
       }
       sums.push(sum);
     }
 
     for i in 0..value.cols(){
       for j in 0..value.rows(){
-        output.set(j,i, value.get(j,i).exp() / sums.get(i).unwrap())
+        output.set(i,j, value.get(i,j).exp() / sums.get(i).unwrap())
       }
     }
 
