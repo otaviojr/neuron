@@ -198,7 +198,7 @@ impl LayerPropagation for ConvLayer {
               for y1 in 0 .. self.filter_size.0 {
                 for x1 in 0 .. self.filter_size.1 {
                   dw.set(y1,x1,i.get(y,x) * fi.get(y+y1, x+x1));
-                  output.set(y + y1, x + x1, i.get(y,x) * fc.get(y1,x1));
+                  output.set(y + y1, x + x1, i.get(y,x) * fc.get(y+y1,x+x1));
                 }
               }
               db += i.get(y,x);
@@ -221,7 +221,7 @@ impl LayerPropagation for ConvLayer {
           for x in 0.. fc.cols() {
             //println!("dw={}",dw_channel.get(y,x) * self.config.learn_rate);
             fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
-            *b = *b - db * self.config.learn_rate; 
+            *b = *b - (db * self.config.learn_rate); 
           }
         }
       }
