@@ -44,7 +44,7 @@ impl LayerPropagation for LinearLayer {
     let input = &input[0];
     println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.cols());
     println!("Bias = {}", self.bias);
-    //println!("Input = {}", input);
+    println!("LinearLayer Input (Forward) = {:?}", input);
     //println!("Weights = {}", self.weights);
     let z1_1 = self.weights.mul(&input);
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
