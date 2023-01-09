@@ -301,12 +301,10 @@ impl LayerPropagation for PoolingLayer {
     for c in 0..self.n_channels {
       let mut result_channels = Vec::new();
       for i in input.iter() {
-        let mut x = 0;
         let mut y = 0;
-        let mut result_x = 0;
-        let mut result_y = 0;
         let mut result = Tensor::zeros(result_height, result_width);
         while y + self.filter_size.0 < i.rows() {
+          let mut x = 0;
           while x + self.filter_size.1 < i.cols() {
             let mut max = 0.0;
             for y1 in 0 .. self.filter_size.0 {
@@ -316,12 +314,10 @@ impl LayerPropagation for PoolingLayer {
                 }
               }
             }
-            result.set(result_y, result_x, max);
+            result.set(y, x, max);
             x += self.config.stride;
-            result_x += 1;
           }
           y += self.config.stride;
-          result_y += 1;
         }
         result_channels.push(result);
       }
