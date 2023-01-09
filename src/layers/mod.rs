@@ -156,10 +156,8 @@ impl LayerPropagation for ConvLayer {
                 sum += i.get(y,x) * fc.get(y1,x1);
               }
             }
-            result.set(result_y, result_x, sum);
-            result_x += 1;
+            result.set(y, x, sum);
           }
-          result_y += 1;
         }
         result_channels.push(self.config.activation.forward(&result.add_value(*b)));
       }
