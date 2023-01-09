@@ -131,6 +131,7 @@ impl ConvLayer {
       bias: vec![0.0; n_filters],
 
       last_input: None,
+      last_z1: None
     }
   }
 }
