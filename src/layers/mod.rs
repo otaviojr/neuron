@@ -189,17 +189,15 @@ impl LayerPropagation for ConvLayer {
           let mut x = 0;
           let mut y = 0;
           let mut output = Tensor::zeros(fi.rows(), fi.cols());
-          while y + self.filter_size.0 < i.rows() {
-            while x + self.filter_size.1 < i.cols() {
-              for y1 in 0 .. self.filter_size.0 {
+          for y in (0..i.rows() - self.filter_size.0).step_by(self.config.stride) {
+            for x in (0..i.cols() - self.filter_size.1).step_by(self.config.stride) {
+                for y1 in 0 .. self.filter_size.0 {
                 for x1 in 0 .. self.filter_size.1 {
                   fc.set(y1,x1,i.get(y,x) * fi.get(y+y1, x+x1));
                   output.set(y + y1, x + x1, i.get(y,x) * fc.get(y1,x1));
                 }
               }
-              x += self.config.stride;
             }
-            y += self.config.stride;
           }
           final_output.push(Box::new(output));
         }
