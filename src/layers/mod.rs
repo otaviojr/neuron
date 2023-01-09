@@ -107,6 +107,7 @@ pub struct ConvLayer {
   bias: Vec<f64>,
 
   last_input: Option<Vec<Box<Tensor>>>,
+  last_z1: Option<Vec<Box<Tensor>>>
 }
 
 impl ConvLayer {
@@ -171,6 +172,7 @@ impl LayerPropagation for ConvLayer {
     }
 
     self.last_input = Some(input.clone());
+    self.last_z1 = Some(output.clone());
 
     //println!("CNN Filter (Forward) = {:?}", output);
 
@@ -190,31 +192,33 @@ impl LayerPropagation for ConvLayer {
     //println!("CNN Backward Input = {:?}", input);
     println!("CNN Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
-    for (f,i) in self.filters.iter_mut().zip(input.iter()) {
-      let mut dw_channel = Vec::new();
-      let mut db = 0.0;
-      if let Some(ref forward_input) = self.last_input {
-        //println!("CNN Forward Input = {:?}", forward_input);
-        for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
-          let mut output = Tensor::zeros(fi.rows(), fi.cols());
-          let mut dw = Tensor::zeros(fc.rows(), fc.cols());
-          for y in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
-            for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
-              for y1 in 0 .. self.filter_size.0 {
-                for x1 in 0 .. self.filter_size.1 {
-                  dw.set(y1,x1,self.config.activation.backward(&i).get(y,x) * fi.get(y+y1, x+x1));
-                  output.set(y + y1, x + x1, self.config.activation.backward(&i).get(y,x) * fc.get(y1,x1));
+    if let Some(z1) = self.last_z1 {
+      for ((f,i), o) in self.filters.iter_mut().zip(input.iter()).zip(z1.iter()) {
+        let mut dw_channel = Vec::new();
+        let mut db = 0.0;
+        if let Some(ref forward_input) = self.last_input {
+          //println!("CNN Forward Input = {:?}", forward_input);
+          for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
+            let mut output = Tensor::zeros(fi.rows(), fi.cols());
+            let mut dw = Tensor::zeros(fc.rows(), fc.cols());
+            for y in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
+              for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
+                for y1 in 0 .. self.filter_size.0 {
+                  for x1 in 0 .. self.filter_size.1 {
+                    dw.set(y1,x1,self.config.activation.backward(&o).get(y,x) * fi.get(y+y1, x+x1));
+                    output.set(y + y1, x + x1, self.config.activation.backward(&o).get(y,x) * fc.get(y1,x1));
+                  }
                 }
+                db += i.get(y,x);
               }
-              db += i.get(y,x);
             }
+            final_output.push(Box::new(output));
+            dw_channel.push(Box::new(dw));
           }
-          final_output.push(Box::new(output));
-          dw_channel.push(Box::new(dw));
         }
-      }
-      final_dw.push(dw_channel);
-      final_db.push(db);
+        final_dw.push(dw_channel);
+        final_db.push(db);
+      }  
     }
 
     for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
