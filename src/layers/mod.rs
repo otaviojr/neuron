@@ -27,8 +27,6 @@ pub struct LinearLayer {
 
 impl LinearLayer {
   pub fn new(input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
-    let mut rng = rand::thread_rng();
-
     LinearLayer {
       config: config,
       weights: Tensor::random(nodes,input_size),

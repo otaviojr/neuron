@@ -121,6 +121,8 @@ impl Activation for SoftMax {
       }
     }
 
+    println!("SoftMax Activation Output = {:?}", output);
+
     output
   }
 
