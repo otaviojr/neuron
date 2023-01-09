@@ -27,9 +27,7 @@ pub struct MatrixMathCPU;
 impl MatrixMath for MatrixMathCPU {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
-      if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0);
-      }
+      assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
       let mut result = Tensor::zeros(a.rows, a.cols);
@@ -44,9 +42,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
-      if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0);
-      }
+      assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
       let mut result = Tensor::zeros(a.rows, a.cols);
@@ -98,9 +94,7 @@ impl MatrixMath for MatrixMathCPU {
 
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
-      if a.cols != b.cols || a.rows != b.rows {
-        return Tensor::zeros(0,0);
-      }
+      assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
       let mut result = Tensor::zeros(a.rows, a.cols);
@@ -117,9 +111,7 @@ impl MatrixMath for MatrixMathCPU {
     let mut result = 0.0;
 
     // Check that the tensors are compatible for the dot product
-    if a.rows != b.rows || a.cols != b.cols {
-        return result;
-    }
+    assert!(a.rows == b.rows && a.cols == b.cols);
 
     // Calculate the dot product
     for i in 0..a.rows {
