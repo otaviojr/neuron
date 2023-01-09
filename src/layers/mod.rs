@@ -187,7 +187,7 @@ impl LayerPropagation for ConvLayer {
     //println!("CNN Backward Input = {:?}", input);
 
     for ((f,i),b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()) {
-      let dw_channel = Vec::new();
+      let mut dw_channel = Vec::new();
       if let Some(ref forward_input) = self.last_input {
         println!("CNN Forward Input = {:?}", forward_input);
         for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
@@ -216,15 +216,13 @@ impl LayerPropagation for ConvLayer {
     }
 
     for (f,dw) in self.filters.iter_mut().zip(final_dw.iter()) {
-      if let Some(ref forward_input) = self.last_input {
-        for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
-          for y in 0.. fc.rows() {
-            for x in 0.. fc.cols() {
-              fc.set(y,x,dw_channel.get(y,x) * self.config.learn_rate);
-            }
+      for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
+        for y in 0.. fc.rows() {
+          for x in 0.. fc.cols() {
+            fc.set(y,x,dw_channel.get(y,x) * self.config.learn_rate);
           }
         }
-      } 
+      }
     }
 
     println!("CNN Filter (Backward) = {:?}", final_output);
