@@ -365,7 +365,7 @@ impl LayerPropagation for PoolingLayer {
 
     self.last_input = Some(input.clone());
 
-    //println!("PoolingLayer Output = {:?}", output);
+    println!("PoolingLayer Output = {:?}", output);
     println!("Pooling Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
 
     Some(output)
