@@ -192,7 +192,7 @@ impl LayerPropagation for ConvLayer {
         //println!("CNN Forward Input = {:?}", forward_input);
         for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
           let mut output = Tensor::zeros(fi.rows(), fi.cols());
-          let mut dw = Tensor::zeros(fi.rows(), fi.cols());
+          let mut dw = Tensor::zeros(fc.rows(), fc.cols());
           for y in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
             for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
               for y1 in 0 .. self.filter_size.0 {
@@ -201,7 +201,7 @@ impl LayerPropagation for ConvLayer {
                   output.set(y + y1, x + x1, i.get(y,x) * fc.get(y1,x1));
                 }
               }
-              //db += i.get(y,x);
+              db += i.get(y,x);
             }
           }
           final_output.push(Box::new(output));
