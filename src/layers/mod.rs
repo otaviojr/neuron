@@ -335,18 +335,18 @@ impl LayerPropagation for PoolingLayer {
         let mut result_y = 0;
         let mut result = Tensor::zeros(result_height, result_width);
         for y in (0 .. i.rows()-self.filter_size.0).step_by(self.config.stride) {
+          let mut result_x = 0;
           for x in (0 .. i.cols()-self.filter_size.1).step_by(self.config.stride) {
             let mut max = 0.0;
             for y1 in 0 .. self.filter_size.0 {
-              let mut result_x = 0;
               for x1 in 0 .. self.filter_size.1 {
                 if i.get(y+y1,x+x1) > max {
                   max = i.get(y+y1,x+x1);
                 }
               }
-              result.set(result_y, result_x, max);
-              result_x += 1;
             }
+            result.set(result_y, result_x, max);
+            result_x += 1;
           }
           result_y += 1;
         }
