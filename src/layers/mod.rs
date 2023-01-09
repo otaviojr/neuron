@@ -212,7 +212,7 @@ impl LayerPropagation for ConvLayer {
                     output.set(y + y1, x + x1, output.get(y + y1, x + x1) + (activation.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1)));
                   }
                 }
-                db += i.get(y,x);
+                db += activation.get(y,x);
               }
             }
             final_output.push(Box::new(output));
