@@ -206,8 +206,9 @@ impl LayerPropagation for ConvLayer {
               for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
-                    dw.set(y1,x1,self.config.activation.backward(&o).get(y,x) * fi.get(y+y1, x+x1));
-                    output.set(y + y1, x + x1, self.config.activation.backward(&o).get(y,x) * fc.get(y1,x1));
+                    println!("CNN Forward Output size (Backward) = {}x{}", o.rows(), o.cols());
+                    dw.set(y1,x1,self.config.activation.backward(o).get(y,x) * fi.get(y+y1, x+x1));
+                    output.set(y + y1, x + x1, self.config.activation.backward(o).get(y,x) * fc.get(y1,x1));
                   }
                 }
                 db += i.get(y,x);
