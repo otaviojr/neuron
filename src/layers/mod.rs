@@ -215,7 +215,7 @@ pub struct FlattenLayer {
 }
 
 impl FlattenLayer {
-  pub fn new(n_channels: usize, n_filters: usize, filter_size: usize, config: ConvLayerConfig) -> Self {
+  pub fn new() -> Self {
     FlattenLayer {
     }
   }
