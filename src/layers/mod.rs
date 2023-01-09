@@ -190,7 +190,7 @@ impl LayerPropagation for ConvLayer {
     let mut final_dw = Vec::new();
     let mut final_db= Vec::new();
     
-    //println!("CNN Backward Input = {:?}", input);
+    println!("CNN Input (Backward) = {:?}", input);
     println!("CNN Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
     if let Some(ref z1) = self.last_z1 {
@@ -209,7 +209,7 @@ impl LayerPropagation for ConvLayer {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
                     dw.set(y1,x1,activation.get(y,x) * i.get(y+y1, x+x1));
-                    output.set(y + y1, x + x1, output.get(y + y1, x + x1) + activation.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1));
+                    output.set(y + y1, x + x1, output.get(y + y1, x + x1) + (activation.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1)));
                   }
                 }
                 db += i.get(y,x);
