@@ -384,6 +384,7 @@ impl LayerPropagation for PoolingLayer {
 
     let mut result_final = Vec::new();
 
+    println!("Pooling Input (Backward) = {:?}", input);
     println!("Pooling Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
     if let Some(ref fic) = self.last_input {
