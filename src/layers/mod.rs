@@ -198,6 +198,7 @@ impl LayerPropagation for ConvLayer {
         let mut dw_channel = Vec::new();
         let mut db = 0.0;
         let activation = self.config.activation.backward(o);
+        println!("CNN Activation (Backward) = {:?}", activation);
         if let Some(ref forward_input) = self.last_input {
           //println!("CNN Forward Input = {:?}", forward_input);
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
