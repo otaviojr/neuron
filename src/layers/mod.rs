@@ -107,7 +107,6 @@ pub struct ConvLayer {
   bias: Vec<f64>,
 
   last_input: Option<Vec<Box<Tensor>>>,
-  last_z1: Option<Vec<Box<Tensor>>>,
 }
 
 impl ConvLayer {
@@ -131,7 +130,6 @@ impl ConvLayer {
       bias: vec![0.0; n_filters],
 
       last_input: None,
-      last_z1: None
     }
   }
 }
@@ -162,7 +160,6 @@ impl LayerPropagation for ConvLayer {
         }
         let z1 = result.add_value(*b);
         result_channels.push(self.config.activation.forward(&z1));
-        last_z1.push(z1);
       }
       result_final.push(result_channels); 
     }
@@ -177,12 +174,12 @@ impl LayerPropagation for ConvLayer {
 
     self.last_input = Some(input.clone());
 
-    //println!("CNN Filter (Forward) = {:?}", output);
+    println!("CNN Filter (Forward) = {:?}", output);
 
     Some(output)
   }
 
-  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
 
     let mut final_output = Vec::new();
     let mut final_dw = Vec::new();
