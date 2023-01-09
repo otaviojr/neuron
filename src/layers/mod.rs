@@ -410,6 +410,7 @@ impl LayerPropagation for PoolingLayer {
       }
     }
 
+    println!("Pooling Output (Backward) = {:?}", result_final);
     println!("Pooling Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len());
 
     Some(result_final)
