@@ -277,7 +277,7 @@ impl LayerPropagation for FlattenLayer {
     }
 
     let t = Tensor::from_data(tmp.len(), 1, tmp);
-    println!("FlattenLayer Output = {}x{}",t.rows(), t.cols());
+    println!("FlattenLayer Output (Forward) = {}x{}",t.rows(), t.cols());
     Some(vec![Box::new(t)])
   }
 
@@ -285,7 +285,7 @@ impl LayerPropagation for FlattenLayer {
 
     let mut output = Vec::new();
 
-    println!("FlattenLayer Input = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
+    println!("FlattenLayer Input (Backward) = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
 
     for n_channel in 0..self.n_channels {
       let mut tmp = Tensor::zeros(self.input_rows, self.input_cols);
