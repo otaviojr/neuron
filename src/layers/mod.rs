@@ -200,6 +200,7 @@ impl LayerPropagation for ConvLayer {
               x += self.config.stride;
             }
             y += self.config.stride;
+            x = 0;
           }
           final_output.push(Box::new(output));
         }
