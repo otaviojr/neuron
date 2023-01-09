@@ -148,8 +148,8 @@ impl LayerPropagation for ConvLayer {
         let mut result_x = 0;
         let mut result_y = 0;
         let mut result = Tensor::zeros(result_height, result_width);
-        while y + self.filter_size.0 < i.rows() {
-          while x + self.filter_size.1 < i.cols() {
+        for y in (0..i.rows() - self.filter_size.0).step_by(self.config.stride) {
+          for x in (0..i.cols() - self.filter_size.1).step_by(self.config.stride) {
             let mut sum = 0.0;
             for y1 in 0 .. self.filter_size.0 {
               for x1 in 0 .. self.filter_size.1 {
@@ -157,10 +157,8 @@ impl LayerPropagation for ConvLayer {
               }
             }
             result.set(result_y, result_x, sum);
-            x += self.config.stride;
             result_x += 1;
           }
-          y += self.config.stride;
           result_y += 1;
         }
         result_channels.push(self.config.activation.forward(&result.add_value(*b)));
