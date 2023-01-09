@@ -137,8 +137,8 @@ impl ConvLayer {
 impl LayerPropagation for ConvLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     
-    let result_height = ((input[0].rows() as f64 + 2.0* self.config.padding as f64 - self.filter_size.0 as f64)/self.config.stride as f64).floor() as usize + 1;
-    let result_width = ((input[0].cols() as f64 + 2.0* self.config.padding as f64 - self.filter_size.1 as f64)/self.config.stride as f64).floor() as usize + 1;
+    let result_height = (((input[0].rows() as f64 + 2.0* self.config.padding as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f64 + 2.0* self.config.padding as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     let mut result_final = Vec::new();
 
     for (f,b) in self.filters.iter().zip(self.bias.iter()) {
@@ -291,8 +291,8 @@ impl LayerPropagation for PoolingLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
 
     
-    let result_height = ((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64).floor() as usize + 1;
-    let result_width = ((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64).floor() as usize + 1;
+    let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     
     let mut result_final = Vec::new();
 
@@ -300,8 +300,8 @@ impl LayerPropagation for PoolingLayer {
       let mut result_channels = Vec::new();
       for i in input.iter() {
         let mut result = Tensor::zeros(result_height, result_width);
-        for y in (0 .. i.rows()-(self.filter_size.0+1)).step_by(self.config.stride) {
-          for x in (0 .. i.cols()-(self.filter_size.1+1)).step_by(self.config.stride) {
+        for y in (0 .. i.rows()-self.filter_size.0).step_by(self.config.stride) {
+          for x in (0 .. i.cols()-self.filter_size.1).step_by(self.config.stride) {
             let mut max = 0.0;
             for y1 in 0 .. self.filter_size.0 {
               for x1 in 0 .. self.filter_size.1 {
