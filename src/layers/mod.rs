@@ -337,16 +337,16 @@ impl LayerPropagation for PoolingLayer {
         for y in (0 .. i.rows()-self.filter_size.0).step_by(self.config.stride) {
           for x in (0 .. i.cols()-self.filter_size.1).step_by(self.config.stride) {
             let mut max = 0.0;
-            let mut result_x = 0;
             for y1 in 0 .. self.filter_size.0 {
+              let mut result_x = 0;
               for x1 in 0 .. self.filter_size.1 {
                 if i.get(y+y1,x+x1) > max {
                   max = i.get(y+y1,x+x1);
                 }
               }
+              result.set(result_y, result_x, max);
+              result_x += 1;
             }
-            result.set(result_y, result_x, max);
-            result_x += 1;
           }
           result_y += 1;
         }
@@ -365,7 +365,7 @@ impl LayerPropagation for PoolingLayer {
 
     self.last_input = Some(input.clone());
 
-    println!("PoolingLayer Output = {:?}", output);
+    println!("PoolingLayer Output (Forward) = {:?}", output);
     println!("Pooling Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
 
     Some(output)
