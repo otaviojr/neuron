@@ -391,7 +391,7 @@ impl LayerPropagation for PoolingLayer {
     if let Some(ref fic) = self.last_input {
       for i in input.iter() {
         for fi in fic.iter() {
-          let mut result = Tensor::zeros(fi.rows(), fi.cols());
+          let mut result =  Tensor::zeros(fi.rows(), fi.cols());
           for y in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
             for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
               let max = 0.0;
@@ -399,7 +399,7 @@ impl LayerPropagation for PoolingLayer {
                 for x1 in 0 .. self.filter_size.1 {
                   let value = fi.get(y+y1,x+x1);
                   if value > max {
-                    result.set(y1,x1, result.get(y1,x1) + fi.get(y+y1, x+x1));
+                    result.set(y1,x1, i.get(y1, x1));
                   }
                 }
               }
