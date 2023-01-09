@@ -232,7 +232,9 @@ impl LayerPropagation for FlattenLayer {
       }
     }
 
-    Some(vec![Box::new(Tensor::from_data(tmp.len(), 1, tmp))])
+    let t = Tensor::from_data(tmp.len(), 1, tmp);
+    println!("FlattenLayer = {}x{}",t.rows(), t.cols());
+    Some(vec![Box::new(t)])
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
