@@ -256,8 +256,6 @@ impl FlattenLayer {
 impl LayerPropagation for FlattenLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
 
-    println!("FlattenLayer Input = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
-
     self.input_rows = input[0].rows();
     self.input_cols = input[0].cols();
     self.n_channels = input.len();
@@ -280,6 +278,8 @@ impl LayerPropagation for FlattenLayer {
 
     let mut output = Vec::new();
 
+    println!("FlattenLayer Input = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
+
     for (n_channel,i) in input.iter().enumerate() {
       let mut tmp = Tensor::zeros(self.input_rows, self.input_cols);
       for j in 0..self.input_rows {
@@ -289,6 +289,8 @@ impl LayerPropagation for FlattenLayer {
       }
       output.push(Box::new(tmp));
     }
+
+    println!("FlattenLayer Output = {}x{}x{}",output[0].rows(), output[0].cols(),output.len());
 
     Some(output)
   }
