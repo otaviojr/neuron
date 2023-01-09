@@ -264,7 +264,7 @@ impl LayerPropagation for FlattenLayer {
     Some(vec![Box::new(t)])
   }
 
-  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
     Some(input.clone())
   }
 }
@@ -336,10 +336,12 @@ impl LayerPropagation for PoolingLayer {
       output.push(Box::new(final_result));
     }
 
+    println!("PoolingLayer Output = {}", output);
+
     Some(output)
   }
 
-  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
     Some(input.clone())
   }
 }
