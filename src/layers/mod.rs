@@ -193,7 +193,7 @@ impl LayerPropagation for ConvLayer {
     //println!("CNN Backward Input = {:?}", input);
     println!("CNN Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
-    if let Some(z1) = self.last_z1 {
+    if let Some(ref z1) = self.last_z1 {
       for ((f,i), o) in self.filters.iter_mut().zip(input.iter()).zip(z1.iter()) {
         let mut dw_channel = Vec::new();
         let mut db = 0.0;
