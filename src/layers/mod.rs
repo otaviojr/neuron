@@ -211,17 +211,17 @@ impl LayerPropagation for ConvLayer {
   }
 }
 
-pub struct FlatLayer {
+pub struct FlattenLayer {
 }
 
-impl FlatLayer {
+impl FlattenLayer {
   pub fn new(n_channels: usize, n_filters: usize, filter_size: usize, config: ConvLayerConfig) -> Self {
-    FlatLayer {
+    FlattenLayer {
     }
   }
 }
 
-impl LayerPropagation for FlatLayer {
+impl LayerPropagation for FlattenLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let mut tmp = Vec::new();
     for i in input.iter() {
