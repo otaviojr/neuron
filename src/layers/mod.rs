@@ -388,7 +388,7 @@ impl LayerPropagation for PoolingLayer {
                 for x1 in 0 .. self.filter_size.1 {
                   let value = fi.get(y+y1,x+x1);
                   if value > max {
-                    //result.set(y1,x1, result.get(y1,x1) + i.get(y, x));
+                    result.set(y1,x1, result.get(y1,x1) + i.get(y, x));
                   }
                 }
               }
