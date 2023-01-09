@@ -246,3 +246,78 @@ impl LayerPropagation for FlattenLayer {
     Some(input.clone())
   }
 }
+
+pub struct PoolingLayerConfig {
+  pub stride: usize
+}
+
+pub struct PoolingLayer {
+  config: PoolingLayerConfig,
+  n_channels: usize,
+  filter_size: (usize,usize),
+}
+
+impl PoolingLayer {
+  pub fn new(n_channels: usize, filter_size: (usize, usize), config: PoolingLayerConfig) -> Self {
+    PoolingLayer {
+      config,
+      n_channels,
+      filter_size,
+    }
+  }
+}
+
+impl LayerPropagation for PoolingLayer {
+  fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
+
+    
+    let result_height = ((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64).floor() as usize + 1;
+    let result_width = ((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64).floor() as usize + 1;
+    
+    let mut result_final = Vec::new();
+
+    for c in 0..self.n_channels {
+      let mut result_channels = Vec::new();
+      for i in input.iter() {
+        let mut x = 0;
+        let mut y = 0;
+        let mut result_x = 0;
+        let mut result_y = 0;
+        let mut result = Tensor::zeros(result_height, result_width);
+        while y + self.filter_size.0 < i.rows() {
+          while x + self.filter_size.1 < i.cols() {
+            let mut max = 0.0;
+            for y1 in 0 .. self.filter_size.0 {
+              for x1 in 0 .. self.filter_size.1 {
+                if i.get(y,x) > max {
+                  max = i.get(y,x);
+                }
+              }
+            }
+            result.set(result_y, result_x, max);
+            x += self.config.stride;
+            result_x += 1;
+          }
+          y += self.config.stride;
+          result_y += 1;
+        }
+        result_channels.push(result);
+      }
+      result_final.push(result_channels); 
+    }
+
+    let mut output = Vec::new();
+    for i in result_final.iter() {
+      let final_result = i.iter()
+                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
+                                .unwrap_or(Tensor::zeros(result_height, result_width));
+      output.push(Box::new(final_result));
+    }
+
+    Some(output)
+  }
+
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
+    Some(input.clone())
+  }
+}
