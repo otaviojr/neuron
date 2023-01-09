@@ -337,7 +337,7 @@ impl LayerPropagation for PoolingLayer {
     let mut result_final = Vec::new();
 
     println!("PoolingLayer Input (Forward) = {:?}", input);
-    println!("Pooling Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
+    println!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
     for _ in 0..self.n_channels {
       let mut result_channels = Vec::new();
@@ -376,7 +376,7 @@ impl LayerPropagation for PoolingLayer {
     self.last_input = Some(input.clone());
 
     println!("PoolingLayer Output (Forward) = {:?}", output);
-    println!("Pooling Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
+    println!("PoolingLayer Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
 
     Some(output)
   }
