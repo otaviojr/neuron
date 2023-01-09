@@ -185,7 +185,7 @@ impl LayerPropagation for ConvLayer {
     for ((f,i),b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()) {
       let mut dw_channel = Vec::new();
       if let Some(ref forward_input) = self.last_input {
-        println!("CNN Forward Input = {:?}", forward_input);
+        //println!("CNN Forward Input = {:?}", forward_input);
         for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
           let mut x = 0;
           let mut y = 0;
