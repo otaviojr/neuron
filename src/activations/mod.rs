@@ -115,9 +115,9 @@ impl Activation for SoftMax {
       sums.push(sum);
     }
 
-    for i in 0..value.cols(){
-      for j in 0..value.rows(){
-        output.set(i,j, value.get(i,j).exp() / sums.get(i).unwrap())
+    for j in 0..value.cols(){
+      for i in 0..value.rows(){
+        output.set(i,j, value.get(i,j).exp() / sums.get(j).unwrap())
       }
     }
 
@@ -129,7 +129,7 @@ impl Activation for SoftMax {
     let mut softmax_1 = Tensor::zeros(softmax.rows(), softmax.cols());
     
     for i in 0..softmax_1.rows(){
-      for j in 0.. softmax.cols(){
+      for j in 0.. softmax_1.cols(){
         softmax_1.set(i,j,1.0 - softmax.get(i,j));
       }
     }
