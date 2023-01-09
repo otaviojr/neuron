@@ -407,7 +407,7 @@ impl LayerPropagation for PoolingLayer {
                   }
                 }
               }
-              result.set(y+max_y,x+max_x, i.get(y, x));
+              result.set(y+max_y,x+max_x, i.get(max_y, max_x));
             }
           }
           result_final.push(Box::new(result));  
