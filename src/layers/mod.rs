@@ -238,11 +238,17 @@ impl LayerPropagation for ConvLayer {
 }
 
 pub struct FlattenLayer {
+  input_cols: usize,
+  input_rows: usize,
+  n_channels: usize
 }
 
 impl FlattenLayer {
   pub fn new() -> Self {
     FlattenLayer {
+      input_rows: 0,
+      input_cols: 0,
+      n_channels: 0
     }
   }
 }
@@ -252,6 +258,9 @@ impl LayerPropagation for FlattenLayer {
 
     println!("FlattenLayer Input = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
 
+    self.input_rows = input[0].rows();
+    self.input_cols = input[0].cols();
+    self.n_channels = input.len();
 
     let mut tmp = Vec::new();
     for i in input.iter() {
@@ -268,7 +277,20 @@ impl LayerPropagation for FlattenLayer {
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
-    Some(input.clone())
+
+    let mut output = Vec::new();
+
+    for (n_channel,i) in input.iter().enumerate() {
+      let mut tmp = Tensor::zeros(self.input_rows, self.input_cols);
+      for j in 0..self.input_rows {
+        for k in 0..self.input_cols {
+          tmp.set(j,k, i.data()[(n_channel + (self.input_cols*self.input_rows)) + (j * self.input_rows + k)])
+        }
+      }
+      output.push(Box::new(tmp));
+    }
+
+    Some(output)
   }
 }
 
