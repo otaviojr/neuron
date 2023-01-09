@@ -153,7 +153,7 @@ impl LayerPropagation for ConvLayer {
             let mut sum = 0.0;
             for y1 in 0 .. self.filter_size.0 {
               for x1 in 0 .. self.filter_size.1 {
-                sum += i.get(y,x) * fc.get(y1,x1);
+                sum += i.get(y+y1,x+x1) * fc.get(y1,x1);
               }
             }
             result.set(y, x, sum);
