@@ -174,6 +174,10 @@ impl LayerPropagation for ConvLayer {
 
     //println!("CNN Filter (Forward) = {:?}", output);
 
+    println!("CNN Weights (Forward) = {}x{}x{}", self.filters[0].rows(), self.filters[0].cols(), self.filters.len());
+    println!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
+
+
     Some(output)
   }
 
@@ -184,8 +188,9 @@ impl LayerPropagation for ConvLayer {
     let mut final_db= Vec::new();
     
     //println!("CNN Backward Input = {:?}", input);
+    println!("CNN Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
-    for ((f,i),b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter_mut()) {
+    for (f,i) in self.filters.iter_mut().zip(input.iter()) {
       let mut dw_channel = Vec::new();
       let mut db = 0.0;
       if let Some(ref forward_input) = self.last_input {
@@ -225,8 +230,8 @@ impl LayerPropagation for ConvLayer {
     }
 
     //println!("CNN Filter (Backward) = {:?}", self.filters);
-
     //println!("CNN Filter (Backward) = {:?}", final_output);
+    println!("CNN Output size (Backward) = {}x{}x{}", final_output[0].rows(), final_output[0].cols(), final_output.len());
 
     Some(final_output)
   }
@@ -275,6 +280,8 @@ pub struct PoolingLayer {
   config: PoolingLayerConfig,
   n_channels: usize,
   filter_size: (usize,usize),
+
+  last_input: Option<Vec<Box<Tensor>>>,
 }
 
 impl PoolingLayer {
@@ -283,6 +290,8 @@ impl PoolingLayer {
       config,
       n_channels,
       filter_size,
+
+      last_input: None
     }
   }
 }
@@ -330,12 +339,46 @@ impl LayerPropagation for PoolingLayer {
       output.push(Box::new(final_result));
     }
 
-    println!("PoolingLayer Output = {:?}", output);
+    self.last_input = Some(input.clone());
+
+    //println!("PoolingLayer Output = {:?}", output);
+    println!("Pooling Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
 
     Some(output)
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
-    Some(input.clone())
+
+    let mut result_final = Vec::new();
+
+    println!("Pooling Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
+
+    if let Some(ref fic) = self.last_input {
+      let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
+      let result_width = (((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
+      for i in input.iter() {
+        let mut result = Tensor::zeros(result_height, result_width);       
+        for fi in fic.iter() {
+          for y in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
+            for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
+              let max = 0.0;
+              for y1 in 0 .. self.filter_size.0 {
+                for x1 in 0 .. self.filter_size.1 {
+                  let value = fi.get(y+y1,x+x1);
+                  if value > max {
+                    result.set(y1,x1, result.get(y1,x1) + i.get(y, x));
+                  }
+                }
+              }
+            }
+          }
+        }
+        result_final.push(Box::new(result));  
+      }
+    }
+
+    println!("Pooling Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len());
+
+    Some(result_final)
   }
 }
