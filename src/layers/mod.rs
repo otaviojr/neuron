@@ -207,8 +207,8 @@ impl LayerPropagation for ConvLayer {
               for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
-                    dw.set(y1,x1,activation.get(y,x) * fi.get(y+y1, x+x1));
-                    output.set(y + y1, x + x1, activation.get(y,x) * fc.get(y1,x1));
+                    dw.set(y1,x1,activation.get(y,x) * i.get(y+y1, x+x1));
+                    output.set(y + y1, x + x1, activation.get(y,x) * fc.get(y1,x1) * i.get(y,x));
                   }
                 }
                 db += i.get(y,x);
@@ -221,15 +221,15 @@ impl LayerPropagation for ConvLayer {
         final_dw.push(dw_channel);
         final_db.push(db);
       }  
-    }
 
-    for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
-      for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
-        for y in 0.. fc.rows() {
-          for x in 0.. fc.cols() {
-            //println!("dw={}",dw_channel.get(y,x) * self.config.learn_rate);
-            fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
-            *b = *b - (db * self.config.learn_rate); 
+      for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
+        for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
+          for y in 0.. fc.rows() {
+            for x in 0.. fc.cols() {
+              //println!("dw={}",dw_channel.get(y,x) * self.config.learn_rate);
+              fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
+              *b = *b - (db * self.config.learn_rate); 
+            }
           }
         }
       }
