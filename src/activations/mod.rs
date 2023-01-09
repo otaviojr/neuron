@@ -48,10 +48,10 @@ impl Sigmoid {
 
 impl Activation for Sigmoid {
   fn forward(&self, value: &Tensor) -> Tensor {
-    println!("Sigmoid Entry: {}", value);
+    //println!("Sigmoid Entry: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
-    println!("Sigmoid result: {}", ret);
+    //println!("Sigmoid result: {}", ret);
     ret
   }
 
@@ -78,10 +78,10 @@ impl Tanh {
 
 impl Activation for Tanh {
   fn forward(&self, value: &Tensor) -> Tensor {
-    println!("Sigmoid Entry: {}", value);
+    //println!("Sigmoid Entry: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| Tanh::tanh(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
-    println!("Sigmoid result: {}", ret);
+    //println!("Sigmoid result: {}", ret);
     ret
   }
 

@@ -208,6 +208,8 @@ impl LayerPropagation for ConvLayer {
       }
     }
 
+    println!("CNN Filter = {:?}", final_output);
+
     Some(final_output)
   }
 }

@@ -227,7 +227,7 @@ impl MatrixMath for MatrixMathCPU {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Tensor {
   rows: usize,
   cols: usize,
