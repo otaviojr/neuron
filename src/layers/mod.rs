@@ -296,7 +296,7 @@ impl LayerPropagation for PoolingLayer {
     
     let mut result_final = Vec::new();
 
-    for c in 0..self.n_channels {
+    for _ in 0..self.n_channels {
       let mut result_channels = Vec::new();
       for i in input.iter() {
         let mut result = Tensor::zeros(result_height, result_width);
@@ -326,7 +326,7 @@ impl LayerPropagation for PoolingLayer {
       output.push(Box::new(final_result));
     }
 
-    //println!("PoolingLayer Output = {:?}", output);
+    println!("PoolingLayer Output = {:?}", output);
 
     Some(output)
   }
