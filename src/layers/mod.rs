@@ -179,11 +179,13 @@ impl LayerPropagation for ConvLayer {
 
     let mut final_output = Vec::new();
     let mut final_dw = Vec::new();
+    let mut final_db= Vec::new();
     
     //println!("CNN Backward Input = {:?}", input);
 
-    for ((f,i),b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()) {
+    for ((f,i),b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter_mut()) {
       let mut dw_channel = Vec::new();
+      let mut db = 0.0;
       if let Some(ref forward_input) = self.last_input {
         //println!("CNN Forward Input = {:?}", forward_input);
         for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
@@ -199,6 +201,7 @@ impl LayerPropagation for ConvLayer {
                   output.set(y + y1, x + x1, i.get(y,x) * fc.get(y1,x1));
                 }
               }
+              db += i.get(y,x);
               x += self.config.stride;
             }
             y += self.config.stride;
@@ -209,14 +212,16 @@ impl LayerPropagation for ConvLayer {
         }
       }
       final_dw.push(dw_channel);
+      final_db.push(db);
     }
 
-    for (f,dw) in self.filters.iter_mut().zip(final_dw.iter()) {
+    for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
       for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
         for y in 0.. fc.rows() {
           for x in 0.. fc.cols() {
             //println!("dw={}",dw_channel.get(y,x) * self.config.learn_rate);
-            fc.set(y,x,dw_channel.get(y,x) * self.config.learn_rate);
+            fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
+            *b = *b - db * self.config.learn_rate; 
           }
         }
       }
