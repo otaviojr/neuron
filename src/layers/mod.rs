@@ -97,13 +97,13 @@ pub struct ConvLayerConfig {
   pub activation: Box<dyn Activation>,
   pub learn_rate: f64,
   pub padding: usize,
-  pub stride: usize,
-  filter_size: usize
+  pub stride: usize
 }
 
 pub struct ConvLayer {
   config: ConvLayerConfig,
   filters: Vec<Vec<Tensor>>,
+  filter_size: usize,
   bias: Vec<f64>,
 
   last_input: Option<Vec<Box<Tensor>>>,
@@ -125,6 +125,7 @@ impl ConvLayer {
     ConvLayer {
       config,
       filters,
+      filter_size,
       bias: vec![0.0; n_filters],
       last_input: None
     }
@@ -146,11 +147,11 @@ impl LayerPropagation for ConvLayer {
         let mut result_x = 0;
         let mut result_y = 0;
         let mut result = Tensor::zeros(result_height, result_width);
-        while y + self.config.filter_size < i.rows() {
-          while x + self.config.filter_size < i.cols() {
+        while y + self.filter_size < i.rows() {
+          while x + self.filter_size < i.cols() {
             let mut sum = 0.0;
-            for y1 in 0 .. self.config.filter_size {
-              for x1 in 0 .. self.config.filter_size {
+            for y1 in 0 .. self.filter_size {
+              for x1 in 0 .. self.filter_size {
                 sum += i.get(y,x) * fc.get(y1,x1);
               }
             }
@@ -189,10 +190,10 @@ impl LayerPropagation for ConvLayer {
           let mut x = 0;
           let mut y = 0;
           let mut output = Tensor::zeros(fi.rows(), fi.cols());
-          while y + self.config.filter_size < i.rows() {
-            while x + self.config.filter_size < i.cols() {
-              for y1 in 0 .. self.config.filter_size {
-                for x1 in 0 .. self.config.filter_size {
+          while y + self.filter_size < i.rows() {
+            while x + self.filter_size < i.cols() {
+              for y1 in 0 .. self.filter_size {
+                for x1 in 0 .. self.filter_size {
                   fc.set(y1,x1,i.get(y,x) * fi.get(y+y1, x+x1));
                   output.set(y + y1, x + x1, i.get(y,x) * fc.get(y1,x1));
                 }
