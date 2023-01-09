@@ -310,7 +310,7 @@ impl LayerPropagation for PoolingLayer {
                 }
               }
             }
-            result.set(y, x, max);
+            //result.set(y, x, max);
           }
         }
         result_channels.push(result);
