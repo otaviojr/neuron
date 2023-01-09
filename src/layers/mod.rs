@@ -297,7 +297,8 @@ impl LayerPropagation for FlattenLayer {
       output.push(Box::new(tmp));
     }
 
-    println!("FlattenLayer Output = {}x{}x{}",output[0].rows(), output[0].cols(),output.len());
+    println!("FlattenLayer Output Size (Backward) = {}x{}x{}",output[0].rows(), output[0].cols(),output.len());
+    println!("FlattenLayer Output (Backward) = {:?}",output);
 
     Some(output)
   }
