@@ -378,11 +378,9 @@ impl LayerPropagation for PoolingLayer {
     println!("Pooling Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
     if let Some(ref fic) = self.last_input {
-      let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
-      let result_width = (((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
       for i in input.iter() {
-        let mut result = Tensor::zeros(result_height, result_width);       
         for fi in fic.iter() {
+          let mut result = Tensor::zeros(fi.rows(), fi.cols());       
           for y in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
             for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
               let max = 0.0;
@@ -396,8 +394,8 @@ impl LayerPropagation for PoolingLayer {
               }
             }
           }
+          result_final.push(Box::new(result));  
         }
-        result_final.push(Box::new(result));  
       }
     }
 
