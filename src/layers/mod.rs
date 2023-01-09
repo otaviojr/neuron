@@ -381,8 +381,8 @@ impl LayerPropagation for PoolingLayer {
       for i in input.iter() {
         for fi in fic.iter() {
           let mut result = Tensor::zeros(fi.rows(), fi.cols());
-          for y in 0 .. fi.rows() {
-            for x in 0 .. fi.cols() {
+          for y in 0 .. fi.rows() - self.filter_size.0 {
+            for x in 0 .. fi.cols()  - self.filter_size.1 {
               let max = 0.0;
               for y1 in 0 .. self.filter_size.0 {
                 for x1 in 0 .. self.filter_size.1 {
