@@ -29,7 +29,7 @@ impl LinearLayer {
   pub fn new(input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
       config: config,
-      weights: Tensor::random(input_size,nodes),
+      weights: Tensor::random(nodes,input_size),
       bias: Tensor::zeros(nodes,1),
       last_input: None,
       last_z1: None
@@ -65,14 +65,14 @@ impl LayerPropagation for LinearLayer {
       if first {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       } else {
-        dz = input.mul_wise(&self.config.activation.backward(z1));
+        dz = input.mul(&self.weights).mul_wise(&self.config.activation.backward(z1));
       }
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
       if let Some(ref forward_input) = self.last_input {
         let forward_input = &forward_input[0];
         println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
-        let dw = forward_input.mul(&dz.transpose()).div_value(forward_input.cols() as f64);
+        let dw = dz.mul(&forward_input.transpose()).div_value(forward_input.cols() as f64);
         println!("dw size = {}x{}", dw.rows(), dw.cols());
         //println!("dw = {}", dw);
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
