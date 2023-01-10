@@ -145,20 +145,20 @@ impl LayerPropagation for ConvLayer {
 
     for (f,b) in self.filters.iter().zip(self.bias.iter()) {
       let mut result_channels = Vec::new();
-      for (i,fc) in input.iter().zip(f.iter()) {
+      for (inp,fc) in input.iter().zip(f.iter()) {
         let mut result = Tensor::zeros(result_height, result_width);
-        for y in (0..i.rows() - self.filter_size.0).step_by(self.config.stride) {
-          for x in (0..i.cols() - self.filter_size.1).step_by(self.config.stride) {
+        for i in (0..inp.rows() - self.filter_size.0).step_by(self.config.stride) {
+          for j in (0..inp.cols() - self.filter_size.1).step_by(self.config.stride) {
             let mut sum = 0.0;
-            for y1 in 0 .. self.filter_size.0 {
-              for x1 in 0 .. self.filter_size.1 {
-                sum += i.get(y+y1,x+x1) * fc.get(y1,x1);
+            for k in 0 .. self.filter_size.0 {
+              for l in 0 .. self.filter_size.1 {
+                sum += inp.get(i+k,j+l) * fc.get(k,l);
               }
             }
-            result.set(y, x, sum);
+            result.set(i, j, sum);
           }
         }
-        result_channels.push(self.config.activation.forward(&result).add_value(*b));
+        result_channels.push(self.config.activation.forward(&result.add_value(*b)));
       }
       result_final.push(result_channels); 
     }
