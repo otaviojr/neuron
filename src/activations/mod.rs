@@ -19,7 +19,7 @@ impl ReLU {
 impl Activation for ReLU {
   fn forward(&self, value: &Tensor) -> Tensor {
     //println!("ReLU Entry: {}", value);
-    let data:Vec<f64> = value.data().iter().map(|value| {if *value > 0.0 { *value } else { 0.0 }} ).collect();
+    let data:Vec<f64> = value.data().iter().map(|value| value.max(0.0) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     //println!("ReLU Result: {}", ret);
     ret
