@@ -62,11 +62,11 @@ impl LayerPropagation for LinearLayer {
     let input = &input[0];
     if let Some(ref z1) = self.last_z1 {
       let dz;
-      if first {
-        dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
-      } else {
+      //if first {
+      //  dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
+      //} else {
         dz = input.mul_wise(&self.config.activation.backward(z1));
-      }
+      //}
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
       if let Some(ref forward_input) = self.last_input {
