@@ -301,7 +301,7 @@ impl LayerPropagation for FlattenLayer {
       let mut tmp = Tensor::zeros(self.input_rows, self.input_cols);
       for j in 0..self.input_rows {
         for k in 0..self.input_cols {
-          tmp.set(j,k, input[0].data()[n_channel * ((self.input_cols*self.input_rows)) + (j * self.input_rows + k)])
+          tmp.set(j,k, input[0].data()[(n_channel * (self.input_cols*self.input_rows)) + (j * self.input_rows + k)])
         }
       }
       output.push(Box::new(tmp));
