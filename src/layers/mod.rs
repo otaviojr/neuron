@@ -80,9 +80,9 @@ impl LayerPropagation for LinearLayer {
 
         let ret = Some(vec![Box::new(self.weights.transpose().mul(&dz))]);
 
-        self.weights = self.weights.sub(&dw).mul_value(self.config.learn_rate);
+        self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
         let dbf = db.sum_row().div_value(forward_input.cols() as f64);
-        self.bias = self.bias.sub(&dbf).mul_value(self.config.learn_rate);
+        self.bias = self.bias.sub(&dbf.mul_value(self.config.learn_rate));
 
         return ret;
       }
