@@ -248,7 +248,7 @@ impl LayerPropagation for ConvLayer {
       let fc = &self.filters[i];
       let mut filters_channels = Vec::new();
       for j in 0 .. fc.len() {
-        filters_channels.push(self.filters[i][j].sub(&final_dw[i][j]).mul_value(self.config.learn_rate));
+        filters_channels.push(self.filters[i][j].sub(&final_dw[i][j]).mul_value(0));
       }
       filters.push(filters_channels);
     }
