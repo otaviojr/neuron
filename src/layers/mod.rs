@@ -253,7 +253,7 @@ impl LayerPropagation for ConvLayer {
       }
       filters.push(filters_channels);
     }
-    self.filters = filters;
+    self.filters = Vec::new();
     
     println!("CNN Filters (Backward) = {:?}", self.filters);
 
