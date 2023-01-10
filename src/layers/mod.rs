@@ -355,8 +355,9 @@ impl LayerPropagation for PoolingLayer {
             let mut max = 0.0;
             for k in 0 .. self.filter_size.0 {
               for l in 0 .. self.filter_size.1 {
-                if inp.get(i+k,j+l) > max {
-                  max = inp.get(i+k,j+l);
+                let value = inp.get(i+k,j+l);
+                if  value > max {
+                  max = value;
                 }
               }
             }
