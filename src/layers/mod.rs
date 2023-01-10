@@ -44,7 +44,7 @@ impl LayerPropagation for LinearLayer {
     println!("Bias = {:?}", self.bias);
     println!("LinearLayer Input (Forward) = {:?}", input);
     //println!("Weights = {}", self.weights);
-    let z1_1 = self.weights.mul(&input);
+    let z1_1 = input.mul(&self.weights.transpose());
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
     let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
     println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
@@ -216,7 +216,7 @@ impl LayerPropagation for ConvLayer {
           let mut db = 0.0;
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
-            let dz = inp.mul_wise(&z1);
+            let dz = inp.mul_wise(&self.config.activation.backward(&z1));
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
 
             for i in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
