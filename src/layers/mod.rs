@@ -240,7 +240,19 @@ impl LayerPropagation for ConvLayer {
           }
         }
       }
+
     }
+
+    let mut filters = Vec::new();
+    for i in 0 .. self.filters.len() {
+      let fc = &self.filters[i];
+      let mut filters_channels = Vec::new();
+      for j in 0 .. fc.len() {
+        filters_channels.push(self.filters[i][j].sub(&final_dw[i][j]).mul_value(self.config.learn_rate));
+      }
+      filters.push(filters_channels);
+    }
+    self.filters = filters;
 
     println!("CNN Filters (Backward) = {:?}", self.filters);
 
