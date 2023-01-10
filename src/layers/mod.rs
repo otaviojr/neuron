@@ -48,7 +48,7 @@ impl LayerPropagation for LinearLayer {
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
     let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
     println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
-    let z1 = self.config.activation.forward(&z1_1.add(&b_bias));
+    let z1 = z1_1.add(&b_bias);
 
     //println!("z1 = {}", z1);
     self.last_z1 = Some(z1.clone());
@@ -56,7 +56,7 @@ impl LayerPropagation for LinearLayer {
 
     println!("LinearLayer Output (Forward) = {:?}", self.last_z1);
 
-    Some(vec![Box::new(z1)])
+    Some(vec![Box::new(self.config.activation.forward(&z1))])
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
@@ -81,9 +81,9 @@ impl LayerPropagation for LinearLayer {
 
         let ret = Some(vec![Box::new(self.weights.transpose().mul(&dz))]);
 
-        self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
+        self.weights = self.weights.sub(&dw).mul_value(self.config.learn_rate);
         let dbf = db.sum_row().div_value(forward_input.cols() as f64);
-        self.bias = self.bias.sub(&dbf.mul_value(self.config.learn_rate));
+        self.bias = self.bias.sub(&dbf).mul_value(self.config.learn_rate);
 
         return ret;
       }
@@ -154,7 +154,7 @@ impl LayerPropagation for ConvLayer {
                 sum += inp.get(i+k,j+l) * fc.get(k,l);
               }
             }
-            result.set(i, j, sum);
+            result.set(i/self.config.stride, j/self.config.stride, sum);
           }
         }
         result_channels.push(result.add_value(*b));
@@ -207,11 +207,11 @@ impl LayerPropagation for ConvLayer {
               for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for k in 0 .. self.filter_size.0 {
                   for l in 0 .. self.filter_size.1 {
-                    output.set(i,j,output.get(i,j) + fc.get(k,l) * fi.get(i+k,j+l));
-                    dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i,j));
+                    output.set(i/self.config.stride,j/self.config.stride,output.get(i/self.config.stride,j/self.config.stride) + fc.get(k,l) * fi.get(i+k,j+l));
+                    dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i/self.config.stride,j/self.config.stride));
                   }
                 }
-                db += inp.get(i,j);
+                db += inp.get(i/self.config.stride,j/self.config.stride);
               }
             }
             dw_channel.push(dw)
