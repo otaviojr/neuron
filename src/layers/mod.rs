@@ -197,8 +197,8 @@ impl LayerPropagation for ConvLayer {
       for ((f,i), o) in self.filters.iter_mut().zip(input.iter()).zip(z1.iter()) {
         let mut dw_channel = Vec::new();
         let mut db = 0.0;
-        let activation = self.config.activation.backward(o);
-        println!("CNN Activation (Backward) = {:?}", activation);
+        let dz = self.config.activation.backward(o);
+        println!("CNN Activation (Backward) = {:?}", dz);
         if let Some(ref forward_input) = self.last_input {
           //println!("CNN Forward Input = {:?}", forward_input);
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
@@ -208,8 +208,8 @@ impl LayerPropagation for ConvLayer {
               for x in (0 .. i.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
-                    output.set(y + y1, x + x1, activation.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1));
-                    dw.set(y1,x1,output.get(y + y1, x + x1) * fi.get(y,x));
+                    output.set(y + y1, x + x1, dz.get(y,x) * fc.transpose().get(y1,x1) * i.get(y+y1,x+x1));
+                    dw.set(y1,x1,output.get(y + y1, x + x1) * fi.transpose().get(y,x));
                     db += output.get(y + y1, x + x1);
                   }
                 }
