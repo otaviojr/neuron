@@ -164,15 +164,17 @@ impl LayerPropagation for ConvLayer {
     }
 
     let mut output = Vec::new();
+    let mut z1 = Vec::new();
     for i in result_final.iter() {
       let final_result = i.iter()
                                 .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
       output.push(Box::new(self.config.activation.forward(&final_result)));
+      z1.push(Box::new(final_result));
     }
 
     self.last_input = Some(input.clone());
-    self.last_z1 = Some(output.clone());
+    self.last_z1 = Some(z1.clone());
 
     //println!("CNN Filter (Forward) = {:?}", output);
 
