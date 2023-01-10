@@ -140,12 +140,14 @@ impl LayerPropagation for ConvLayer {
     let result_height = (((input[0].rows() as f64 + 2.0* self.config.padding as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 + 2.0* self.config.padding as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     let mut result_final = Vec::new();
+    let mut z1_final = Vec::new();
 
     println!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
     println!("CNN Input (Forward) = {:?}", input);
 
     for (f,b) in self.filters.iter().zip(self.bias.iter()) {
       let mut result_channels = Vec::new();
+      let mut z1_channels = Vec::new();
       for (inp,fc) in input.iter().zip(f.iter()) {
         let mut result = Tensor::zeros(result_height, result_width);
         for i in (0..inp.rows() - self.filter_size.0).step_by(self.config.stride) {
@@ -159,19 +161,28 @@ impl LayerPropagation for ConvLayer {
             result.set(i/self.config.stride, j/self.config.stride, sum);
           }
         }
-        result_channels.push(result.add_value(*b));
+        let z1 = result.add_value(*b);
+        result_channels.push(self.config.activation.forward(&z1));
+        z1_channels.push(Box::new(z1));
       }
       result_final.push(result_channels); 
+      z1_final.push(z1_channels); 
     }
 
     let mut output = Vec::new();
     let mut z1 = Vec::new();
-    for i in result_final.iter() {
+    for (i,z) in result_final.iter().zip(z1_final.iter()) {
       let final_result = i.iter()
                                 .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
-      output.push(Box::new(self.config.activation.forward(&final_result)));
-      z1.push(Box::new(final_result));
+
+      output.push(Box::new(final_result));
+
+      let final_z1 = z.iter()
+                                .fold(Some(Tensor::zeros(z[0].rows(), z[0].cols())), |a,b| Some(a.unwrap().add(b)))
+                                .unwrap_or(Tensor::zeros(z[0].rows(), z[0].cols()));
+
+      z1.push(Box::new(final_z1))
     }
 
     self.last_input = Some(input.clone());
