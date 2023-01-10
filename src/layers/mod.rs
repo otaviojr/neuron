@@ -199,9 +199,10 @@ impl LayerPropagation for ConvLayer {
     if let Some(ref z1) = self.last_z1 {
       if let Some(ref forward_input) = self.last_input {
         for ((f,inp), b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()) {
+          let mut dw_channel = Vec::new();
           let mut output = Tensor::zeros(f[0].rows(), f[0].cols());
           let mut db = 0.0;
-          for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
+          for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {            
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
             for i in (0..inp.rows()-self.filter_size.0).step_by(self.config.stride) {
               for j in (0 .. inp.cols()-self.filter_size.1).step_by(self.config.stride) {
@@ -214,10 +215,11 @@ impl LayerPropagation for ConvLayer {
                 db += output.get(i,j);
               }
             }
-            final_dw.push(dw)
+            dw_channel.push(dw)
           }
           final_output.push(Box::new(output.add_value(*b)));
           final_db.push(db);
+          final_dw.push(dw_channel);
         }
       }
     }
@@ -226,7 +228,7 @@ impl LayerPropagation for ConvLayer {
     println!("CNN final_db (Backward) = {:?}", final_db);
 
     for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
-      for (fc,dw_channel) in f.iter_mut().zip(final_dw.iter()) {
+      for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
         for y in 0.. fc.rows() {
           for x in 0.. fc.cols() {
             println!("UPDATE DW={}",dw_channel.get(y,x) * self.config.learn_rate);
