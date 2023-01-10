@@ -141,6 +141,9 @@ impl LayerPropagation for ConvLayer {
     let result_width = (((input[0].cols() as f64 + 2.0* self.config.padding as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     let mut result_final = Vec::new();
 
+    println!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
+    println!("CNN Input (Forward) = {:?}", input);
+
     for (f,b) in self.filters.iter().zip(self.bias.iter()) {
       let mut result_channels = Vec::new();
       for (inp,fc) in input.iter().zip(f.iter()) {
