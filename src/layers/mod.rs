@@ -203,14 +203,16 @@ impl LayerPropagation for ConvLayer {
           let mut dw_channel = Vec::new();
           let mut output = Tensor::zeros(forward_input[0].rows(), forward_input[0].cols());
           let mut db = 0.0;
-          for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {            
-            let dz = inp.mul_wise(&self.config.activation.backward(&z1)); 
+          for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
+
+            let dz = inp.mul_wise(&self.config.activation.backward(&z1));
+            let dw1 = dz.mul(&fi.transpose());
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
             for i in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
               for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for k in 0 .. self.filter_size.0 {
                   for l in 0 .. self.filter_size.1 {
-                    output.set(i/self.config.stride,j/self.config.stride,output.get(i/self.config.stride,j/self.config.stride) + fc.get(k,l) * fi.get(i+k,j+l));
+                    output.set(i/self.config.stride,j/self.config.stride,output.get(i/self.config.stride,j/self.config.stride) + (fc.get(k,l) * fi.get(i+k,j+l)));
                     dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * dz.get(i/self.config.stride,j/self.config.stride));
                   }
                 }
