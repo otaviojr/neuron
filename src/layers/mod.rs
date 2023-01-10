@@ -50,7 +50,6 @@ impl LayerPropagation for LinearLayer {
     println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
     let z1 = z1_1.add(&b_bias);
 
-    //println!("z1 = {}", z1);
     self.last_z1 = Some(z1.clone());
     self.last_input = Some(vec![input.clone()]);
 
