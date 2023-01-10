@@ -60,14 +60,13 @@ impl LayerPropagation for LinearLayer {
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
     let input = &input[0];
-    println!("weights size = {}x{}", self.weights.rows(), self.weights.cols());
-    println!("input size = {}x{}", input.rows(), input.cols());
     if let Some(ref z1) = self.last_z1 {
-      let dz;
+      let mut dz;
       if first {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       } else {
-        dz = input.mul(&self.weights.transpose()).mul_wise(&self.config.activation.backward(z1));
+        dz = input.mul_wise(&self.config.activation.backward(z1));
+        dz = self.weights.transpose().mul(&dz)
       }
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
@@ -80,8 +79,9 @@ impl LayerPropagation for LinearLayer {
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
 
-        let ret = Some(vec![Box::new(self.weights.transpose().mul(&dz))]);
+        let ret = Some(vec![Box::new(&dz)]);
 
+        println!("weights size = {}x{}", self.weights.rows(), self.weights.cols());
         self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
         let dbf = db.sum_row().div_value(forward_input.cols() as f64);
         self.bias = self.bias.sub(&dbf.mul_value(self.config.learn_rate));
