@@ -29,7 +29,7 @@ impl LinearLayer {
   pub fn new(input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
       config: config,
-      weights: Tensor::random(nodes,input_size),
+      weights: Tensor::random(input_size,nodes),
       bias: Tensor::zeros(nodes,1),
       last_input: None,
       last_z1: None
