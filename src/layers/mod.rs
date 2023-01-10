@@ -195,12 +195,12 @@ impl LayerPropagation for ConvLayer {
     if let Some(ref z1) = self.last_z1 {
       for ((f,i), o) in self.filters.iter_mut().zip(input.iter()).zip(z1.iter()) {
         let mut dw_channel = Vec::new();
-        let mut db = 0.0;
         let dz = self.config.activation.backward(o);
         println!("CNN Activation (Backward) = {:?}", dz);
         if let Some(ref forward_input) = self.last_input {
           //println!("CNN Forward Input = {:?}", forward_input);
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
+            let mut db = 0.0;
             let mut output = Tensor::zeros(fi.rows(), fi.cols());
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
             let fct = fc.transpose();
@@ -218,10 +218,10 @@ impl LayerPropagation for ConvLayer {
             }
             final_output.push(Box::new(output));
             dw_channel.push(Box::new(dw));
+            final_db.push(db);
           }
         }
         final_dw.push(dw_channel);
-        final_db.push(db);
       }  
 
       println!("CNN final_dw (Backward) = {:?}", final_dw);
