@@ -158,7 +158,7 @@ impl LayerPropagation for ConvLayer {
             result.set(i, j, sum);
           }
         }
-        result_channels.push(self.config.activation.forward(&result.add_value(*b)));
+        result_channels.push(result.add_value(*b));
       }
       result_final.push(result_channels); 
     }
@@ -169,7 +169,7 @@ impl LayerPropagation for ConvLayer {
       let final_result = i.iter()
                                 .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
-      output.push(Box::new(final_result));
+      output.push(Box::new(self.config.activation.forward(&final_result)));
       //z1.push(Box::new(final_result));
     }
 
