@@ -204,12 +204,14 @@ impl LayerPropagation for ConvLayer {
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
             let mut output = Tensor::zeros(fi.rows(), fi.cols());
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
+            let fct = fc.transpose();
+            let fit = fi.transpose();
             for y in (0..i.rows()-self.filter_size.0).step_by(self.config.stride) {
               for x in (0 .. i.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
-                    output.set(y + y1, x + x1, dz.get(y,x) * fc.transpose().get(y1,x1) * i.get(y+y1,x+x1));
-                    dw.set(y1,x1,output.get(y + y1, x + x1) * fi.transpose().get(y,x));
+                    output.set(y + y1, x + x1, dz.get(y,x) * fct.get(y1,x1) * i.get(y+y1,x+x1));
+                    dw.set(y1,x1,output.get(y + y1, x + x1) * fit.get(y,x));
                     db += output.get(y + y1, x + x1);
                   }
                 }
