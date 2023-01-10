@@ -158,7 +158,7 @@ impl LayerPropagation for ConvLayer {
             result.set(y, x, sum);
           }
         }
-        result_channels.push(result);
+        result_channels.push(result.add_value(*b));
       }
       result_final.push(result_channels); 
     }
@@ -210,7 +210,7 @@ impl LayerPropagation for ConvLayer {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
                     output.set(y + y1, x + x1, dz.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1));
-                    dw.set(y1,x1,output.get(y + y1, x + x1) * fi.get(y,x));
+                    dw.set(y1,x1,fc.get(y1, x1) * fi.get(y,x));
                     db += output.get(y + y1, x + x1);
                   }
                 }
