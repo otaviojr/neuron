@@ -200,7 +200,7 @@ impl LayerPropagation for ConvLayer {
       if let Some(ref forward_input) = self.last_input {
         for ((f,inp), b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()) {
           let mut dw_channel = Vec::new();
-          let mut output = Tensor::zeros(f[0].rows(), f[0].cols());
+          let mut output = Tensor::zeros(forward_input[0].rows(), forward_input[0].cols());
           let mut db = 0.0;
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {            
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
