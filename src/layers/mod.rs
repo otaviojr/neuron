@@ -210,7 +210,7 @@ impl LayerPropagation for ConvLayer {
                 for y1 in 0 .. self.filter_size.0 {
                   for x1 in 0 .. self.filter_size.1 {
                     output.set(y + y1, x + x1, dz.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1));
-                    dw.set(y1,x1,dw.get(y1,x1) + fc.get(y1, x1) * i.get(y+y1,x+x1) * dz.get(y+y1,x+x1));
+                    dw.set(y1,x1,fc.get(y1, x1) * fi.get(y,x));
                     db += output.get(y + y1, x + x1);
                   }
                 }
@@ -227,13 +227,12 @@ impl LayerPropagation for ConvLayer {
       println!("CNN final_dw (Backward) = {:?}", final_dw);
       println!("CNN final_db (Backward) = {:?}", final_db);
 
-      let filter_new = Tensor::zeros(self.filter_size.0, self.filter_size.1);
       for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
         for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
           for y in 0.. fc.rows() {
             for x in 0.. fc.cols() {
               println!("UPDATE DW={}",dw_channel.get(y,x) * self.config.learn_rate);
-              fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
+              //fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
               //*b = *b - (db * self.config.learn_rate);
             }
           }
