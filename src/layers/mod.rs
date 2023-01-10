@@ -169,7 +169,7 @@ impl LayerPropagation for ConvLayer {
       let final_result = i.iter()
                                 .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
-      output.push(Box::new(self.config.activation.forward(&final_result)));
+      output.push(Box::new(&final_result));
       z1.push(Box::new(final_result));
     }
 
@@ -229,10 +229,10 @@ impl LayerPropagation for ConvLayer {
 
     for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
       for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
-        for y in 0.. fc.rows() {
-          for x in 0.. fc.cols() {
-            println!("UPDATE DW={}",dw_channel.get(y,x) * self.config.learn_rate);
-            fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
+        for k in 0.. fc.rows() {
+          for l in 0.. fc.cols() {
+            println!("UPDATE DW={}",dw_channel.get(k,l) * self.config.learn_rate);
+            fc.set(k,l,fc.get(k,l) - (dw_channel.get(k,l) * self.config.learn_rate));
             *b = *b - (db * self.config.learn_rate);
           }
         }
