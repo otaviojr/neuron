@@ -65,7 +65,7 @@ impl LayerPropagation for LinearLayer {
       if first {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       } else {
-        dz = input.mul(&self.weights).mul_wise(&self.config.activation.backward(z1));
+        dz = input.mul(&self.weights.transpose()).mul_wise(&self.config.activation.backward(z1));
       }
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
