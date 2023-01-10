@@ -197,13 +197,14 @@ impl LayerPropagation for ConvLayer {
     println!("CNN Input (Backward) = {:?}", input);
     println!("CNN Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
-    if let Some(ref z1) = self.last_z1 {
+    if let Some(ref lz1) = self.last_z1 {
       if let Some(ref forward_input) = self.last_input {
-        for ((f,inp), b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()) {
+        for (((f,inp), b),z1) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()).zip(lz1.iter()) {
           let mut dw_channel = Vec::new();
           let mut output = Tensor::zeros(forward_input[0].rows(), forward_input[0].cols());
-          let mut db = *b;
+          let mut db = 0.0;
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {            
+            let dz = inp.mul_wise(&self.config.activation.backward(&z1)); 
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
             for i in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
               for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
@@ -213,7 +214,7 @@ impl LayerPropagation for ConvLayer {
                     dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i/self.config.stride,j/self.config.stride));
                   }
                 }
-                db += inp.get(i/self.config.stride,j/self.config.stride);
+                db += dz.get(i/self.config.stride,j/self.config.stride);
               }
             }
             dw_channel.push(dw)
