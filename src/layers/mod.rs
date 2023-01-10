@@ -227,7 +227,7 @@ impl LayerPropagation for ConvLayer {
                     dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i/self.config.stride,j/self.config.stride));
                   }
                 }
-                db += dz.get(i/self.config.stride,j/self.config.stride);
+                db += inp.get(i/self.config.stride,j/self.config.stride);
               }
             }
             dw_channel.push(dw)
