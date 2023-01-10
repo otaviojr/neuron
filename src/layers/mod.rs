@@ -60,6 +60,8 @@ impl LayerPropagation for LinearLayer {
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
     let input = &input[0];
+    println!("input size = {}x{}", input.rows(), input.cols());
+    println!("weights size = {}x{}", self.weights.rows(), self.weights.cols());
     if let Some(ref z1) = self.last_z1 {
       let dz;
       if first {
@@ -80,7 +82,6 @@ impl LayerPropagation for LinearLayer {
 
         let ret = Some(vec![Box::new(dz)]);
 
-        println!("weights size = {}x{}", self.weights.rows(), self.weights.cols());
         self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
         let dbf = db.sum_row().div_value(forward_input.cols() as f64);
         self.bias = self.bias.sub(&dbf.mul_value(self.config.learn_rate));
