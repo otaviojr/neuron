@@ -170,7 +170,7 @@ impl LayerPropagation for ConvLayer {
                                 .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
       output.push(Box::new(self.config.activation.forward(&final_result)));
-      //z1.push(Box::new(final_result));
+      z1.push(Box::new(final_result));
     }
 
     self.last_input = Some(input.clone());
@@ -296,9 +296,9 @@ impl LayerPropagation for FlattenLayer {
 
     for n_channel in 0..self.n_channels {
       let mut tmp = Tensor::zeros(self.input_rows, self.input_cols);
-      for j in 0..self.input_rows {
-        for k in 0..self.input_cols {
-          tmp.set(j,k, input[0].data()[(n_channel * (self.input_cols*self.input_rows)) + (j * self.input_cols + k)])
+      for i in 0..self.input_rows {
+        for j in 0..self.input_cols {
+          tmp.set(i,j, input[0].data()[(n_channel * (self.input_cols*self.input_rows)) + (i * self.input_cols + j)])
         }
       }
       output.push(Box::new(tmp));
@@ -349,24 +349,20 @@ impl LayerPropagation for PoolingLayer {
 
     for _ in 0..self.n_channels {
       let mut result_channels = Vec::new();
-      for i in input.iter() {
-        let mut result_y = 0;
+      for inp in input.iter() {
         let mut result = Tensor::zeros(result_height, result_width);
-        for y in (0 .. i.rows()-self.filter_size.0).step_by(self.config.stride) {
-          let mut result_x = 0;
-          for x in (0 .. i.cols()-self.filter_size.1).step_by(self.config.stride) {
+        for i in (0 .. inp.rows()-self.filter_size.0).step_by(self.config.stride) {
+          for j in (0 .. inp.cols()-self.filter_size.1).step_by(self.config.stride) {
             let mut max = 0.0;
-            for y1 in 0 .. self.filter_size.0 {
-              for x1 in 0 .. self.filter_size.1 {
-                if i.get(y+y1,x+x1) > max {
-                  max = i.get(y+y1,x+x1);
+            for k in 0 .. self.filter_size.0 {
+              for l in 0 .. self.filter_size.1 {
+                if inp.get(i+k,j+l) > max {
+                  max = inp.get(i+k,j+l);
                 }
               }
             }
-            result.set(result_y, result_x, max);
-            result_x += 1;
+            result.set(i, j, max);
           }
-          result_y += 1;
         }
         result_channels.push(result);
       }
@@ -397,30 +393,28 @@ impl LayerPropagation for PoolingLayer {
     println!("Pooling Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
     if let Some(ref fic) = self.last_input {
-      for i in input.iter() {
+      for inp in input.iter() {
         for fi in fic.iter() {
           let mut result =  Tensor::zeros(fi.rows(), fi.cols());
           let mut input_y = 0;
-          for y in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
+          for i in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
             let mut input_x = 0;
-            for x in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
+            for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
               let mut max = 0.0;
-              let mut max_x = 0;
-              let mut max_y = 0;
-              for y1 in 0 .. self.filter_size.0 {
-                for x1 in 0 .. self.filter_size.1 {
-                  let value = fi.get(y+y1,x+x1);
+              let mut max_k = 0;
+              let mut max_l = 0;
+              for k in 0 .. self.filter_size.0 {
+                for l in 0 .. self.filter_size.1 {
+                  let value = fi.get(i+k,j+l);
                   if value > max {
                     max = value;
-                    max_x = x1;
-                    max_y = y1;
+                    max_k = k;
+                    max_l = l;
                   }
                 }
               }
-              result.set(y+max_y,x+max_x, i.get(input_y, input_x) * fi.get(y,x));
-              input_x += 1;
+              result.set(i+max_k,j+max_l, inp.get(i,j));
             }
-            input_y += 1;
           }
           result_final.push(Box::new(result));  
         }
