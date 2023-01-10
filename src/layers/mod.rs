@@ -361,7 +361,6 @@ impl LayerPropagation for PoolingLayer {
                 }
               }
             }
-            println!("DEBUG={}x{}", i, j);
             result.set(i/self.config.stride, j/self.config.stride, max);
           }
         }
@@ -411,7 +410,7 @@ impl LayerPropagation for PoolingLayer {
                   }
                 }
               }
-              result.set(i+max_k,j+max_l, inp.get(i,j));
+              result.set((i/self.config.stride)+max_k,(j/self.config.stride)+max_l, inp.get(i,j));
             }
           }
           result_final.push(Box::new(result));  
