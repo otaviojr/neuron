@@ -30,7 +30,7 @@ impl LinearLayer {
     LinearLayer {
       config: config,
       weights: Tensor::random(nodes,input_size),
-      bias: Tensor::zeros(nodes,1),
+      bias: Tensor::random(nodes,1),
       last_input: None,
       last_z1: None
     }
