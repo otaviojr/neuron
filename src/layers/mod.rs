@@ -61,12 +61,11 @@ impl LayerPropagation for LinearLayer {
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
     let input = &input[0];
     if let Some(ref z1) = self.last_z1 {
-      let mut dz;
+      let dz;
       if first {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       } else {
-        dz = input.mul_wise(&self.config.activation.backward(z1));
-        dz = self.weights.transpose().mul(&dz)
+        dz = input.mul(&self.weights.transpose()).mul_wise(&self.config.activation.backward(z1));
       }
       println!("dz size = {}x{}", dz.rows(), dz.cols());
       //println!("dz = {}", dz);
