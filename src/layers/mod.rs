@@ -79,7 +79,7 @@ impl LayerPropagation for LinearLayer {
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
         println!("db size = {}x{}", db.rows(), db.cols());
 
-        let ret = Some(vec![Box::new(&dz)]);
+        let ret = Some(vec![Box::new(dz)]);
 
         println!("weights size = {}x{}", self.weights.rows(), self.weights.cols());
         self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
