@@ -48,16 +48,15 @@ impl LayerPropagation for LinearLayer {
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
     let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
     println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
-    let z1 = z1_1.add(&b_bias);
+    let z1 = self.config.activation.forward(&z1_1.add(&b_bias));
 
     //println!("z1 = {}", z1);
-    let ret = Some(vec![Box::new(self.config.activation.forward(&z1))]);
-    self.last_z1 = Some(z1);
+    self.last_z1 = Some(z1.clone());
     self.last_input = Some(vec![input.clone()]);
 
-    println!("LinearLayer Output (Forward) = {:?}", ret);
+    println!("LinearLayer Output (Forward) = {:?}", self.last_z1);
 
-    ret
+    Some(vec![Box::new(z1)])
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
