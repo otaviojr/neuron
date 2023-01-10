@@ -216,7 +216,7 @@ impl LayerPropagation for ConvLayer {
           let mut db = 0.0;
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
-            let dz = inp.mul_wise(&self.config.activation.backward(&z1));
+            let dz = inp.mul_wise(&z1);
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
 
             for i in (0..fi.rows()-self.filter_size.0).step_by(self.config.stride) {
