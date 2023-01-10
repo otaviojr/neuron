@@ -197,66 +197,45 @@ impl LayerPropagation for ConvLayer {
     println!("CNN Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
     if let Some(ref z1) = self.last_z1 {
-      for ((f,i), o) in self.filters.iter_mut().zip(input.iter()).zip(z1.iter()) {
-        let mut dw_channel = Vec::new();
-        let dz = self.config.activation.backward(o);
-        println!("CNN Activation (Backward) = {:?}", dz);
-        if let Some(ref forward_input) = self.last_input {
-          //println!("CNN Forward Input = {:?}", forward_input);
+      if let Some(ref forward_input) = self.last_input {
+        for ((f,inp), b) in self.filters.iter_mut().zip(input.iter()).zip(self.bias.iter()) {
+          let mut output = Tensor::zeros(f[0].rows(), f[0].cols());
+          let mut db = 0.0;
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
-            let mut db = 0.0;
-            let mut output = Tensor::zeros(fi.rows(), fi.cols());
             let mut dw = Tensor::zeros(fc.rows(), fc.cols());
-            let fct = fc.transpose();
-            let fit = fi.transpose();
-            for y in (0..i.rows()-self.filter_size.0).step_by(self.config.stride) {
-              for x in (0 .. i.cols()-self.filter_size.1).step_by(self.config.stride) {
-                for y1 in 0 .. self.filter_size.0 {
-                  for x1 in 0 .. self.filter_size.1 {
-                    output.set(y + y1, x + x1, dz.get(y,x) * fc.get(y1,x1) * i.get(y+y1,x+x1));
-                    dw.set(y1,x1,fc.get(y1, x1) * fi.get(y,x));
-                    db += output.get(y + y1, x + x1);
+            for i in (0..inp.rows()-self.filter_size.0).step_by(self.config.stride) {
+              for j in (0 .. inp.cols()-self.filter_size.1).step_by(self.config.stride) {
+                for k in 0 .. self.filter_size.0 {
+                  for l in 0 .. self.filter_size.1 {
+                    output.set(i,j,output.get(i,j) + fc.get(k,l) * fi.get(i+k,j+l));
+                    dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l));
                   }
                 }
+                db += output.get(i,j);
               }
             }
-            final_output.push(Box::new(output));
-            dw_channel.push(Box::new(dw));
-            final_db.push(db);
+            final_dw.push(dw)
           }
+          final_output.push(Box::new(output.add_value(*b)));
+          final_db.push(db);
         }
-        final_dw.push(dw_channel);
-      }  
+      }
+    }
 
-      println!("CNN final_dw (Backward) = {:?}", final_dw);
-      println!("CNN final_db (Backward) = {:?}", final_db);
+    println!("CNN final_dw (Backward) = {:?}", final_dw);
+    println!("CNN final_db (Backward) = {:?}", final_db);
 
-      for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
-        for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
-          for y in 0.. fc.rows() {
-            for x in 0.. fc.cols() {
-              println!("UPDATE DW={}",dw_channel.get(y,x) * self.config.learn_rate);
-              fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
-              *b = *b - (db * self.config.learn_rate);
-            }
+    for (((f,dw),b),db) in self.filters.iter_mut().zip(final_dw.iter()).zip(self.bias.iter_mut()).zip(final_db.iter()) {
+      for (fc,dw_channel) in f.iter_mut().zip(final_dw.iter()) {
+        for y in 0.. fc.rows() {
+          for x in 0.. fc.cols() {
+            println!("UPDATE DW={}",dw_channel.get(y,x) * self.config.learn_rate);
+            fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
+            *b = *b - (db * self.config.learn_rate);
           }
         }
       }
-
     }
-
-    /*let mut filters = Vec::new();
-    for i in 0 .. self.filters.len() {
-      let fc = &self.filters[i];
-      let mut filters_channels = Vec::new();
-      for j in 0 .. fc.len() {
-        //filters_channels.push(self.filters[i][j].sub(&final_dw[i][j]).mul_value(self.config.learn_rate));
-        filters_channels.push(Tensor::zeros(fc[0].rows(), fc[0].cols()))
-      }
-      filters.push(filters_channels);
-    }
-    self.filters = filters;*/
-    
     println!("CNN Filters (Backward) = {:?}", self.filters);
 
     println!("CNN Output (Backward) = {:?}", final_output);
