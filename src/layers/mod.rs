@@ -233,7 +233,7 @@ impl LayerPropagation for ConvLayer {
             for x in 0.. fc.cols() {
               println!("UPDATE DW={}",dw_channel.get(y,x) * self.config.learn_rate);
               fc.set(y,x,fc.get(y,x) - (dw_channel.get(y,x) * self.config.learn_rate));
-              *b = *b - (db * self.config.learn_rate); 
+              *b = *b - (db * self.config.learn_rate);
             }
           }
         }
@@ -419,7 +419,7 @@ impl LayerPropagation for PoolingLayer {
                   }
                 }
               }
-              result.set(y+max_y,x+max_x, i.get(input_y, input_x)*max);
+              result.set(y+max_y,x+max_x, i.get(input_y, input_x));
               input_x += 1;
             }
             input_y += 1;
