@@ -169,8 +169,8 @@ impl LayerPropagation for ConvLayer {
       let final_result = i.iter()
                                 .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
-      output.push(Box::new(&final_result));
-      z1.push(Box::new(final_result));
+      output.push(Box::new(final_result));
+      //z1.push(Box::new(final_result));
     }
 
     self.last_input = Some(input.clone());
