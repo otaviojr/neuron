@@ -48,7 +48,6 @@ impl LayerPropagation for LinearLayer {
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
     let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
     println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
-    println!("b_bias = {:?}", b_bias);
     let z1 = z1_1.add(&b_bias);
 
     self.last_z1 = Some(z1.clone());
@@ -73,7 +72,7 @@ impl LayerPropagation for LinearLayer {
       if let Some(ref forward_input) = self.last_input {
         let forward_input = &forward_input[0];
         println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
-        let dw = dz.mul(&forward_input.transpose()).div_value(forward_input.cols() as f64);
+        let dw = forward_input.mul(&dz.transpose()).div_value(forward_input.cols() as f64);
         println!("dw size = {}x{}", dw.rows(), dw.cols());
         //println!("dw = {}", dw);
         let db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
