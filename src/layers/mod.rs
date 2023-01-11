@@ -332,7 +332,6 @@ pub struct PoolingLayerConfig {
 
 pub struct PoolingLayer {
   config: PoolingLayerConfig,
-  n_channels: usize,
   filter_size: (usize,usize),
 
   last_input: Option<Vec<Box<Tensor>>>,
@@ -342,7 +341,6 @@ impl PoolingLayer {
   pub fn new(n_channels: usize, filter_size: (usize, usize), config: PoolingLayerConfig) -> Self {
     PoolingLayer {
       config,
-      n_channels,
       filter_size,
 
       last_input: None
@@ -362,28 +360,26 @@ impl LayerPropagation for PoolingLayer {
     println!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
     println!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len());
 
-    for _ in 0..self.n_channels {
-      let mut result_channels = Vec::new();
-      for inp in input.iter() {
-        let mut result = Tensor::zeros(result_height, result_width);
-        for i in (0 .. inp.rows() - self.filter_size.0).step_by(self.config.stride) {
-          for j in (0 .. inp.cols() - self.filter_size.1).step_by(self.config.stride) {
-            let mut max = 0.0;
-            for k in 0 .. self.filter_size.0 {
-              for l in 0 .. self.filter_size.1 {
-                let value = inp.get(i+k,j+l);
-                if  value > max {
-                  max = value;
-                }
+    let mut result_channels = Vec::new();
+    for inp in input.iter() {
+      let mut result = Tensor::zeros(result_height, result_width);
+      for i in (0 .. inp.rows() - self.filter_size.0).step_by(self.config.stride) {
+        for j in (0 .. inp.cols() - self.filter_size.1).step_by(self.config.stride) {
+          let mut max = 0.0;
+          for k in 0 .. self.filter_size.0 {
+            for l in 0 .. self.filter_size.1 {
+              let value = inp.get(i+k,j+l);
+              if  value > max {
+                max = value;
               }
             }
-            result.set(i/self.config.stride, j/self.config.stride, max);
           }
+          result.set(i/self.config.stride, j/self.config.stride, max);
         }
-        result_channels.push(result);
       }
-      result_final.push(result_channels); 
+      result_channels.push(result);
     }
+    result_final.push(result_channels); 
 
     let mut output = Vec::new();
     for i in result_final.iter() {
