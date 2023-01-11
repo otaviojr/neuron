@@ -47,7 +47,12 @@ impl LayerPropagation for LinearLayer {
     println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.cols());
     println!("Layer weights = {:?}", self.weights);
     println!("LinearLayer Input (Forward) = {:?}", input);
-    let z1_1 = input.mul_wise(&self.weights);
+    let z1_1;
+    if self.weights.rows() == input.rows(){
+      z1_1 = input.mul_wise(&self.weights);
+    } else {
+      z1_1 = input.mul(&self.weights.transpose());
+    }
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
     println!("z1_1 = {:?}", z1_1);
     let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
