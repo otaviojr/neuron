@@ -19,6 +19,8 @@ pub trait MatrixMath {
 
   fn sum_row(&self, a:&Tensor) -> Tensor;
   fn broadcast(&self, a: &Tensor, rows: usize, cols: usize) -> Tensor;
+
+  fn pad(&self, a: &Tensor, pad_row: usize, pad_col: usize) -> Tensor;
 }
 
 #[derive(Copy, Clone)]
@@ -215,6 +217,19 @@ impl MatrixMath for MatrixMathCPU {
     result
   }
 
+  fn pad(&self, a: &Tensor, pad_row: usize, pad_col: usize) -> Tensor {
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(a.rows() + pad_row*2, a.cols() + pad_col*2);
+
+    for i in 0..result.rows() {
+      for j in 0..result.cols() {
+          result.set(i+pad_row, j+pad_col,a.get(i,j));
+      }
+    }
+    result
+  }
+
+
 }
 
 #[derive(Clone, Debug)]
@@ -351,6 +366,10 @@ impl Tensor {
 
   pub fn broadcast(&self, rows: usize, cols: usize) -> Tensor {
     return Neuron::matrix_math().broadcast(&self, rows, cols);
+  }
+
+  pub fn pad(&self, pad_row: usize, pad_col: usize) -> Tensor {
+    return Neuron::matrix_math().pad(&self, pad_row, pad_col);
   }
 }
 
