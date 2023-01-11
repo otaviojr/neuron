@@ -232,6 +232,8 @@ impl LayerPropagation for ConvLayer {
           let col_pad = (forward_input[0].cols() - inp.cols())/2;
           let mut output = inp.pad(row_pad, col_pad);
           let mut db = 0.0;
+          println!("input no pad = {}", inp);
+          println!("output pad = {}", output);
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
             let dz = inp.mul_wise(&self.config.activation.backward(&z1));
