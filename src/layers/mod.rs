@@ -230,6 +230,7 @@ impl LayerPropagation for ConvLayer {
           let mut dw_channel = Vec::new();
           let row_pad = (forward_input[0].rows() - inp.rows())/2;
           let col_pad = (forward_input[0].cols() - inp.cols())/2;
+          println!("rowpad={}",row_pad);
           let mut output = inp.pad(row_pad, col_pad);
           let mut db = 0.0;
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
