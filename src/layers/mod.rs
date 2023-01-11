@@ -393,29 +393,27 @@ impl LayerPropagation for PoolingLayer {
     println!("Pooling Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
 
     if let Some(ref fic) = self.last_input {
-      for inp in input.iter() {
-        for fi in fic.iter() {
-          let mut result =  Tensor::zeros(fi.rows(), fi.cols());
-          for i in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
-            for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
-              let mut max = 0.0;
-              let mut max_k = 0;
-              let mut max_l = 0;
-              for k in 0 .. self.filter_size.0 {
-                for l in 0 .. self.filter_size.1 {
-                  let value = fi.get(i+k,j+l);
-                  if value > max {
-                    max = value;
-                    max_k = k;
-                    max_l = l;
-                  }
+      for (inp,fi) in input.iter().zip(fic.iter()) {
+        let mut result =  Tensor::zeros(fi.rows(), fi.cols());
+        for i in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
+          for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
+            let mut max = 0.0;
+            let mut max_k = 0;
+            let mut max_l = 0;
+            for k in 0 .. self.filter_size.0 {
+              for l in 0 .. self.filter_size.1 {
+                let value = fi.get(i+k,j+l);
+                if value > max {
+                  max = value;
+                  max_k = k;
+                  max_l = l;
                 }
               }
-              result.set((i/self.config.stride)+max_k,(j/self.config.stride)+max_l, inp.get(i/self.config.stride,j/self.config.stride));
             }
-            result_final.push(Box::new(result));  
+            result.set((i/self.config.stride)+max_k,(j/self.config.stride)+max_l, inp.get(i/self.config.stride,j/self.config.stride));
           }
         }
+        result_final.push(Box::new(result));  
       }
     }
 
