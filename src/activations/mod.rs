@@ -119,7 +119,8 @@ impl Activation for SoftMax {
 
     for j in 0..value.cols(){
       for i in 0..value.rows(){
-        output.set(i,j, value.get(i,j).exp() / sums.get(j).unwrap())
+        let v = value.get(i,j).exp() / sums.get(j).unwrap();
+        output.set(i,j, if v.is_normal() {v} else {0.0})
       }
     }
 
