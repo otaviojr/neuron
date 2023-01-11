@@ -168,7 +168,7 @@ impl LayerPropagation for ConvLayer {
         let mut result = Tensor::zeros(result_height, result_width);
         for i in (0..inp.rows() - self.filter_size.0).step_by(self.config.stride) {
           for j in (0..inp.cols() - self.filter_size.1).step_by(self.config.stride) {
-            let mut sum = 0.0;
+            let mut sum = *b;
             for k in 0 .. self.filter_size.0 {
               for l in 0 .. self.filter_size.1 {
                 sum += inp.get(i+k,j+l) * fc.get(k,l);
@@ -177,7 +177,7 @@ impl LayerPropagation for ConvLayer {
             result.set(i/self.config.stride, j/self.config.stride, sum);
           }
         }
-        let z1 = self.config.activation.forward(&result.add_value(*b));
+        let z1 = self.config.activation.forward(&result);
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(z1));
       }
@@ -251,7 +251,7 @@ impl LayerPropagation for ConvLayer {
             dw_channel.push(dw);
           }
           final_output.push(Box::new(self.config.activation.backward(&output.add_value(*b))));
-          final_db.push(db);
+          final_db.push(if db > f64::MAX {f64::MAX} else {db});
           final_dw.push(dw_channel);
         }
       }
