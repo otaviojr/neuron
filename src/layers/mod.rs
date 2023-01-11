@@ -241,16 +241,16 @@ impl LayerPropagation for ConvLayer {
               for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for k in 0 .. self.filter_size.0 {
                   for l in 0 .. self.filter_size.1 {
-                    output.set(i/self.config.stride,j/self.config.stride,output.get(i/self.config.stride,j/self.config.stride) * (dz.get(k,l) * fc.get(k,l)));
-                    dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * dz.get(i/self.config.stride,j/self.config.stride));
+                    output.set(i/self.config.stride,j/self.config.stride,output.get(i/self.config.stride,j/self.config.stride) + (inp.get(k,l) * fc.get(k,l)));
+                    dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i/self.config.stride,j/self.config.stride));
                   }
                 }
-                db += dz.get(i/self.config.stride,j/self.config.stride);
+                db += inp.get(i/self.config.stride,j/self.config.stride);
               }
             }
             dw_channel.push(dw);
           }
-          final_output.push(Box::new(output.add_value(*b)));
+          final_output.push(Box::new(self.config.activation.backward(&output.add_value(*b))));
           final_db.push(db);
           final_dw.push(dw_channel);
         }
