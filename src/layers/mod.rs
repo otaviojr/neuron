@@ -232,8 +232,6 @@ impl LayerPropagation for ConvLayer {
           let col_pad = (forward_input[0].cols() - inp.cols())/2;
           let mut output = inp.pad(row_pad, col_pad);
           let mut db = 0.0;
-          println!("input no pad = {}", inp);
-          println!("output pad = {}", output);
           for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
             let dz = inp.mul_wise(&self.config.activation.backward(&z1));
@@ -243,7 +241,7 @@ impl LayerPropagation for ConvLayer {
               for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
                 for k in 0 .. self.filter_size.0 {
                   for l in 0 .. self.filter_size.1 {
-                    output.set(i/self.config.stride + row_pad,j/self.config.stride + col_pad,output.get(i/self.config.stride + row_pad,j/self.config.stride+ col_pad) + (dz.get(k,l) * fi.get(i+k,j+l)));
+                    output.set(i/self.config.stride,j/self.config.stride,output.get(i/self.config.stride,j/self.config.stride) + (dz.get(k,l) * fc.get(i+k,j+l)));
                     dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * dz.get(i/self.config.stride,j/self.config.stride));
                   }
                 }
