@@ -246,10 +246,10 @@ impl LayerPropagation for ConvLayer {
                 db += dz.get(i/self.config.stride,j/self.config.stride);
               }
             }
-            dw_channel.push(dw.div_value(fc.rows() as f64 * fc.cols() as f64));
+            dw_channel.push(dw);
           }
           final_output.push(Box::new(output.add_value(*b)));
-          final_db.push(db/(inp.rows() as f64 *inp.cols() as f64));
+          final_db.push(db);
           final_dw.push(dw_channel);
         }
       }
