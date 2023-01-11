@@ -56,9 +56,11 @@ impl LayerPropagation for LinearLayer {
     self.last_z1 = Some(z1.clone());
     self.last_input = Some(vec![input.clone()]);
 
-    println!("LinearLayer Output (Forward) = {:?}", self.last_z1);
+    let ret = vec![Box::new(self.config.activation.forward(&z1))];
 
-    Some(vec![Box::new(self.config.activation.forward(&z1))])
+    println!("LinearLayer Output (Forward) = {:?}", ret);
+
+    Some(ret)
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
