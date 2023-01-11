@@ -1,7 +1,7 @@
 use std::{fmt::{Display,Formatter}, time::Instant};
 use std::ops::{Mul, Add, Sub, Div};
 use rand::{Rng};
-use rand_distr::{Uniform};
+use rand_distr::{Normal, Uniform};
 use crate::Neuron;
 
 pub trait MatrixMath {
@@ -264,7 +264,7 @@ impl Tensor {
     let mut rng = rand::thread_rng();
     
     let start = Instant::now();
-    data.iter_mut().for_each(|x| *x = rng.sample(Uniform::new(-0.002, 0.002)));
+    data.iter_mut().for_each(|x| *x = rng.sample(Uniform::new(0., 1.)));
     let elapsed = start.elapsed();
     println!("Random tensor loaded after: {} seconds", elapsed.as_secs());
 
