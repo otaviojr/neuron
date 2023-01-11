@@ -230,10 +230,10 @@ impl LayerPropagation for ConvLayer {
                 for k in 0 .. self.filter_size.0 {
                   for l in 0 .. self.filter_size.1 {
                     output.set(i/self.config.stride,j/self.config.stride,output.get(i/self.config.stride,j/self.config.stride) + (inp.get(k,l) * fi.get(i+k,j+l)));
-                    inp.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i/self.config.stride,j/self.config.stride));
+                    dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i/self.config.stride,j/self.config.stride));
                   }
                 }
-                db += dz.get(i/self.config.stride,j/self.config.stride);
+                db += inp.get(i/self.config.stride,j/self.config.stride);
               }
             }
             dw_channel.push(dw)
