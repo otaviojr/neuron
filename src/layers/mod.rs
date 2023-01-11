@@ -354,6 +354,8 @@ impl LayerPropagation for PoolingLayer {
     let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     
+    let mut result_final = Vec::new();
+
     println!("PoolingLayer Input (Forward) = {:?}", input);
     println!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
     println!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len());
@@ -375,14 +377,14 @@ impl LayerPropagation for PoolingLayer {
           result.set(i/self.config.stride, j/self.config.stride, max);
         }
       }
-      result_final.push(Box::new(result));
+      result_final.push(result);
     }
 
     self.last_input = Some(input.clone());
 
-    println!("PoolingLayer Output (Forward) = {:?}", result_final);
+    println!("PoolingLayer Output (Forward) = {:?}", final_result);
 
-    Some(result_final)
+    Some(final_result)
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
@@ -413,8 +415,8 @@ impl LayerPropagation for PoolingLayer {
               }
               result.set((i/self.config.stride)+max_k,(j/self.config.stride)+max_l, inp.get(i/self.config.stride,j/self.config.stride));
             }
+            result_final.push(Box::new(result));  
           }
-          result_final.push(Box::new(result));  
         }
       }
     }
