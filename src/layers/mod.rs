@@ -13,7 +13,10 @@ pub trait LayerPropagation {
 
 pub struct LinearLayerConfig {
   pub activation: Box<dyn Activation>,
-  pub learn_rate: f64
+  pub learn_rate: f64,
+  pub weights_low: f64,
+  pub weights_high: f64
+
 }
 
 pub struct LinearLayer {
@@ -28,11 +31,11 @@ pub struct LinearLayer {
 impl LinearLayer {
   pub fn new(input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
-      config: config,
-      weights: Tensor::random(nodes,input_size),
-      bias: Tensor::random(nodes,1),
+      weights: Tensor::random(nodes,input_size, config.weights_low, config.weights_high),
+      bias: Tensor::random(nodes,1, config.weights_low, config.weights_high),
       last_input: None,
-      last_z1: None
+      last_z1: None,
+      config: config,
     }
   }
 }
@@ -96,7 +99,9 @@ pub struct ConvLayerConfig {
   pub activation: Box<dyn Activation>,
   pub learn_rate: f64,
   pub padding: usize,
-  pub stride: usize
+  pub stride: usize,
+  pub weights_low: f64,
+  pub weights_high: f64
 }
 
 pub struct ConvLayer {
@@ -117,17 +122,17 @@ impl ConvLayer {
     for i in 0 .. n_filters {
       let mut filter_channels = Vec::new();
       for j in 0 .. n_channels {
-        let filter_channel = Tensor::random(filter_size.0, filter_size.1);
+        let filter_channel = Tensor::random(filter_size.0, filter_size.1, config.weights_low, config.weights_high);
         filter_channels.push(filter_channel);
       }
       filters.push(filter_channels);
     }
   
     ConvLayer {
-      config,
       filters,
       filter_size,
       bias: vec![0.0; n_filters],
+      config,
 
       last_input: None,
       last_z1: None

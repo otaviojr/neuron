@@ -259,12 +259,12 @@ impl Tensor {
   }
 
   // Initialize this tensor with random values
-  pub fn random(rows: usize, cols: usize) -> Self {
+  pub fn random(rows: usize, cols: usize, low: f64, high: f64) -> Self {
     let mut data = vec![0.0; rows * cols];
     let mut rng = rand::thread_rng();
     
     let start = Instant::now();
-    data.iter_mut().for_each(|x| *x = rng.sample(Uniform::new(-5.0, 5.0)));
+    data.iter_mut().for_each(|x| *x = rng.sample(Uniform::new(-1.0, 1.0)));
     let elapsed = start.elapsed();
     println!("Random tensor loaded after: {} seconds", elapsed.as_secs());
 
