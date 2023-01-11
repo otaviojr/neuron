@@ -86,14 +86,14 @@ impl LayerPropagation for LinearLayer {
         db = db.sum_row().div_value(forward_input.cols() as f64);
         println!("db size = {}x{}", db.rows(), db.cols());
 
-        let ret = Some(vec![Box::new(self.weights.transpose().mul(&dz))]);
+        let zl = vec![Box::new(self.weights.transpose().mul(&dz))];
+        println!("LinearLayer output size (Backward) = {}x{}x{}", zl[0].rows(), zl[0].cols(), zl.len());
+        println!("LinearLayer output (Backward) = {:?}", zl);
+        let ret = Some(zl);
 
         println!("weights size = {}x{}", self.weights.rows(), self.weights.cols());
         self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
         self.bias = self.bias.sub(&db.mul_value(self.config.learn_rate));
-
-        println!("LinearLayer output size (Backward) = {}x{}x{}", ret.unwrap_or(vec![Box::new(Tensor::zeros(0,0))]).get(0).unwrap().rows(), ret.unwrap_or(vec![Box::new(Tensor::zeros(0,0))]).get(0).unwrap().cols(), ret.unwrap().len());
-        println!("LinearLayer output (Backward) = {:?}", ret);
     
         return ret;
       }
