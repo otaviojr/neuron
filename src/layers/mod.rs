@@ -377,14 +377,14 @@ impl LayerPropagation for PoolingLayer {
           result.set(i/self.config.stride, j/self.config.stride, max);
         }
       }
-      result_final.push(result);
+      result_final.push(Box::new(result));
     }
 
     self.last_input = Some(input.clone());
 
-    println!("PoolingLayer Output (Forward) = {:?}", final_result);
+    println!("PoolingLayer Output (Forward) = {:?}", result_final);
 
-    Some(final_result)
+    Some(result_final)
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
