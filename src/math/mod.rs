@@ -221,7 +221,7 @@ impl MatrixMath for MatrixMathCPU {
     // Create a new tensor to store the result
     let mut result = Tensor::zeros(a.rows() + pad_row*2, a.cols() + pad_col*2);
 
-    println!("pad input = {}", a)
+    println!("pad input = {}", a);
 
     for i in 0..a.rows() {
       for j in 0..a.cols() {
@@ -229,7 +229,7 @@ impl MatrixMath for MatrixMathCPU {
       }
     }
 
-    println!("pad output = {}", result)
+    println!("pad output = {}", result);
 
     result
   }
