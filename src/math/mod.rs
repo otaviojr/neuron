@@ -304,13 +304,15 @@ impl Tensor {
     let mut rng = Xoshiro256Plus::from_entropy();
 
     let start = Instant::now();
-    let mut f1;
-    let mut f2;
+    let mut f1 = 0.0;
+    let mut f2 = 0.0;
     let pi: f64 = std::f64::consts::PI;
     data.iter_mut().for_each(|x| { 
-      f1 = rng.next_u32() as f64 / u32::MAX as f64;
-      f2 = rng.next_u32() as f64 / u32::MAX as f64;
-      *x = ((-2.0 * f1.ln()).sqrt() * (2.0 * pi * f2).cos()) * he_scale;
+      f1 = rng.next_u64() as f64 / u32::MAX as f64;
+      f2 = rng.next_u64() as f64 / u32::MAX as f64;
+
+      let w = ((-2.0 * f1.ln()).sqrt() * (2.0 * pi * f2).cos()) * he_scale;  
+      *x = w;
     });
     let elapsed = start.elapsed();
     println!("Random tensor loaded after: {} seconds", elapsed.as_secs());

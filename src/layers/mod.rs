@@ -31,8 +31,8 @@ pub struct LinearLayer {
 impl LinearLayer {
   pub fn new(input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
-      weights: Tensor::random(nodes,input_size, config.weights_low, config.weights_high),
-      bias: Tensor::random(nodes,1, config.weights_low, config.weights_high),
+      weights: Tensor::randomHE(nodes,input_size, input_size),
+      bias: Tensor::randomHE(nodes,1, input_size),
       last_input: None,
       last_z1: None,
       config: config,
@@ -132,7 +132,7 @@ impl ConvLayer {
     for i in 0 .. n_filters {
       let mut filter_channels = Vec::new();
       for j in 0 .. n_channels {
-        let filter_channel = Tensor::random(filter_size.0, filter_size.1, config.weights_low, config.weights_high);
+        let filter_channel = Tensor::randomHE(filter_size.0, filter_size.1, n_channels);
         filter_channels.push(filter_channel);
       }
       filters.push(filter_channels);
