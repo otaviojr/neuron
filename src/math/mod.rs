@@ -1,7 +1,9 @@
 use std::{fmt::{Display,Formatter}, time::Instant};
 use std::ops::{Mul, Add, Sub, Div};
-use rand::{Rng};
-use rand_distr::{Normal, Uniform};
+use rand::{Rng, distributions, SeedableRng};
+use rand_distr::{Normal, Uniform, StandardNormal, Distribution};
+use rand_xoshiro::Xoshiro256Plus;
+use rand_xoshiro::rand_core::RngCore;
 use crate::Neuron;
 
 pub trait MatrixMath {
@@ -294,6 +296,32 @@ impl Tensor {
       data,
     }
   }
+
+  pub fn randomHE(rows: usize, cols: usize, fan_in: usize) -> Self {
+    let mut data = vec![0.0; rows * cols];
+
+    let he_scale = (2.0 / fan_in as f64).sqrt();
+    let mut rng = Xoshiro256Plus::from_entropy();
+
+    let start = Instant::now();
+    let mut f1;
+    let mut f2;
+    let pi: f64 = std::f64::consts::PI;
+    data.iter_mut().for_each(|x| { 
+      f1 = rng.next_u32() as f64 / u32::MAX as f64;
+      f2 = rng.next_u32() as f64 / u32::MAX as f64;
+      *x = ((-2.0 * f1.ln()).sqrt() * (2.0 * pi * f2).cos()) * he_scale;
+    });
+    let elapsed = start.elapsed();
+    println!("Random tensor loaded after: {} seconds", elapsed.as_secs());
+
+    Tensor {
+      rows,
+      cols,
+      data,
+    }
+  }
+
 
   pub fn from_data(rows: usize, cols: usize, data: Vec<f64>) -> Self{
     assert!(data.len() == rows*cols);

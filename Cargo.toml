@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 rand = { version = "0.8.5", features = ["simd_support"] }
 rand_distr = "0.4.3"
+rand_xoshiro = "0.6.0"
