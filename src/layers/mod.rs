@@ -425,7 +425,7 @@ impl LayerPropagation for PoolingLayer {
                 }
               }
             }
-            result.set((i/self.config.stride)+max_k,(j/self.config.stride)+max_l, inp.get(i/self.config.stride,j/self.config.stride));
+            result.set(i+max_k,j+max_l, inp.get(i/self.config.stride,j/self.config.stride));
           }
         }
         result_final.push(Box::new(result));  
