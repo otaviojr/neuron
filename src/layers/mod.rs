@@ -177,8 +177,8 @@ impl LayerPropagation for ConvLayer {
             result.set(i/self.config.stride, j/self.config.stride, sum);
           }
         }
-        let z1 = result.add_value(*b);
-        result_channels.push(self.config.activation.forward(&z1));
+        let z1 = self.config.activation.forward(&result.add_value(*b));
+        result_channels.push(z1.clone());
         z1_channels.push(Box::new(z1));
       }
       result_final.push(result_channels); 
