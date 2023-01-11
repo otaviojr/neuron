@@ -29,10 +29,10 @@ pub struct LinearLayer {
 }
 
 impl LinearLayer {
-  pub fn new(input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
+  pub fn new(n_channels: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
-      weights: Tensor::randomHE(nodes,input_size, input_size),
-      bias: Tensor::randomHE(nodes,1, input_size),
+      weights: Tensor::randomHE(nodes,n_channels, nodes),
+      bias: Tensor::randomHE(nodes,1, nodes),
       last_input: None,
       last_z1: None,
       config: config,
@@ -47,7 +47,7 @@ impl LayerPropagation for LinearLayer {
     println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.cols());
     println!("Layer weights = {:?}", self.weights);
     println!("LinearLayer Input (Forward) = {:?}", input);
-    let z1_1 = self.weights.mul(&input);
+    let z1_1 = self.weights.transpose().mul(&input);
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
     println!("z1_1 = {:?}", z1_1);
     let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
