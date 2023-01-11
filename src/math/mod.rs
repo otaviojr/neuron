@@ -284,7 +284,7 @@ impl Tensor {
     let mut rng = rand::thread_rng();
     
     let start = Instant::now();
-    data.iter_mut().for_each(|x| *x = rng.sample(Uniform::new(-1.0, 1.0)));
+    data.iter_mut().for_each(|x| *x = rng.sample(Uniform::new(low, high)));
     let elapsed = start.elapsed();
     println!("Random tensor loaded after: {} seconds", elapsed.as_secs());
 
