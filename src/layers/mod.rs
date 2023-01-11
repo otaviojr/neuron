@@ -249,7 +249,7 @@ impl LayerPropagation for ConvLayer {
             dw_channel.push(dw)
           }
           final_output.push(Box::new(output.add_value(*b)));
-          final_db.push(db/(inp.rows()*inp.cols()));
+          final_db.push(db/(inp.rows() as f64 *inp.cols() as f64));
           final_dw.push(dw_channel);
         }
       }
