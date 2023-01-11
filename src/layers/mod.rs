@@ -62,10 +62,10 @@ impl LayerPropagation for LinearLayer {
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
-    let input = &input[0];
-
-    println!("LinearLayer input size (Backward) = {}x{}x{}", input.rows(), input.cols(), input.len());
+    println!("LinearLayer input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
     println!("LinearLayer input (Backward) = {:?}", input);
+
+    let input = &input[0];
 
     if let Some(ref z1) = self.last_z1 {
       let dz;
