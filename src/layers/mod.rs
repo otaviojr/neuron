@@ -360,7 +360,7 @@ impl LayerPropagation for PoolingLayer {
     println!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
     println!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len());
 
-    let mut result_channels = Vec::new();
+    let mut result_final = Vec::new();
     for inp in input.iter() {
       let mut result = Tensor::zeros(result_height, result_width);
       for i in (0 .. inp.rows() - self.filter_size.0).step_by(self.config.stride) {
@@ -377,23 +377,14 @@ impl LayerPropagation for PoolingLayer {
           result.set(i/self.config.stride, j/self.config.stride, max);
         }
       }
-      result_channels.push(result);
-    }
-    result_final.push(result_channels); 
-
-    let mut output = Vec::new();
-    for i in result_final.iter() {
-      let final_result = i.iter()
-                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
-                                .unwrap_or(Tensor::zeros(result_height, result_width));
-      output.push(Box::new(final_result));
+      result_final.push(Box::new(result));
     }
 
     self.last_input = Some(input.clone());
 
-    println!("PoolingLayer Output (Forward) = {:?}", output);
+    println!("PoolingLayer Output (Forward) = {:?}", result_final);
 
-    Some(output)
+    Some(result_final)
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
