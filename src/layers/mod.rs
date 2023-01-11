@@ -47,11 +47,12 @@ impl LayerPropagation for LinearLayer {
     println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.cols());
     println!("Layer weights = {:?}", self.weights);
     println!("LinearLayer Input (Forward) = {:?}", input);
-    //println!("Weights = {}", self.weights);
     let z1_1 = self.weights.mul(&input);
     println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
+    println!("z1_1 = {:?}", z1_1);
     let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
     println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
+    println!("b_bias = {:?}", b_bias);
     let z1 = self.config.activation.forward(&z1_1.add(&b_bias));
 
     self.last_z1 = Some(z1.clone());
