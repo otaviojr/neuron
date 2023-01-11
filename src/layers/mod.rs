@@ -134,7 +134,7 @@ impl ConvLayer {
     for i in 0 .. n_filters {
       let mut filter_channels = Vec::new();
       for j in 0 .. n_channels {
-        let filter_channel = Tensor::randomHE(filter_size.0, filter_size.1, n_channels);
+        let filter_channel = Tensor::randomHE(filter_size.0, filter_size.1, n_filters);
         filter_channels.push(filter_channel);
       }
       filters.push(filter_channels);
