@@ -24,4 +24,12 @@ impl Functions{
     }
     Tensor::from_data(targets.rows(), targets.cols(), data)
   }
+
+  pub fn softmax_loss(predictions: &Tensor, targets: &Tensor) -> Tensor {  
+    let mut data = Vec::new();
+    for (prediction, target) in predictions.data().iter().zip(targets.data().iter()) {
+        data.push( -target * prediction.ln());
+    }
+    Tensor::from_data(targets.rows(), targets.cols(), data)
+  }
 }
