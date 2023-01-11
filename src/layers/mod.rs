@@ -338,7 +338,7 @@ pub struct PoolingLayer {
 }
 
 impl PoolingLayer {
-  pub fn new(n_channels: usize, filter_size: (usize, usize), config: PoolingLayerConfig) -> Self {
+  pub fn new(filter_size: (usize, usize), config: PoolingLayerConfig) -> Self {
     PoolingLayer {
       config,
       filter_size,
