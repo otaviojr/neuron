@@ -181,7 +181,7 @@ impl LayerPropagation for ConvLayer {
         }
         let z1 = self.config.activation.forward(&result);
         result_channels.push(z1.clone());
-        z1_channels.push(Box::new((&result));
+        z1_channels.push(Box::new(result));
       }
       result_final.push(result_channels); 
       z1_final.push(z1_channels); 
