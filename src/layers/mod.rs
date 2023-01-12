@@ -14,9 +14,6 @@ pub trait LayerPropagation {
 pub struct LinearLayerConfig {
   pub activation: Box<dyn Activation>,
   pub learn_rate: f64,
-  pub weights_low: f64,
-  pub weights_high: f64
-
 }
 
 pub struct LinearLayer {
@@ -112,8 +109,6 @@ pub struct ConvLayerConfig {
   pub learn_rate: f64,
   pub padding: usize,
   pub stride: usize,
-  pub weights_low: f64,
-  pub weights_high: f64
 }
 
 pub struct ConvLayer {
