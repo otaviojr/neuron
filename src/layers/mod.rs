@@ -202,12 +202,12 @@ impl Loader for ConvLayer {
   fn set_weights(&mut self, weights: Vec<Weigths>) {
     for w in weights {
       if w.name.starts_with(&self.name) {
-        for (idx, filter )in self.filters.iter_mut().enumerate() {
-          if w.name == format!("{}_{}", self.name, idx) {
-            for channel in filter.iter_mut() {
-              *channel = *w.weights[idx].clone();
+        for (f_idx, filter )in self.filters.iter_mut().enumerate() {
+          if w.name == format!("{}_{}", self.name, f_idx) {
+            for (c_idx,channel )in filter.iter_mut().enumerate() {
+              *channel = *w.weights[c_idx].clone();
             }
-            self.bias[idx] = w.bias[0].data()[0];
+            self.bias[f_idx] = w.bias[0].data()[0];
           }
         }
       }
