@@ -31,7 +31,7 @@ impl Loader for SequentialPieline {
       if let Ok(l) = layer.lock() {
         if let Some(loader) =  l.as_loader() {
           println!("get weigths for {}", loader.get_name());
-          weights.append(&mut loader.get_weights());
+          weights.extend(loader.get_weights());
         } else {
           println!("not found");
         }
