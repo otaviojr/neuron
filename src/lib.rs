@@ -26,7 +26,7 @@ pub trait Loader {
 }
 
 pub struct Neuron {
-  pipelines: Vec<Box<Mutex<dyn Propagation>>>
+  pipelines: Vec<Mutex<Box<dyn Propagation>>>
 }
 
 impl Neuron {
@@ -60,7 +60,7 @@ impl Neuron {
     Box::new(MatrixMathCPU { })
   }
 
-  pub fn add_pipeline(&mut self, layer: Box<Mutex<dyn Propagation>>) -> &mut Self {
+  pub fn add_pipeline(&mut self, layer: Mutex<Box<dyn Propagation>>) -> &mut Self {
     self.pipelines.push(layer);
     self
   }
