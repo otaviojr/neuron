@@ -29,7 +29,7 @@ impl Loader for SequentialPieline {
     let mut weights = Vec::new();
     for layer in self.layers.iter() {
       if let Ok(l) = layer.lock() {
-        if let Some(loader) =  l.downcast_ref::<Box<dyn Loader>>() {
+        if let Some(loader) =  l.as_ref().downcast_ref::<Box<dyn Loader>>() {
           println!("get weigths for {}", loader.get_name());
           //weights.append(&mut loader.get_weights());
         } else {
@@ -64,7 +64,7 @@ impl Propagation for SequentialPieline {
     for layer in self.layers.iter() {
       if let Some(ref i1) = i {
         if let Ok(ref mut l) = layer.lock() {
-          if let Some(prop) =  l.downcast_mut::<Box<dyn Propagation>>() {
+          if let Some(prop) =  l.as_mut().downcast_mut::<Box<dyn Propagation>>() {
             i = prop.forward(i1);
           }
         }
