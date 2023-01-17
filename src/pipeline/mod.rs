@@ -4,7 +4,7 @@ use std::any::Any;
 use crate::{Propagation, math::Tensor, Loader};
 
 pub struct SequentialPieline{
-  layers: Vec<Mutex<Box<Box<dyn Any>>>>
+  layers: Vec<Mutex<Box<dyn Any>>>
 } 
 
 impl SequentialPieline {
@@ -14,7 +14,7 @@ impl SequentialPieline {
     }
   }
 
-  pub fn add_layer(&mut self, layer: Mutex<Box<Box<dyn Any>>>) -> &mut Self {
+  pub fn add_layer(&mut self, layer: Mutex<Box<dyn Any>>) -> &mut Self {
     self.layers.push(layer);
     self
   }
