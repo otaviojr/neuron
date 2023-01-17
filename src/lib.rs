@@ -4,7 +4,7 @@ pub mod activations;
 pub mod cost;
 pub mod pipeline;
 
-use std::{sync::Mutex, any::Any};
+use std::{sync::Mutex, any::Any, io::{Write, Read}};
 
 use math::{Tensor, MatrixMath, MatrixMathCPU};
 
@@ -17,15 +17,15 @@ pub trait Propagation: Any {
 
 #[derive(Clone)]
 pub struct Weigths {
-  name: &'static str,
+  name: String,
   weights: Vec<Box<Tensor>>,
   bias: Vec<Box<Tensor>>
 }
 
 pub trait Loader: Any {
-  fn get_name(&self) -> &str;
+  fn get_name(&self) -> String;
   fn get_weights(&self) -> Vec<Weigths>;
-  fn set_weights(&mut self, weights: Vec<Weigths>, bias: Vec<Weigths>);
+  fn set_weights(&mut self, weights: Vec<Weigths>);
 }
 
 pub struct Neuron {
@@ -66,5 +66,117 @@ impl Neuron {
   pub fn add_pipeline(&mut self, layer: Mutex<Box<dyn Propagation>>) -> &mut Self {
     self.pipelines.push(layer);
     self
+  }
+
+  pub fn save_weights(&self, path: &str) -> Result<(), std::io::Error> {
+    let mut file = std::fs::File::create(path)?;
+    for pipeline in self.pipelines.iter() {
+      if let Ok(pipeline) = pipeline.lock() {
+        if let Some(loader) = pipeline.as_loader() {
+          let weights = loader.get_weights();
+          for weight in weights.iter() {
+            file.write(weight.name.as_bytes())?;
+            file.write(&[0])?;
+            file.write(&(weight.weights.len() as u64).to_le_bytes())?;
+            for w in weight.weights.iter() {
+              let byte_vec : Vec<u8> = w.data().iter().flat_map(|f| f.to_le_bytes().to_vec()).collect();
+              file.write(&(w.rows() as u64).to_le_bytes())?;
+              file.write(&(w.cols() as u64).to_le_bytes())?;
+              file.write(&byte_vec)?;
+            }
+            file.write(&(weight.bias.len() as u64).to_le_bytes())?;
+            for b in weight.bias.iter() {
+              file.write(&(b.rows() as u64).to_le_bytes())?;
+              file.write(&(b.cols() as u64).to_le_bytes())?;
+              let byte_vec : Vec<u8> = b.data().iter().flat_map(|f| f.to_le_bytes().to_vec()).collect();
+              file.write(&byte_vec)?;
+            }
+          }
+        }
+      }
+    }
+    Ok(())
+  }
+
+  pub fn load_weights(&mut self, path: &str)  -> Result<(), std::io::Error> {
+    let mut file = std::fs::File::open(path)?;
+    let mut buffer = Vec::new();
+    let mut final_weigths = Vec::new();
+
+    file.read_to_end(&mut buffer)?;
+    let mut index = 0;
+    while index < buffer.len() {
+      let mut name = Vec::new();
+      while buffer[index] != 0 {
+        name.push(buffer[index]);
+        index += 1;
+      }
+      index += 1;
+      let name = String::from_utf8(name).unwrap();
+      let mut weights = Vec::new();
+      let mut bias = Vec::new();
+      let mut size = 0;
+      for i in 0..8 {
+        size += (buffer[index+i] as u64) << (i*8);
+      }
+      index += 8;
+      let mut rows = 0;
+      for i in 0..8 {
+        rows += (buffer[index+i] as u64) << (i*8);
+      }
+      index += 8;
+      let mut cols = 0;
+      for i in 0..8 {
+        cols += (buffer[index+i] as u64) << (i*8);
+      }
+      index += 8;
+      for _ in 0..size {
+        let mut data = Vec::new();
+        for i in 0..8 {
+          data.push((buffer[index+i] as f64) / 255.0);
+        }
+        index += 8;
+        weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
+      }
+      size = 0;
+      for i in 0..8 {
+        size += (buffer[index+i] as u64) << (i*8);
+      }
+      index += 8;
+      let mut rows = 0;
+      for i in 0..8 {
+        rows += (buffer[index+i] as u64) << (i*8);
+      }
+      index += 8;
+      let mut cols = 0;
+      for i in 0..8 {
+        cols += (buffer[index+i] as u64) << (i*8);
+      }
+      index += 8;
+      for _ in 0..size {
+        let mut data = Vec::new();
+        for i in 0..8 {
+          data.push((buffer[index+i] as f64) / 255.0);
+        }
+        index += 8;
+        bias.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
+      }
+
+      final_weigths.push(Weigths {
+        name: name,
+        weights,
+        bias
+      });
+    }
+
+    for pipeline in self.pipelines.iter_mut() {
+      if let Ok(mut pipeline) = pipeline.lock() {
+        if let Some(loader) = pipeline.as_mut_loader() {
+          loader.set_weights(final_weigths.clone());
+        }
+      }
+    }
+
+    Ok(())
   }
 }

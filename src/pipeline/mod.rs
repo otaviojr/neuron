@@ -21,8 +21,8 @@ impl SequentialPieline {
 }
 
 impl Loader for SequentialPieline {
-  fn get_name(&self) -> &str {
-    "SequentialPieline"
+  fn get_name(&self) -> String {
+    "SequentialPieline".to_owned()
   }
 
   fn get_weights(&self) -> Vec<crate::Weigths> {
@@ -30,21 +30,18 @@ impl Loader for SequentialPieline {
     for layer in self.layers.iter() {
       if let Ok(l) = layer.lock() {
         if let Some(loader) =  l.as_loader() {
-          println!("get weigths for {}", loader.get_name());
           weights.extend(loader.get_weights());
-        } else {
-          println!("not found");
         }
       }
     }
     weights
   }
 
-  fn set_weights(&mut self, weights: Vec<crate::Weigths>, bias: Vec<crate::Weigths>) {
+  fn set_weights(&mut self, weights: Vec<crate::Weigths>) {
     for layer in self.layers.iter_mut() {
       if let Ok(ref mut l) = layer.lock() {
         if let Some(loader) =  l.as_mut_loader() {
-          loader.set_weights(weights.clone(), bias.clone());
+          loader.set_weights(weights.clone());
         }
       }
     }

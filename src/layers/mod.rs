@@ -8,7 +8,7 @@ pub struct LinearLayerConfig {
 }
 
 pub struct LinearLayer {
-  name: &'static str,
+  name: String,
   config: LinearLayerConfig,
   weights: Tensor,
   bias: Tensor,
@@ -18,7 +18,7 @@ pub struct LinearLayer {
 }
 
 impl LinearLayer {
-  pub fn new(name: &'static str, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
+  pub fn new(name: String, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
       name,
       weights: Tensor::randomHE(nodes,input_size, input_size),
@@ -31,7 +31,7 @@ impl LinearLayer {
 }
 
 impl Loader for LinearLayer {
-  fn get_name(&self) -> &str {
+  fn get_name(&self) -> String {
     self.name
   }
 
@@ -43,15 +43,11 @@ impl Loader for LinearLayer {
     }]
   }
 
-  fn set_weights(&mut self, weights: Vec<Weigths>, bias: Vec<Weigths>) {
+  fn set_weights(&mut self, weights: Vec<Weigths>) {
     for w in weights {
       if w.name == self.name {
         self.weights = *w.weights[0].clone();
-      }
-    }
-    for b in bias {
-      if b.name == self.name {
-        self.bias = *b.bias[0].clone();
+        self.bias = *w.bias[0].clone();
       }
     }
   }
