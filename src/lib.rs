@@ -68,7 +68,7 @@ impl Neuron {
     self
   }
 
-  pub fn save_weights(&self, path: &str) -> Result<(), std::io::Error> {
+  pub fn save(&self, path: &str) -> Result<(), std::io::Error> {
     let mut file = std::fs::File::create(path)?;
     for pipeline in self.pipelines.iter() {
       if let Ok(pipeline) = pipeline.lock() {
@@ -98,7 +98,7 @@ impl Neuron {
     Ok(())
   }
 
-  pub fn load_weights(&mut self, path: &str)  -> Result<(), std::io::Error> {
+  pub fn load(&mut self, path: &str)  -> Result<(), std::io::Error> {
     let mut file = std::fs::File::open(path)?;
     let mut buffer = Vec::new();
     let mut final_weigths = Vec::new();
