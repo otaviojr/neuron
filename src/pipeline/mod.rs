@@ -29,7 +29,7 @@ impl Loader for SequentialPieline {
     let mut weights = Vec::new();
     for layer in self.layers.iter() {
       if let Ok(l) = layer.lock() {
-        if let Some(loader) =  l.downcast_ref::<Box<Box<dyn Loader>>>() {
+        if let Some(loader) =  l.downcast_ref::<Box<dyn Loader>>() {
           println!("get weigths for {}", loader.get_name());
           //weights.append(&mut loader.get_weights());
         } else {
