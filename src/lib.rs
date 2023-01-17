@@ -136,7 +136,7 @@ impl Neuron {
         for i in 0..8 {
           value += ((buffer[index+i] as u64) << (i*8)) as f64;
         }
-        data .push(value);
+        data.push(value);
         index += 8;
       }
       weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
