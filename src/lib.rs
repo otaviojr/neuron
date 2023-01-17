@@ -14,8 +14,8 @@ pub trait Propagation {
 }
 
 #[derive(Clone)]
-pub struct Weigths {
-  name: String,
+pub struct Weigths<'a> {
+  name: &'a str,
   weights: Vec<Box<Tensor>>,
   bias: Vec<Box<Tensor>>
 }

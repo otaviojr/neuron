@@ -26,7 +26,7 @@ impl Loader for SequentialPieline {
     for layer in self.layers.iter() {
       if let Ok(l) = layer.lock() {
         if let Some(loader) =  l.downcast_ref::<Box<dyn Loader>>() {
-          weights.append(&mut loader.get_weights());
+          //weights.append(&mut loader.get_weights());
         }
       }
     }

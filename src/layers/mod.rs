@@ -7,8 +7,8 @@ pub struct LinearLayerConfig {
   pub learn_rate: f64,
 }
 
-pub struct LinearLayer {
-  name: String,
+pub struct LinearLayer<'a> {
+  name: &'a str,
   config: LinearLayerConfig,
   weights: Tensor,
   bias: Tensor,
@@ -17,8 +17,8 @@ pub struct LinearLayer {
   last_z1: Option<Tensor>
 }
 
-impl LinearLayer {
-  pub fn new(name: String, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
+impl<'a> LinearLayer<'a> {
+  pub fn new(name: &'a str, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
       name,
       weights: Tensor::randomHE(nodes,input_size, input_size),
@@ -30,10 +30,10 @@ impl LinearLayer {
   }
 }
 
-impl Loader for LinearLayer {
+impl<'a> Loader for LinearLayer<'a> {
   fn get_weights(&self) -> Vec<Weigths> {
     vec![Weigths {
-      name: self.name.clone(),
+      name: self.name,
       weights: vec![Box::new(self.weights.clone())],
       bias: vec![Box::new(self.bias.clone())]
     }]
@@ -53,7 +53,7 @@ impl Loader for LinearLayer {
   }
 }
 
-impl Propagation for LinearLayer {
+impl<'a> Propagation for LinearLayer<'a> {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let input = &input[0];
     println!("Bias = {:?}", self.bias);
@@ -127,8 +127,8 @@ pub struct ConvLayerConfig {
   pub stride: usize,
 }
 
-pub struct ConvLayer {
-  name: String,
+pub struct ConvLayer<'a> {
+  name: &'a str,
   config: ConvLayerConfig,
   filters: Vec<Vec<Tensor>>,
   filter_size: (usize,usize),
@@ -138,8 +138,8 @@ pub struct ConvLayer {
   last_z1: Option<Vec<Box<Tensor>>>
 }
 
-impl ConvLayer {
-  pub fn new(name: String, n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
+impl<'a> ConvLayer<'a> {
+  pub fn new(name: &'a str, n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
     let mut filters = Vec::new();
     for i in 0 .. n_filters {
       let mut filter_channels = Vec::new();
@@ -163,7 +163,7 @@ impl ConvLayer {
   }
 }
 
-impl Propagation for ConvLayer {
+impl<'a> Propagation for ConvLayer<'a> {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     
     let result_height = (((input[0].rows() as f64 + 2.0* self.config.padding as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
