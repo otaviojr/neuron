@@ -36,6 +36,8 @@ impl Loader for SequentialPieline {
         if let Some(loader) =  l.as_any().downcast_ref::<&dyn Loader>() {
           println!("get weigths for {}", loader.get_name());
           //weights.append(&mut loader.get_weights());
+        } else {
+          println!("not found");
         }
       }
     }
