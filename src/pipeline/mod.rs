@@ -29,7 +29,7 @@ impl Loader for SequentialPieline {
     let mut weights = Vec::new();
     for layer in self.layers.iter() {
       if let Ok(l) = layer.lock() {
-        if let Some(loader) =  l.as_ref().as_any().downcast_ref::<&dyn Loader>() {
+        if let Some(loader) =  l.as_any().downcast_ref::<&dyn Loader>() {
           println!("get weigths for {}", loader.get_name());
           //weights.append(&mut loader.get_weights());
         }
@@ -41,7 +41,7 @@ impl Loader for SequentialPieline {
   fn set_weights(&mut self, weights: Vec<crate::Weigths>, bias: Vec<crate::Weigths>) {
     for layer in self.layers.iter_mut() {
       if let Ok(ref mut l) = layer.lock() {
-        if let Some(loader) =  l.as_mut().as_mut_any().downcast_mut::<&mut dyn Loader>() {
+        if let Some(loader) =  l.as_mut_any().downcast_mut::<&mut dyn Loader>() {
           loader.set_weights(weights.clone(), bias.clone());
         }
       }
