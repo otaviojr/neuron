@@ -139,7 +139,7 @@ pub struct ConvLayerConfig {
 }
 
 pub struct ConvLayer {
-  name: &'static str,
+  name: String,
   config: ConvLayerConfig,
   filters: Vec<Vec<Tensor>>,
   filter_size: (usize,usize),
@@ -150,7 +150,7 @@ pub struct ConvLayer {
 }
 
 impl ConvLayer {
-  pub fn new(name: &'static str, n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
+  pub fn new(name: String, n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
     let mut filters = Vec::new();
     for i in 0 .. n_filters {
       let mut filter_channels = Vec::new();
