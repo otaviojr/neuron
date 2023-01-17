@@ -4,11 +4,11 @@ pub mod activations;
 pub mod cost;
 pub mod pipeline;
 
-use std::sync::Mutex;
+use std::{sync::Mutex, any::Any};
 
 use math::{Tensor, MatrixMath, MatrixMathCPU};
 
-pub trait Propagation {
+pub trait Propagation: Any {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>>;
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>>;
 }
@@ -20,7 +20,7 @@ pub struct Weigths<'a> {
   bias: Vec<Box<Tensor>>
 }
 
-pub trait Loader {
+pub trait Loader: Any {
   fn get_weights(&self) -> Vec<Weigths>;
   fn set_weights(&mut self, weights: Vec<Weigths>, bias: Vec<Weigths>);
 }
