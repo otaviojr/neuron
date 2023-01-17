@@ -34,7 +34,7 @@ impl Loader for LinearLayer {
   fn get_name(&self) -> &str {
     self.name
   }
-  
+
   fn get_weights(&self) -> Vec<Weigths> {
     vec![Weigths {
       name: self.name,
@@ -55,13 +55,14 @@ impl Loader for LinearLayer {
       }
     }
   }
-
-  fn as_any(&self) -> Box<&dyn std::any::Any> {
-    Box::new(self)  
+  
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
   }
-  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
-    Box::new(self)  
+  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
+    self  
   }
+  
 }
 
 impl Propagation for LinearLayer {
@@ -129,12 +130,12 @@ impl Propagation for LinearLayer {
     }
     None
   }
-
-  fn as_any(&self) -> Box<&dyn std::any::Any> {
-    Box::new(self)  
+  
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
   }
-  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
-    Box::new(self)  
+  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
+    self  
   }
 
 }
@@ -309,12 +310,12 @@ impl Propagation for ConvLayer {
 
     Some(final_output)
   }
-
-  fn as_any(&self) -> Box<&dyn std::any::Any> {
-    Box::new(self)  
+  
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
   }
-  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
-    Box::new(self)  
+  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
+    self  
   }
 
 }
@@ -382,13 +383,12 @@ impl Propagation for FlattenLayer {
     Some(output)
   }
 
-  fn as_any(&self) -> Box<&dyn std::any::Any> {
-    Box::new(self)  
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
   }
-  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
-    Box::new(self)  
+  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
+    self  
   }
-
 }
 
 pub struct PoolingLayerConfig {
@@ -488,11 +488,11 @@ impl Propagation for PoolingLayer {
     Some(result_final)
   }
   
-  fn as_any(&self) -> Box<&dyn std::any::Any> {
-    Box::new(self)  
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
   }
-  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
-    Box::new(self)  
+  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
+    self  
   }
 
 }
