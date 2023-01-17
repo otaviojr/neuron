@@ -130,6 +130,8 @@ impl Neuron {
         cols += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
+
+      println!("Reading weights: {}",size);
       let mut data = Vec::new();
       for _ in 0..size {
         let mut value = 0.0;
@@ -160,6 +162,7 @@ impl Neuron {
       }
       index += 8;
 
+      println!("Reading bias: {}",size);
       let mut data = Vec::new();
       for _ in 0..size {
         let mut value = 0.0;
