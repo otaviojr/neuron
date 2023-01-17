@@ -86,9 +86,9 @@ impl Neuron {
             }
             file.write(&(weight.bias.len() as u64).to_le_bytes())?;
             for b in weight.bias.iter() {
+              let byte_vec : Vec<u8> = b.data().iter().flat_map(|f| f.to_le_bytes().to_vec()).collect();
               file.write(&(b.rows() as u64).to_le_bytes())?;
               file.write(&(b.cols() as u64).to_le_bytes())?;
-              let byte_vec : Vec<u8> = b.data().iter().flat_map(|f| f.to_le_bytes().to_vec()).collect();
               file.write(&byte_vec)?;
             }
           }
@@ -139,6 +139,7 @@ impl Neuron {
         data.push(value);
         index += 8;
       }
+      println!("Loading weights: {}x{}-{}", rows, cols, data.len());
       weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
 
       size = 0;
@@ -146,7 +147,7 @@ impl Neuron {
         size += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
-      
+
       let mut rows = 0;
       for i in 0..8 {
         rows += (buffer[index+i] as u64) << (i*8);
@@ -168,6 +169,7 @@ impl Neuron {
         data.push(value);
         index += 8;
       }
+      println!("Loading bias: {}x{}-{}", rows, cols, data.len());
       bias.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
 
       final_weigths.push(Weigths {
