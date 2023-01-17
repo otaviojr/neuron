@@ -189,6 +189,7 @@ impl Loader for ConvLayer {
         println!("filter size = {}x{}", channel.rows(), channel.cols());
         weigths.push(Box::new(channel.clone()));
       }
+      
       final_weigths.push(Weigths {
         name: format!("{}_{}", self.name, idx),
         weights: weigths,

@@ -115,6 +115,7 @@ impl Neuron {
       }
       index += 1;
       let name = String::from_utf8(name).unwrap();
+      println!("Reading data: {}",name);
       let mut weights = Vec::new();
       let mut bias = Vec::new();
       let mut channels = 0;
