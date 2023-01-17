@@ -1,15 +1,6 @@
-use std::result;
-
-use rand::{Rng};
-use rand_distr::{Uniform};
-
+use crate::{Propagation, Loader, Weigths};
 use crate::math::Tensor;
 use crate::activations::Activation;
-
-pub trait LayerPropagation {
-  fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>>;
-  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>>;
-}
 
 pub struct LinearLayerConfig {
   pub activation: Box<dyn Activation>,
@@ -17,6 +8,7 @@ pub struct LinearLayerConfig {
 }
 
 pub struct LinearLayer {
+  name: String,
   config: LinearLayerConfig,
   weights: Tensor,
   bias: Tensor,
@@ -26,8 +18,9 @@ pub struct LinearLayer {
 }
 
 impl LinearLayer {
-  pub fn new(input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
+  pub fn new(name: String, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
+      name,
       weights: Tensor::randomHE(nodes,input_size, input_size),
       bias: Tensor::randomHE(nodes,1, input_size),
       last_input: None,
@@ -37,7 +30,30 @@ impl LinearLayer {
   }
 }
 
-impl LayerPropagation for LinearLayer {
+impl Loader for LinearLayer {
+  fn get_weights(&self) -> Vec<Weigths> {
+    vec![Weigths {
+      name: self.name.clone(),
+      weights: vec![Box::new(self.weights.clone())],
+      bias: vec![Box::new(self.bias.clone())]
+    }]
+  }
+
+  fn set_weights(&mut self, weights: Vec<Weigths>, bias: Vec<Weigths>) {
+    for w in weights {
+      if w.name == self.name {
+        self.weights = *w.weights[0].clone();
+      }
+    }
+    for b in bias {
+      if b.name == self.name {
+        self.bias = *b.bias[0].clone();
+      }
+    }
+  }
+}
+
+impl Propagation for LinearLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let input = &input[0];
     println!("Bias = {:?}", self.bias);
@@ -112,6 +128,7 @@ pub struct ConvLayerConfig {
 }
 
 pub struct ConvLayer {
+  name: String,
   config: ConvLayerConfig,
   filters: Vec<Vec<Tensor>>,
   filter_size: (usize,usize),
@@ -122,9 +139,7 @@ pub struct ConvLayer {
 }
 
 impl ConvLayer {
-  pub fn new(n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
-    let mut rng = rand::thread_rng();
-
+  pub fn new(name: String, n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
     let mut filters = Vec::new();
     for i in 0 .. n_filters {
       let mut filter_channels = Vec::new();
@@ -136,6 +151,7 @@ impl ConvLayer {
     }
   
     ConvLayer {
+      name,
       filters,
       filter_size,
       bias: vec![0.0; n_filters],
@@ -147,7 +163,7 @@ impl ConvLayer {
   }
 }
 
-impl LayerPropagation for ConvLayer {
+impl Propagation for ConvLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     
     let result_height = (((input[0].rows() as f64 + 2.0* self.config.padding as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
@@ -292,7 +308,7 @@ impl FlattenLayer {
   }
 }
 
-impl LayerPropagation for FlattenLayer {
+impl Propagation for FlattenLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
 
     self.input_rows = input[0].rows();
@@ -362,7 +378,7 @@ impl PoolingLayer {
   }
 }
 
-impl LayerPropagation for PoolingLayer {
+impl Propagation for PoolingLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     
     let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;

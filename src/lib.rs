@@ -2,26 +2,43 @@ pub mod math;
 pub mod layers;
 pub mod activations;
 pub mod cost;
+mod pipeline;
 
 use std::sync::Mutex;
 
 use math::{Tensor, MatrixMath, MatrixMathCPU};
-use layers::LayerPropagation;
+
+pub trait Propagation {
+  fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>>;
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>>;
+}
+
+#[derive(Clone)]
+pub struct Weigths {
+  name: String,
+  weights: Vec<Box<Tensor>>,
+  bias: Vec<Box<Tensor>>
+}
+
+pub trait Loader {
+  fn get_weights(&self) -> Vec<Weigths>;
+  fn set_weights(&mut self, weights: Vec<Weigths>, bias: Vec<Weigths>);
+}
 
 pub struct Neuron {
-  layers: Vec<Box<Mutex<dyn LayerPropagation>>>
+  pipelines: Vec<Box<Mutex<dyn Propagation>>>
 }
 
 impl Neuron {
   pub fn new() -> Self {
     Neuron {
-      layers: Vec::new()
+      pipelines: Vec::new()
     }
   }
 
   pub fn forward(&self, input: Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let mut i = Some(input);
-    for layer in self.layers.iter() {
+    for layer in self.pipelines.iter() {
       if let Some(ref i1) = i {
         i = layer.lock().unwrap().forward(i1);
       }
@@ -31,7 +48,7 @@ impl Neuron {
 
   pub fn backward(&self, input: Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let mut i = Some(input);
-    for (index,layer) in self.layers.iter().rev().enumerate() {
+    for (index,layer) in self.pipelines.iter().rev().enumerate() {
       if let Some(ref i1) = i {
         i = layer.lock().unwrap().backward(i1, index==0);
       }
@@ -43,8 +60,8 @@ impl Neuron {
     Box::new(MatrixMathCPU { })
   }
 
-  pub fn add_layer(&mut self, layer: Box<Mutex<dyn LayerPropagation>>) -> &mut Self {
-    self.layers.push(layer);
+  pub fn add_pipeline(&mut self, layer: Box<Mutex<dyn Propagation>>) -> &mut Self {
+    self.pipelines.push(layer);
     self
   }
 }
