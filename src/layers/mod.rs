@@ -55,14 +55,6 @@ impl Loader for LinearLayer {
       }
     }
   }
-  
-  fn as_any(&self) -> &dyn std::any::Any {
-    self
-  }
-  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
-    self  
-  }
-  
 }
 
 impl Propagation for LinearLayer {
@@ -131,12 +123,15 @@ impl Propagation for LinearLayer {
     None
   }
   
-  fn as_any(&self) -> &dyn std::any::Any {
-    self
+  
+  fn as_loader(&self) -> Option<&dyn Loader> {
+    Some(self)
   }
-  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
-    self  
+
+  fn as_mut_loader(&mut self) -> Option<&mut dyn Loader> {
+    Some(self)  
   }
+
 
 }
 
@@ -311,11 +306,13 @@ impl Propagation for ConvLayer {
     Some(final_output)
   }
   
-  fn as_any(&self) -> &dyn std::any::Any {
-    self
+  
+  fn as_loader(&self) -> Option<&dyn Loader> {
+    None
   }
-  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
-    self  
+
+  fn as_mut_loader(&mut self) -> Option<&mut dyn Loader> {
+    None  
   }
 
 }
@@ -383,12 +380,14 @@ impl Propagation for FlattenLayer {
     Some(output)
   }
 
-  fn as_any(&self) -> &dyn std::any::Any {
-    self
+  fn as_loader(&self) -> Option<&dyn Loader> {
+    None
   }
-  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
-    self  
+
+  fn as_mut_loader(&mut self) -> Option<&mut dyn Loader> {
+    None  
   }
+
 }
 
 pub struct PoolingLayerConfig {
@@ -488,11 +487,13 @@ impl Propagation for PoolingLayer {
     Some(result_final)
   }
   
-  fn as_any(&self) -> &dyn std::any::Any {
-    self
+  fn as_loader(&self) -> Option<&dyn Loader> {
+    None
   }
-  fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
-    self  
+
+  fn as_mut_loader(&mut self) -> Option<&mut dyn Loader> {
+    None  
   }
+
 
 }
