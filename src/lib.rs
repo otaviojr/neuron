@@ -2,7 +2,7 @@ pub mod math;
 pub mod layers;
 pub mod activations;
 pub mod cost;
-mod pipeline;
+pub mod pipeline;
 
 use std::sync::Mutex;
 
