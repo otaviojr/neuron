@@ -130,14 +130,16 @@ impl Neuron {
         cols += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
+      let mut data = Vec::new();
       for _ in 0..size {
-        let mut data = Vec::new();
+        let mut value = 0.0;
         for i in 0..8 {
-          data.push((buffer[index+i] as f64) / 255.0);
+          value += ((buffer[index+i] as u64) << (i*8)) as f64;
         }
+        data .push(value);
         index += 8;
-        weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
       }
+      weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
       size = 0;
       for i in 0..8 {
         size += (buffer[index+i] as u64) << (i*8);
@@ -153,14 +155,16 @@ impl Neuron {
         cols += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
+      let mut data = Vec::new();
       for _ in 0..size {
-        let mut data = Vec::new();
+        let mut value = 0.0;
         for i in 0..8 {
-          data.push((buffer[index+i] as f64) / 255.0);
+          value += ((buffer[index+i] as u64) << (i*8)) as f64;
         }
+        data.push(value);
         index += 8;
-        bias.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
       }
+      bias.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
 
       final_weigths.push(Weigths {
         name: name,
