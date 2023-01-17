@@ -174,6 +174,47 @@ impl ConvLayer {
   }
 }
 
+//implement the loader trait
+impl Loader for ConvLayer {
+  fn get_name(&self) -> String {
+    self.name.clone()
+  }
+
+  fn get_weights(&self) -> Vec<Weigths> {    
+    let mut final_weigths = Vec::new();
+
+    for (idx, filter )in self.filters.iter().enumerate() {
+      let mut weigths = Vec::new();
+      for channel in filter.iter() {
+        println!("filter size = {}x{}", channel.rows(), channel.cols());
+        weigths.push(Box::new(channel.clone()));
+      }
+      final_weigths.push(Weigths {
+        name: format!("{}_{}", self.name, idx),
+        weights: weigths,
+        bias: vec![Box::new(Tensor::from_data(1, 1, vec![self.bias[idx]]))]
+      });
+    }
+
+    final_weigths
+  }
+
+  fn set_weights(&mut self, weights: Vec<Weigths>) {
+    for w in weights {
+      if w.name.starts_with(&self.name) {
+        for (idx, filter )in self.filters.iter_mut().enumerate() {
+          if w.name == format!("{}_{}", self.name, idx) {
+            for channel in filter.iter_mut() {
+              *channel = *w.weights[idx].clone();
+            }
+            self.bias[idx] = w.bias[0].data()[0];
+          }
+        }
+      }
+    }
+  }
+}
+
 impl Propagation for ConvLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     
@@ -304,11 +345,11 @@ impl Propagation for ConvLayer {
   
   
   fn as_loader(&self) -> Option<&dyn Loader> {
-    None
+    Some(self)
   }
 
   fn as_mut_loader(&mut self) -> Option<&mut dyn Loader> {
-    None  
+    Some(self)
   }
 
 }
