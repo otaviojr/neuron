@@ -80,6 +80,7 @@ impl Neuron {
             file.write(&(weight.weights.len() as u64).to_le_bytes())?;
             for w in weight.weights.iter() {
               let byte_vec : Vec<u8> = w.data().iter().flat_map(|f| f.to_le_bytes().to_vec()).collect();
+              file.write(&(w.data().len() as u64).to_le_bytes())?;
               file.write(&(w.rows() as u64).to_le_bytes())?;
               file.write(&(w.cols() as u64).to_le_bytes())?;
               file.write(&byte_vec)?;
@@ -87,6 +88,7 @@ impl Neuron {
             file.write(&(weight.bias.len() as u64).to_le_bytes())?;
             for b in weight.bias.iter() {
               let byte_vec : Vec<u8> = b.data().iter().flat_map(|f| f.to_le_bytes().to_vec()).collect();
+              file.write(&(b.data().len() as u64).to_le_bytes())?;
               file.write(&(b.rows() as u64).to_le_bytes())?;
               file.write(&(b.cols() as u64).to_le_bytes())?;
               file.write(&byte_vec)?;
@@ -115,65 +117,83 @@ impl Neuron {
       let name = String::from_utf8(name).unwrap();
       let mut weights = Vec::new();
       let mut bias = Vec::new();
-      let mut size = 0;
+      let mut channels = 0;
       for i in 0..8 {
-        size += (buffer[index+i] as u64) << (i*8);
-      }
-      index += 8;
-      let mut rows = 0;
-      for i in 0..8 {
-        rows += (buffer[index+i] as u64) << (i*8);
-      }
-      index += 8;
-      let mut cols = 0;
-      for i in 0..8 {
-        cols += (buffer[index+i] as u64) << (i*8);
+        channels += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
 
-      println!("Reading weights: {}",size);
-      let mut data = Vec::new();
-      for _ in 0..size {
-        let mut value = 0.0;
+      for c in 0..channels {
+        let mut size = 0;
         for i in 0..8 {
-          value += ((buffer[index+i] as u64) << (i*8)) as f64;
+          size += (buffer[index+i] as u64) << (i*8);
         }
-        data.push(value);
         index += 8;
-      }
-      println!("Loading weights: {}x{}-{}", rows, cols, data.len());
-      weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
 
-      size = 0;
-      for i in 0..8 {
-        size += (buffer[index+i] as u64) << (i*8);
-      }
-      index += 8;
-
-      let mut rows = 0;
-      for i in 0..8 {
-        rows += (buffer[index+i] as u64) << (i*8);
-      }
-      index += 8;
-
-      let mut cols = 0;
-      for i in 0..8 {
-        cols += (buffer[index+i] as u64) << (i*8);
-      }
-      index += 8;
-
-      println!("Reading bias: {}",size);
-      let mut data = Vec::new();
-      for _ in 0..size {
-        let mut value = 0.0;
+        let mut rows = 0;
         for i in 0..8 {
-          value += ((buffer[index+i] as u64) << (i*8)) as f64;
+          rows += (buffer[index+i] as u64) << (i*8);
         }
-        data.push(value);
         index += 8;
+
+        let mut cols = 0;
+        for i in 0..8 {
+          cols += (buffer[index+i] as u64) << (i*8);
+        }
+        index += 8;
+
+        println!("Reading weights: {}",size);
+        let mut data = Vec::new();
+        for _ in 0..size {
+          let mut value = 0.0;
+          for i in 0..8 {
+            value += ((buffer[index+i] as u64) << (i*8)) as f64;
+          }
+          data.push(value);
+          index += 8;
+        }
+        println!("Loading weights: {}x{}x{}-{}", rows, cols, c, data.len());
+        weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
       }
-      println!("Loading bias: {}x{}-{}", rows, cols, data.len());
-      bias.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
+
+      channels = 0;
+      for i in 0..8 {
+        channels += (buffer[index+i] as u64) << (i*8);
+      }
+      index += 8;
+
+      for c in 0..channels {
+        let mut size = 0;
+        for i in 0..8 {
+          size += (buffer[index+i] as u64) << (i*8);
+        }
+        index += 8;
+
+        let mut rows = 0;
+        for i in 0..8 {
+          rows += (buffer[index+i] as u64) << (i*8);
+        }
+        index += 8;
+  
+        let mut cols = 0;
+        for i in 0..8 {
+          cols += (buffer[index+i] as u64) << (i*8);
+        }
+        index += 8;
+
+        println!("Reading bias: {}",size);
+        let mut data = Vec::new();
+        for _ in 0..size {
+          let mut value = 0.0;
+          for i in 0..8 {
+            value += ((buffer[index+i] as u64) << (i*8)) as f64;
+          }
+          data.push(value);
+          index += 8;
+        }
+        println!("Loading bias: {}x{}x{}-{}", rows, cols, c, data.len());
+        bias.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
+      }
 
       final_weigths.push(Weigths {
         name: name,
