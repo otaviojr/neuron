@@ -140,21 +140,25 @@ impl Neuron {
         index += 8;
       }
       weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
+
       size = 0;
       for i in 0..8 {
         size += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
+      
       let mut rows = 0;
       for i in 0..8 {
         rows += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
+
       let mut cols = 0;
       for i in 0..8 {
         cols += (buffer[index+i] as u64) << (i*8);
       }
       index += 8;
+
       let mut data = Vec::new();
       for _ in 0..size {
         let mut value = 0.0;
