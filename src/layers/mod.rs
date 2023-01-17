@@ -32,12 +32,12 @@ impl LinearLayer {
 
 impl Loader for LinearLayer {
   fn get_name(&self) -> String {
-    self.name
+    self.name.clone()
   }
 
   fn get_weights(&self) -> Vec<Weigths> {
     vec![Weigths {
-      name: self.name,
+      name: self.name.clone(),
       weights: vec![Box::new(self.weights.clone())],
       bias: vec![Box::new(self.bias.clone())]
     }]
