@@ -14,18 +14,23 @@ impl SequentialPieline {
     }
   }
 
-  pub fn add_layer(&mut self, layer: Mutex<Box<dyn Any>>) -> &mut Self {
+  pub fn add_layer(&mut self, layer: Mutex<Box<dyn Propagation>>) -> &mut Self {
     self.layers.push(layer);
     self
   }
 }
 
 impl Loader for SequentialPieline {
+  fn get_name(&self) -> &str {
+    "SequentialPieline"
+  }
+  
   fn get_weights(&self) -> Vec<crate::Weigths> {
     let mut weights = Vec::new();
     for layer in self.layers.iter() {
       if let Ok(l) = layer.lock() {
-        if let Some(loader) =  l.downcast_ref::<Loader>() {
+        if let Some(loader) =  l.as_ref().as_any().downcast_ref::<Box<&dyn Loader>>() {
+          println!("get weigths for {}", loader.get_name());
           //weights.append(&mut loader.get_weights());
         }
       }
@@ -36,11 +41,18 @@ impl Loader for SequentialPieline {
   fn set_weights(&mut self, weights: Vec<crate::Weigths>, bias: Vec<crate::Weigths>) {
     for layer in self.layers.iter_mut() {
       if let Ok(ref mut l) = layer.lock() {
-        if let Some(loader) =  l.downcast_mut::<Loader>() {
+        if let Some(loader) =  l.as_mut().as_mut_any().downcast_mut::<Box<&mut dyn Loader>>() {
           loader.set_weights(weights.clone(), bias.clone());
         }
       }
     }
+  }
+
+  fn as_any(&self) -> Box<&dyn std::any::Any> {
+    Box::new(self)  
+  }
+  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
+    Box::new(self)  
   }
 }
 
@@ -68,4 +80,12 @@ impl Propagation for SequentialPieline {
     }
     i
   }
+
+  fn as_any(&self) -> Box<&dyn std::any::Any> {
+    Box::new(self)  
+  }
+  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
+    Box::new(self)  
+  }
+
 }

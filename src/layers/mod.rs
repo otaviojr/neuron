@@ -7,8 +7,8 @@ pub struct LinearLayerConfig {
   pub learn_rate: f64,
 }
 
-pub struct LinearLayer<'a> {
-  name: &'a str,
+pub struct LinearLayer {
+  name: &'static str,
   config: LinearLayerConfig,
   weights: Tensor,
   bias: Tensor,
@@ -17,8 +17,8 @@ pub struct LinearLayer<'a> {
   last_z1: Option<Tensor>
 }
 
-impl<'a> LinearLayer<'a> {
-  pub fn new(name: &'a str, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
+impl LinearLayer {
+  pub fn new(name: &'static str, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
     LinearLayer {
       name,
       weights: Tensor::randomHE(nodes,input_size, input_size),
@@ -30,7 +30,11 @@ impl<'a> LinearLayer<'a> {
   }
 }
 
-impl<'a> Loader for LinearLayer<'a> {
+impl Loader for LinearLayer {
+  fn get_name(&self) -> &str {
+    self.name
+  }
+  
   fn get_weights(&self) -> Vec<Weigths> {
     vec![Weigths {
       name: self.name,
@@ -51,9 +55,16 @@ impl<'a> Loader for LinearLayer<'a> {
       }
     }
   }
+
+  fn as_any(&self) -> Box<&dyn std::any::Any> {
+    Box::new(self)  
+  }
+  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
+    Box::new(self)  
+  }
 }
 
-impl<'a> Propagation for LinearLayer<'a> {
+impl Propagation for LinearLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     let input = &input[0];
     println!("Bias = {:?}", self.bias);
@@ -118,6 +129,14 @@ impl<'a> Propagation for LinearLayer<'a> {
     }
     None
   }
+
+  fn as_any(&self) -> Box<&dyn std::any::Any> {
+    Box::new(self)  
+  }
+  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
+    Box::new(self)  
+  }
+
 }
 
 pub struct ConvLayerConfig {
@@ -127,8 +146,8 @@ pub struct ConvLayerConfig {
   pub stride: usize,
 }
 
-pub struct ConvLayer<'a> {
-  name: &'a str,
+pub struct ConvLayer {
+  name: &'static str,
   config: ConvLayerConfig,
   filters: Vec<Vec<Tensor>>,
   filter_size: (usize,usize),
@@ -138,8 +157,8 @@ pub struct ConvLayer<'a> {
   last_z1: Option<Vec<Box<Tensor>>>
 }
 
-impl<'a> ConvLayer<'a> {
-  pub fn new(name: &'a str, n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
+impl ConvLayer {
+  pub fn new(name: &'static str, n_channels: usize, n_filters: usize, filter_size: (usize,usize), config: ConvLayerConfig) -> Self {
     let mut filters = Vec::new();
     for i in 0 .. n_filters {
       let mut filter_channels = Vec::new();
@@ -163,7 +182,7 @@ impl<'a> ConvLayer<'a> {
   }
 }
 
-impl<'a> Propagation for ConvLayer<'a> {
+impl Propagation for ConvLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     
     let result_height = (((input[0].rows() as f64 + 2.0* self.config.padding as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
@@ -290,6 +309,14 @@ impl<'a> Propagation for ConvLayer<'a> {
 
     Some(final_output)
   }
+
+  fn as_any(&self) -> Box<&dyn std::any::Any> {
+    Box::new(self)  
+  }
+  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
+    Box::new(self)  
+  }
+
 }
 
 pub struct FlattenLayer {
@@ -354,6 +381,14 @@ impl Propagation for FlattenLayer {
 
     Some(output)
   }
+
+  fn as_any(&self) -> Box<&dyn std::any::Any> {
+    Box::new(self)  
+  }
+  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
+    Box::new(self)  
+  }
+
 }
 
 pub struct PoolingLayerConfig {
@@ -452,4 +487,12 @@ impl Propagation for PoolingLayer {
 
     Some(result_final)
   }
+  
+  fn as_any(&self) -> Box<&dyn std::any::Any> {
+    Box::new(self)  
+  }
+  fn as_mut_any(&mut self) -> Box<&mut dyn std::any::Any> {
+    Box::new(self)  
+  }
+
 }

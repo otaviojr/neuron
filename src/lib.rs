@@ -11,6 +11,8 @@ use math::{Tensor, MatrixMath, MatrixMathCPU};
 pub trait Propagation: Any {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>>;
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>>;
+  fn as_any(&self) -> Box<&dyn Any>;
+  fn as_mut_any(&mut self) -> Box<&mut dyn Any>;
 }
 
 #[derive(Clone)]
@@ -21,8 +23,11 @@ pub struct Weigths<'a> {
 }
 
 pub trait Loader: Any {
+  fn get_name(&self) -> &str;
   fn get_weights(&self) -> Vec<Weigths>;
   fn set_weights(&mut self, weights: Vec<Weigths>, bias: Vec<Weigths>);
+  fn as_any(&self) -> Box<&dyn Any>;
+  fn as_mut_any(&mut self) -> Box<&mut dyn Any>;
 }
 
 pub struct Neuron {
