@@ -4,7 +4,7 @@ use std::any::Any;
 use crate::{Propagation, math::Tensor, Loader};
 
 pub struct SequentialPieline{
-  layers: Vec<Mutex<Box<dyn Propagation>>>
+  layers: Vec<Mutex<Box<dyn Any>>>
 } 
 
 impl SequentialPieline {
@@ -14,7 +14,7 @@ impl SequentialPieline {
     }
   }
 
-  pub fn add_layer(&mut self, layer: Mutex<Box<dyn Propagation>>) -> &mut Self {
+  pub fn add_layer(&mut self, layer: Mutex<Box<dyn Any>>) -> &mut Self {
     self.layers.push(layer);
     self
   }
@@ -29,11 +29,7 @@ impl Loader for SequentialPieline {
     let mut weights = Vec::new();
     for layer in self.layers.iter() {
       if let Ok(l) = layer.lock() {
-        if l.as_any().is::<&dyn Loader>() {
-          println!("get weigths for {}", "asd");
-          //weights.append(&mut l.get_weights());
-        }
-        if let Some(loader) =  l.as_any().downcast_ref::<&dyn Loader>() {
+        if let Some(loader) =  l.downcast_ref::<&dyn Loader>() {
           println!("get weigths for {}", loader.get_name());
           //weights.append(&mut loader.get_weights());
         } else {
@@ -47,7 +43,7 @@ impl Loader for SequentialPieline {
   fn set_weights(&mut self, weights: Vec<crate::Weigths>, bias: Vec<crate::Weigths>) {
     for layer in self.layers.iter_mut() {
       if let Ok(ref mut l) = layer.lock() {
-        if let Some(loader) =  l.as_mut_any().downcast_mut::<&mut dyn Loader>() {
+        if let Some(loader) =  l.downcast_mut::<&mut dyn Loader>() {
           loader.set_weights(weights.clone(), bias.clone());
         }
       }
@@ -68,7 +64,9 @@ impl Propagation for SequentialPieline {
     for layer in self.layers.iter() {
       if let Some(ref i1) = i {
         if let Ok(ref mut l) = layer.lock() {
-          i = l.forward(i1);
+          if let Some(prop) =  l.downcast_mut::<&mut dyn Propagation>() {
+            i = prop.forward(i1);
+          }
         }
       }
     }
@@ -80,7 +78,9 @@ impl Propagation for SequentialPieline {
     for (index,layer) in self.layers.iter().rev().enumerate() {
       if let Some(ref i1) = i {
         if let Ok(ref mut l) = layer.lock() {
-          i = l.backward(i1, index == 0 && first);
+          if let Some(prop) =  l.downcast_mut::<&mut dyn Propagation>() {
+            i = prop.backward(i1, index == 0 && first);
+          }
         }
       }
     }
