@@ -6,7 +6,7 @@ pub mod pipeline;
 
 use std::{sync::Mutex, any::Any, io::{Write, Read}};
 
-use math::{Tensor, MatrixMath, MatrixMathCPU};
+use math::{Tensor, MatrixMath, cpu::MatrixMathCPU, opencl::MatrixMathOCL};
 
 pub trait Propagation: Any {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>>;
@@ -60,7 +60,8 @@ impl Neuron {
   }
 
   pub fn matrix_math() -> Box<dyn MatrixMath> {
-    Box::new(MatrixMathCPU { })
+    //Box::new(MatrixMathCPU::init())
+    Box::new(MatrixMathOCL::init())
   }
 
   pub fn add_pipeline(&mut self, layer: Mutex<Box<dyn Propagation>>) -> &mut Self {
