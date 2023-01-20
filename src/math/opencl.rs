@@ -1,4 +1,4 @@
-use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event}};
+use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
 use std::{ptr};
 
 use super::{MatrixMath, Tensor};
@@ -77,7 +77,7 @@ impl MatrixMath for MatrixMathOCL {
 
             let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
 
-            let width: cl_ulong = a.cols as u64;
+            let width: cl_int = a.cols as i32;
 
             let kernel_event = unsafe {
               ExecuteKernel::new(&kernel)
