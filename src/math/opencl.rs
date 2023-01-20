@@ -10,9 +10,20 @@ __kernel void add(__global double *a, __global double *b, __global double *c, in
   int col = gid % width;
   c[gid] = a[gid] + b[gid];
 }
+__kernel void multiply(__global double *a, __global double *b, __global double *c, int width) {
+  int gid = get_global_id(0);
+  int row = gid / width;
+  int col = gid % width;
+  double sum = 0.0;
+  for (int i = 0; i < width; i++) {
+      sum += a[row * width + i] * b[i * width + col];
+  }
+  c[gid] = sum;
+}
 "#;
 
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
+const KERNEL_MATRIX_MULTIPLY_NAME: &str = "multiply";
 
 pub struct MatrixMathOCL {
   device: Option<Device>,
@@ -129,17 +140,47 @@ impl MatrixMath for MatrixMathOCL {
     // Create a new tensor to store the result
     let mut result = Tensor::zeros(a.rows, b.cols);
 
-    // Perform matrix multiplication
-    for i in 0..a.rows {
-      for j in 0..b.cols {
-        let mut sum = 0.0;
-        for k in 0..a.cols {
-          sum += a.get(i, k) * b.get(k, j);
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut ab = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+          };
+          let mut bb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
+          };
+          let rb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
+
+          let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_NAME).unwrap();
+
+          let width: cl_int = a.cols as i32;
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&ab)
+                .set_arg(&bb)
+                .set_arg(&rb)
+                .set_arg(&width)
+                .set_global_work_size(result.data().len())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+          let _ = ret.wait().unwrap();
+
         }
-        result.set(i, j, sum);
       }
     }
-
+    println!("OpenCL add matrix = {:?}", result);
     result
   }
 
