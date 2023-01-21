@@ -400,7 +400,7 @@ impl MatrixMath for MatrixMathOCL {
   }
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut result = Tensor::zeros(a.cols, a.rows);
+    let mut result = Tensor::zeros(a.rows, a.cols);
 
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
@@ -449,7 +449,7 @@ impl MatrixMath for MatrixMathOCL {
   }
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut result = Tensor::zeros(a.cols, a.rows);
+    let mut result = Tensor::zeros(a.rows, a.cols);
 
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
