@@ -1,15 +1,17 @@
-use crate::{Propagation, Loader, Weigths};
+pub mod cpu;
+
+use crate::{Propagation, Loader, Weigths, Neuron};
 use crate::math::Tensor;
 use crate::activations::Activation;
 
-pub struct LinearLayerConfig {
+pub struct DenseLayerConfig {
   pub activation: Box<dyn Activation>,
   pub learn_rate: f64,
 }
 
-pub struct LinearLayer {
+pub struct DenseLayer {
   name: String,
-  config: LinearLayerConfig,
+  config: DenseLayerConfig,
   weights: Tensor,
   bias: Tensor,
 
@@ -17,9 +19,14 @@ pub struct LinearLayer {
   last_z1: Option<Tensor>
 }
 
-impl LinearLayer {
-  pub fn new(name: String, input_size: usize, nodes: usize, config: LinearLayerConfig) -> Self {
-    LinearLayer {
+pub trait DenseLayerExecutor {
+  fn forward(&self, input: &Vec<Box<Tensor>>, weights: &Tensor, bias: &Tensor, config: &DenseLayerConfig) -> Option<(Vec<Box<Tensor>>, Tensor, Vec<Box<Tensor>>)>;
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Tensor, weights: &mut Tensor, bias: &mut Tensor, activate: bool, config: &DenseLayerConfig) -> Option<Vec<Box<Tensor>>>;
+}
+
+impl DenseLayer {
+  pub fn new(name: String, input_size: usize, nodes: usize, config: DenseLayerConfig) -> Self {
+    DenseLayer {
       name,
       weights: Tensor::randomHE(nodes,input_size, input_size),
       bias: Tensor::randomHE(nodes,1, input_size),
@@ -30,7 +37,7 @@ impl LinearLayer {
   }
 }
 
-impl Loader for LinearLayer {
+impl Loader for DenseLayer {
   fn get_name(&self) -> String {
     self.name.clone()
   }
@@ -53,67 +60,25 @@ impl Loader for LinearLayer {
   }
 }
 
-impl Propagation for LinearLayer {
+impl Propagation for DenseLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
-    let input = &input[0];
-    println!("Bias = {:?}", self.bias);
-    println!("Layer weights size = {}x{}", self.weights.rows(), self.weights.cols());
-    println!("Layer weights = {:?}", self.weights);
-    println!("LinearLayer Input (Forward) = {:?}", input);
-    let z1_1 = self.weights.mul(&input);
-    println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
-    println!("z1_1 = {:?}", z1_1);
-    let b_bias = self.bias.broadcast(z1_1.rows(), z1_1.cols());
-    println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
-    println!("b_bias = {:?}", b_bias);
-    let z1 = z1_1.add(&b_bias);
 
-    self.last_z1 = Some(z1.clone());
-    self.last_input = Some(vec![input.clone()]);
-
-
-    println!("LinearLayer Output Before Activation(Forward) = {:?}", z1);
-    let ret = vec![Box::new(self.config.activation.forward(&z1))];
-    println!("LinearLayer Output (Forward) = {:?}", ret);
-
-    Some(ret)
+    if let Some((forward_input,z1,ret)) = Neuron::executors().lock().unwrap().as_ref().unwrap().dense.forward(input, &self.weights, &self.bias, &self.config) {
+      self.last_z1 = Some(z1.clone());
+      self.last_input = Some(forward_input.clone());
+      return Some(ret);
+    }
+    None
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
-    println!("LinearLayer input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
-    println!("LinearLayer input (Backward) = {:?}", input);
-
-    let input = &input[0];
-
-    if let Some(ref z1) = self.last_z1 {
-      let dz;
-      if first {
-        dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
-      } else {
-        dz = input.mul_wise(&self.config.activation.backward(z1));
-      }
-      println!("dz size = {}x{}", dz.rows(), dz.cols());
-      //println!("dz = {}", dz);
-      if let Some(ref forward_input) = self.last_input {
-        let forward_input = &forward_input[0];
-        println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
-        let dw = dz.mul(&forward_input.transpose()).div_value(forward_input.cols() as f64);
-        println!("dw size = {}x{}", dw.rows(), dw.cols());
-        //println!("dw = {}", dw);
-        let mut db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
-        db = db.sum_row().div_value(forward_input.cols() as f64);
-        println!("db size = {}x{}", db.rows(), db.cols());
-
-        let zl = vec![Box::new(self.weights.transpose().mul(&dz))];
-        println!("LinearLayer output size (Backward) = {}x{}x{}", zl[0].rows(), zl[0].cols(), zl.len());
-        println!("LinearLayer output (Backward) = {:?}", zl);
-        let ret = Some(zl);
-
-        println!("weights size = {}x{}", self.weights.rows(), self.weights.cols());
-        self.weights = self.weights.sub(&dw.mul_value(self.config.learn_rate));
-        self.bias = self.bias.sub(&db.mul_value(self.config.learn_rate));
-    
-        return ret;
+    if let Some(ref forward_input) = self.last_input {
+      if let Some(ref z1) = self.last_z1{
+        if let Some(ret) = Neuron::executors().lock().unwrap().as_ref().unwrap().dense.backward(input, forward_input, z1, &mut self.weights, &mut self.bias, !first, &self.config) {
+          self.last_z1 = Some(z1.clone());
+          self.last_input = Some(forward_input.clone());
+          return Some(ret);
+        }
       }
     }
     None
@@ -127,8 +92,6 @@ impl Propagation for LinearLayer {
   fn as_mut_loader(&mut self) -> Option<&mut dyn Loader> {
     Some(self)  
   }
-
-
 }
 
 pub struct ConvLayerConfig {

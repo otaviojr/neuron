@@ -6,11 +6,17 @@ pub mod pipeline;
 
 use std::{sync::Mutex, any::Any, io::{Write, Read}};
 
-use math::{Tensor, MatrixMath, cpu::MatrixMathCPU, opencl::MatrixMathOCL};
+use layers::{DenseLayerExecutor, cpu::DenseLayerCPU};
+use math::{Tensor, MatrixMathExecutor, cpu::MatrixMathCPU, opencl::MatrixMathOCL};
 use lazy_static::lazy_static;
 
+pub struct Executors {
+  matrix: Box<dyn MatrixMathExecutor + Send + Sync>,
+  dense: Box<dyn DenseLayerExecutor + Send + Sync>
+}
+
 lazy_static! {
-    static ref MATH_PROCESSOR: Mutex<Box<dyn MatrixMath + Send + Sync>> = Mutex::new(Box::new(MatrixMathCPU::init()));
+    static ref EXECUTORS: Mutex<Option<Box<Executors>>> = Mutex::new(None);
 }
 
 pub trait Propagation: Any {
@@ -39,6 +45,13 @@ pub struct Neuron {
 
 impl Neuron {
   pub fn new() -> Self {
+
+    //init Neuron with CPU executor
+    *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
+      matrix: Box::new(MatrixMathCPU::init()),
+      dense: Box::new(DenseLayerCPU::init())
+    }));
+
     Neuron {
       pipelines: Vec::new()
     }
@@ -65,11 +78,15 @@ impl Neuron {
   }
 
   pub fn enable_opencl() {
-    *MATH_PROCESSOR.lock().unwrap() = Box::new(MatrixMathOCL::init());
+    *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
+      matrix: Box::new(MatrixMathOCL::init()),
+      dense: Box::new(DenseLayerCPU::init())
+    }));
   }
 
-  pub fn matrix_math() -> &'static Mutex<Box<dyn MatrixMath + Send + Sync>> {
-    let r = &*MATH_PROCESSOR;
+  pub fn executors() -> &'static Mutex<Option<Box<Executors>>> {
+
+    let r = &*EXECUTORS;
     r
   }
 

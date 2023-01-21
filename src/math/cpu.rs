@@ -1,4 +1,4 @@
-use super::{MatrixMath, Tensor};
+use super::{MatrixMathExecutor, Tensor};
 
 #[derive(Copy, Clone)]
 pub struct MatrixMathCPU;
@@ -9,7 +9,7 @@ impl MatrixMathCPU {
   }
 }
 
-impl MatrixMath for MatrixMathCPU {
+impl MatrixMathExecutor for MatrixMathCPU {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);

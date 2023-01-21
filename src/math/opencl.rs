@@ -1,7 +1,7 @@
 use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
 use std::{ptr};
 
-use super::{MatrixMath, Tensor};
+use super::{MatrixMathExecutor, Tensor};
 
 const PROGRAM_SOURCE: &str = r#"
 __kernel void add(__global double *a, __global double *b, __global double *c, int width) {
@@ -115,7 +115,7 @@ impl MatrixMathOCL {
   }
 }
 
-impl MatrixMath for MatrixMathOCL {
+impl MatrixMathExecutor for MatrixMathOCL {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);
