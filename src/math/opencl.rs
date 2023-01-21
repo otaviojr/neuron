@@ -1,4 +1,4 @@
-use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
+use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
 use std::{ptr};
 
 use super::{MatrixMath, Tensor};
@@ -82,7 +82,7 @@ impl MatrixMath for MatrixMathOCL {
               Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
             };
             let rb = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+              Buffer::<cl_double>::create(context, CL_MEM_READ_WRITE, result.data().len(), ptr::null_mut()).unwrap()
             };  
 
             let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
@@ -90,7 +90,7 @@ impl MatrixMath for MatrixMathOCL {
 
             let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
 
-            let width: cl_int = a.cols as i32;
+            let width: cl_int = result.cols as i32;
 
             let kernel_event = unsafe {
               ExecuteKernel::new(&kernel)
@@ -148,7 +148,7 @@ impl MatrixMath for MatrixMathOCL {
             Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
           };
           let rb = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+            Buffer::<cl_double>::create(context, CL_MEM_READ_WRITE, result.data().len(), ptr::null_mut()).unwrap()
           };  
 
           let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
