@@ -147,53 +147,53 @@ impl Tensor {
 
   // Transpose the tensor
   pub fn transpose(&self) -> Tensor {
-    return Neuron::matrix_math().transpose(self);
+    return Neuron::matrix_math().lock().unwrap().transpose(self);
   }
 
   // Add a number to all rows and columns in the tensor
   pub fn add_value(&self, value: f64) -> Tensor {
-    return Neuron::matrix_math().add_value(&self, value);
+    return Neuron::matrix_math().lock().unwrap().add_value(&self, value);
   }
 
   pub fn div_value(&self, value: f64) -> Tensor {
-    return Neuron::matrix_math().div_value(&self, value);
+    return Neuron::matrix_math().lock().unwrap().div_value(&self, value);
   }
 
   pub fn mul_value(&self, value: f64) -> Tensor {
-    return Neuron::matrix_math().mul_value(&self, value);
+    return Neuron::matrix_math().lock().unwrap().mul_value(&self, value);
   }
 
   //Dot Product between two tensors
   pub fn dot(&self, other: &Tensor) -> f64 {
-    return Neuron::matrix_math().dot(self, other);
+    return Neuron::matrix_math().lock().unwrap().dot(self, other);
   }
 
   pub fn add(&self, other: &Tensor) -> Tensor {
-    return Neuron::matrix_math().add(&self, other);
+    return Neuron::matrix_math().lock().unwrap().add(&self, other);
   }
 
   pub fn mul(&self, other: &Tensor) -> Tensor {
-    return Neuron::matrix_math().mul(&self, other);
+    return Neuron::matrix_math().lock().unwrap().mul(&self, other);
   }
 
   pub fn mul_wise(&self, other: &Tensor) -> Tensor {
-    return Neuron::matrix_math().mul_wise(&self, other);
+    return Neuron::matrix_math().lock().unwrap().mul_wise(&self, other);
   }
 
   pub fn sub(&self, other: &Tensor) -> Tensor {
-    return Neuron::matrix_math().sub(&self, other);
+    return Neuron::matrix_math().lock().unwrap().sub(&self, other);
   }
 
   pub fn sum_row(&self) -> Tensor {
-    return Neuron::matrix_math().sum_row(&self);
+    return Neuron::matrix_math().lock().unwrap().sum_row(&self);
   }
 
   pub fn broadcast(&self, rows: usize, cols: usize) -> Tensor {
-    return Neuron::matrix_math().broadcast(&self, rows, cols);
+    return Neuron::matrix_math().lock().unwrap().broadcast(&self, rows, cols);
   }
 
   pub fn pad(&self, pad_row: usize, pad_col: usize) -> Tensor {
-    return Neuron::matrix_math().pad(&self, pad_row, pad_col);
+    return Neuron::matrix_math().lock().unwrap().pad(&self, pad_row, pad_col);
   }
 }
 
@@ -202,6 +202,6 @@ impl Div for Tensor {
   type Output = Tensor;
 
   fn div(self, other: Tensor) -> Tensor {
-    return Neuron::matrix_math().div(&self, &other);
+    return Neuron::matrix_math().lock().unwrap().div(&self, &other);
   }
 }

@@ -10,7 +10,7 @@ use math::{Tensor, MatrixMath, cpu::MatrixMathCPU, opencl::MatrixMathOCL};
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref MATH_PROCESSOR: Box<dyn MatrixMath + Send + Sync> = Box::new(MatrixMathOCL::init());
+    static ref MATH_PROCESSOR: Mutex<Box<dyn MatrixMath + Send + Sync>> = Mutex::new(Box::new(MatrixMathCPU::init()));
 }
 
 pub trait Propagation: Any {
@@ -64,7 +64,11 @@ impl Neuron {
     i
   }
 
-  pub fn matrix_math() -> &'static Box<dyn MatrixMath + Send + Sync> {
+  pub fn enableOpenCL() {
+    *MATH_PROCESSOR.lock().unwrap() = Box::new(MatrixMathOCL::init());
+  }
+
+  pub fn matrix_math() -> &'static Mutex<Box<dyn MatrixMath + Send + Sync>> {
     let r = &*MATH_PROCESSOR;
     r
   }
