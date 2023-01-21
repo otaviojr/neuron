@@ -11,10 +11,10 @@ __kernel void add(__global double *a, __global double *b, __global double *c, in
   c[gid] = a[gid] + b[gid];
 }
 
-__kernel void multiply(__global double *a, __global double *b, __global double *c, int width_a, int width_b) {
+__kernel void multiply(__global double *a, __global double *b, __global double *c, int width_a, int width_b, int width_c) {
   int gid = get_global_id(0);
-  int row = gid / width;
-  int col = gid % width;
+  int row = gid / width_c;
+  int col = gid % width_c;
   double sum = 0.0;
   for (int i = 0; i < width; i++) {
       sum += a[row * width_a + i] * b[i * width_b + col];
@@ -167,6 +167,7 @@ impl MatrixMath for MatrixMathOCL {
                 .set_arg(&rb)
                 .set_arg(&a.cols)
                 .set_arg(&b.cols)
+                .set_arg(&result.cols)
                 .set_global_work_size(result.data().len())
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
