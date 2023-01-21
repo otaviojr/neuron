@@ -398,7 +398,7 @@ impl MatrixMath for MatrixMathOCL {
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
     let mult = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
-    self.div(a, &mult)
+    self.mul(a, &mult)
   }
 
   fn sum_row(&self, a:&Tensor) -> Tensor {
