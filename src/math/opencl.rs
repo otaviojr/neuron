@@ -182,7 +182,7 @@ impl MatrixMath for MatrixMathOCL {
         }
       }
     }
-    println!("OpenCL add matrix = {:?}", result);
+    println!("OpenCL multiply matrix = {:?}", result);
     result
   }
 
