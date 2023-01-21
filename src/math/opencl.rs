@@ -363,8 +363,8 @@ impl MatrixMath for MatrixMathOCL {
                 .set_arg(&ab)
                 .set_arg(&rb)
                 .set_arg(&(a.cols as i32))
-                .set_arg(&(result.rows as i32))
-                .set_global_work_size(result.data().len())
+                .set_arg(&(a.rows as i32))
+                .set_global_work_size(a.data().len())
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
