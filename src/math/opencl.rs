@@ -156,7 +156,7 @@ impl MatrixMath for MatrixMathOCL {
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_NAME).unwrap();
 
-          let width: cl_int = a.cols as i32;
+          let width: cl_int = result.cols as i32;
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
