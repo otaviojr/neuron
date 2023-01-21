@@ -11,13 +11,13 @@ __kernel void add(__global double *a, __global double *b, __global double *c, in
   c[gid] = a[gid] + b[gid];
 }
 
-__kernel void multiply(__global double *a, __global double *b, __global double *c, int width) {
+__kernel void multiply(__global double *a, __global double *b, __global double *c, int width_a, int width_b) {
   int gid = get_global_id(0);
   int row = gid / width;
   int col = gid % width;
   double sum = 0.0;
   for (int i = 0; i < width; i++) {
-      sum += a[row * width + i] * b[i * width + col];
+      sum += a[row * width_a + i] * b[i * width_b + col];
   }
   c[gid] = sum;
 }
@@ -160,14 +160,13 @@ impl MatrixMath for MatrixMathOCL {
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_NAME).unwrap();
 
-          let width: cl_int = result.cols as i32;
-
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
                 .set_arg(&ab)
                 .set_arg(&bb)
                 .set_arg(&rb)
-                .set_arg(&width)
+                .set_arg(&a.cols)
+                .set_arg(&b.cols)
                 .set_global_work_size(result.data().len())
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
