@@ -347,45 +347,18 @@ impl MatrixMath for MatrixMathOCL {
   }
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
-
-    for i in 0..a.rows {
-      for j in 0..a.cols {
-        let val = a.get(i, j);
-        result.set(i, j, val + value);
-      }
-    }
-
-    result
+    let add = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
+    self.add(a, &add)
   }
 
   fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
-
-    for i in 0..a.rows {
-      for j in 0..a.cols {
-        let val = a.get(i, j);
-        result.set(i, j, val/value);
-      }
-    }
-
-    result
+    let div = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
+    self.div(a, &div)
   }
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
-
-    for i in 0..a.rows {
-      for j in 0..a.cols {
-        let val = a.get(i, j);
-        result.set(i, j, val*value);
-      }
-    }
-
-    result
+    let mult = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
+    self.div(a, &mult)
   }
 
   fn sum_row(&self, a:&Tensor) -> Tensor {
