@@ -164,7 +164,7 @@ impl MatrixMath for MatrixMathOCL {
                 .set_arg(&bb)
                 .set_arg(&rb)
                 .set_arg(&width)
-                .set_global_work_size(a.data().len())
+                .set_global_work_size(result.data().len())
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
