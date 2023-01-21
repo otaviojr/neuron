@@ -35,12 +35,20 @@ __kernel void multiply(__global double *a, __global double *b, __global double *
   }
   c[gid] = sum;
 }
+
+__kernel void transpose(__global double *a, __global double *b, int width, int height) {
+  int gid = get_global_id(0);
+  int row = gid / width;
+  int col = gid % width;
+  b[col * height + row] = a[gid];
+}
 "#;
 
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
 const KERNEL_MATRIX_SUB_NAME: &str = "sub";
 const KERNEL_MATRIX_MULTIPLY_NAME: &str = "multiply";
 const KERNEL_MATRIX_MULTIPLY_WISE_NAME: &str = "mul_wise";
+const KERNEL_MATRIX_TRANSPOSE_NAME: &str = "transpose";
 
 pub struct MatrixMathOCL {
   device: Option<Device>,
@@ -102,7 +110,7 @@ impl MatrixMath for MatrixMathOCL {
             };  
 
             let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-            let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
+            let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
             let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
 
@@ -157,7 +165,7 @@ impl MatrixMath for MatrixMathOCL {
           };  
 
           let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
 
@@ -212,7 +220,7 @@ impl MatrixMath for MatrixMathOCL {
           };  
 
           let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_NAME).unwrap();
 
@@ -267,7 +275,7 @@ impl MatrixMath for MatrixMathOCL {
           };  
 
           let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_WISE_NAME).unwrap();
 
@@ -297,7 +305,7 @@ impl MatrixMath for MatrixMathOCL {
         }
       }
     }
-    println!("OpenCL add matrix = {:?}", result);
+    println!("OpenCL multiply wise matrix = {:?}", result);
     result
   }
 
@@ -336,13 +344,45 @@ impl MatrixMath for MatrixMathOCL {
     // Create a new tensor to store the result
     let mut result = Tensor::zeros(a.cols, a.rows);
 
-    // Transpose the matrix
-    for i in 0..a.rows {
-        for j in 0..a.cols {
-            result.set(j, i, a.get(i, j));
-        }
-    }
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut ab = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+          };
+          let rb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
 
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut ab, CL_NON_BLOCKING, 0, a.data(), &[]).unwrap() };
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_TRANSPOSE_NAME).unwrap();
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&ab)
+                .set_arg(&rb)
+                .set_arg(&(a.cols as i32))
+                .set_arg(&(a.rows as i32))
+                .set_global_work_size(result.data().len())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+          let error = ret.wait();
+
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }  
+        }
+      }
+    }
+    println!("OpenCL transpose matrix = {:?}", result);
     result
   }
 
