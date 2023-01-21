@@ -1,5 +1,4 @@
 use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
-use rayon::prelude::*;
 use std::{ptr};
 
 use super::{MatrixMath, Tensor};
@@ -388,23 +387,17 @@ impl MatrixMath for MatrixMathOCL {
   }
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut v = Vec::with_capacity(a.rows * a.cols);
-    v.par_iter_mut().for_each(|x| *x = value);
-    let add = Tensor::from_data(a.rows, a.cols, v);
+    let add = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
     self.add(a, &add)
   }
 
   fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut v = Vec::with_capacity(a.rows * a.cols);
-    v.par_iter_mut().for_each(|x| *x = value);
-    let div = Tensor::from_data(a.rows, a.cols, v);
+    let div = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
     self.div(a, &div)
   }
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut v = Vec::with_capacity(a.rows * a.cols);
-    v.par_iter_mut().for_each(|x| *x = value);
-    let mult = Tensor::from_data(a.rows, a.cols, v);
+    let mult = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
     self.mul_wise(a, &mult)
   }
 
