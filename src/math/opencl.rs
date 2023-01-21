@@ -18,6 +18,13 @@ __kernel void sub(__global double *a, __global double *b, __global double *c, in
   c[gid] = a[gid] - b[gid];
 }
 
+__kernel void div(__global double *a, __global double *b, __global double *c, int width) {
+  int gid = get_global_id(0);
+  int row = gid / width;
+  int col = gid % width;
+  c[gid] = a[gid] / b[gid];
+}
+
 __kernel void mul_wise(__global double *a, __global double *b, __global double *c, int width) {
   int gid = get_global_id(0);
   int row = gid / width;
@@ -53,11 +60,18 @@ __kernel void mul_value(__global double *a, __global double *b, double value) {
   b[gid] = a[gid] * value;
 }
 
+__kernel void div_value(__global double *a, __global double *b, double value) {
+  int gid = get_global_id(0);
+  b[gid] = a[gid] / value;
+}
+
 "#;
 
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
 const KERNEL_MATRIX_ADD_VALUE_NAME: &str = "add_value";
 const KERNEL_MATRIX_SUB_NAME: &str = "sub";
+const KERNEL_MATRIX_DIV_NAME: &str = "div";
+const KERNEL_MATRIX_DIV_VALUE_NAME: &str = "div_value";
 const KERNEL_MATRIX_MUL_NAME: &str = "mul";
 const KERNEL_MATRIX_MUL_VALUE_NAME: &str = "mul_value";
 const KERNEL_MATRIX_MUL_WISE_NAME: &str = "mul_wise";
@@ -329,11 +343,51 @@ impl MatrixMath for MatrixMathOCL {
       // Create a new tensor to store the result
       let mut result = Tensor::zeros(a.rows, a.cols);
 
-      // Perform element-wise division
-      for i in 0..a.data.len() {
-          result.data[i] = a.data[i] / b.data[i];
-      }
+      if let Some(ref context) = self.context {
+        if let Some(ref queue) = self.queue {
+          if let Some(ref program) = self.program {
+            let mut ab = unsafe {
+              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+            };
+            let mut bb = unsafe {
+              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
+            };
+            let rb = unsafe {
+              Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+            };  
 
+            let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
+            let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
+
+            let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_NAME).unwrap();
+
+            let width: cl_int = result.cols as i32;
+
+            let kernel_event = unsafe {
+              ExecuteKernel::new(&kernel)
+                  .set_arg(&ab)
+                  .set_arg(&bb)
+                  .set_arg(&rb)
+                  .set_arg(&width)
+                  .set_global_work_size(result.data().len())
+                  .set_wait_event(&write_event)
+                  .enqueue_nd_range(&queue).unwrap()
+            };
+
+            let mut events: Vec<cl_event> = Vec::default();
+            events.push(kernel_event.get());
+            
+            let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+            let error = ret.wait();
+
+            if let Err(error) = error {
+              println!("OpenCL Error: {:?}", error);
+              std::process::exit(0);
+            }  
+          }
+        }
+      }
+      println!("OpenCL div matrix = {:?}", result);
       result
   }
 
@@ -439,13 +493,52 @@ impl MatrixMath for MatrixMathOCL {
         }
       }
     }
-    println!("OpenCL transpose matrix = {:?}", result);
+    println!("OpenCL add value matrix = {:?}", result);
     result
   }
 
   fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let div = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
-    self.div(a, &div)
+    let mut result = Tensor::zeros(a.rows, a.cols);
+
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut ab = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+          };
+          let rb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
+
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut ab, CL_NON_BLOCKING, 0, a.data(), &[]).unwrap() };
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_VALUE_NAME).unwrap();
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&ab)
+                .set_arg(&rb)
+                .set_arg(&value)
+                .set_global_work_size(a.data().len())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+          let error = ret.wait();
+
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }  
+        }
+      }
+    }
+    println!("OpenCL div value matrix = {:?}", result);
+    result
   }
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
@@ -488,7 +581,7 @@ impl MatrixMath for MatrixMathOCL {
         }
       }
     }
-    println!("OpenCL transpose matrix = {:?}", result);
+    println!("OpenCL mul value matrix = {:?}", result);
     result
   }
 
