@@ -25,7 +25,7 @@ __kernel void mul_wise(__global double *a, __global double *b, __global double *
   c[gid] = a[gid] * b[gid];
 }
 
-__kernel void multiply(__global double *a, __global double *b, __global double *c, int width_a, int width_b, int width_c) {
+__kernel void mul(__global double *a, __global double *b, __global double *c, int width_a, int width_b, int width_c) {
   int gid = get_global_id(0);
   int row = gid / width_c;
   int col = gid % width_c;
@@ -42,12 +42,25 @@ __kernel void transpose(__global double *a, __global double *b, int width, int h
   int col = gid % width;
   b[col * height + row] = a[gid];
 }
+
+__kernel void add_value(__global double *a, __global double *b, double value) {
+  int gid = get_global_id(0);
+  b[gid] = a[gid] + value;
+}
+
+__kernel void mul_value(__global double *a, __global double *b, double value) {
+  int gid = get_global_id(0);
+  b[gid] = a[gid] * value;
+}
+
 "#;
 
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
+const KERNEL_MATRIX_ADD_VALUE_NAME: &str = "add_value";
 const KERNEL_MATRIX_SUB_NAME: &str = "sub";
-const KERNEL_MATRIX_MULTIPLY_NAME: &str = "multiply";
-const KERNEL_MATRIX_MULTIPLY_WISE_NAME: &str = "mul_wise";
+const KERNEL_MATRIX_MUL_NAME: &str = "mul";
+const KERNEL_MATRIX_MUL_VALUE_NAME: &str = "mul_value";
+const KERNEL_MATRIX_MUL_WISE_NAME: &str = "mul_wise";
 const KERNEL_MATRIX_TRANSPOSE_NAME: &str = "transpose";
 
 pub struct MatrixMathOCL {
@@ -222,7 +235,7 @@ impl MatrixMath for MatrixMathOCL {
           let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
           let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
-          let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_NAME).unwrap();
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_NAME).unwrap();
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
@@ -277,7 +290,7 @@ impl MatrixMath for MatrixMathOCL {
           let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
           let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
-          let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_WISE_NAME).unwrap();
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_WISE_NAME).unwrap();
 
           let width: cl_int = result.cols as i32;
 
@@ -387,8 +400,47 @@ impl MatrixMath for MatrixMathOCL {
   }
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let add = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
-    self.add(a, &add)
+    let mut result = Tensor::zeros(a.cols, a.rows);
+
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut ab = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+          };
+          let rb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
+
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut ab, CL_NON_BLOCKING, 0, a.data(), &[]).unwrap() };
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_VALUE_NAME).unwrap();
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&ab)
+                .set_arg(&rb)
+                .set_arg(&value)
+                .set_global_work_size(a.data().len())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+          let error = ret.wait();
+
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }  
+        }
+      }
+    }
+    println!("OpenCL transpose matrix = {:?}", result);
+    result
   }
 
   fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
@@ -397,8 +449,47 @@ impl MatrixMath for MatrixMathOCL {
   }
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mult = Tensor::from_data(a.rows, a.cols, vec![value; a.rows * a.cols]);
-    self.mul_wise(a, &mult)
+    let mut result = Tensor::zeros(a.cols, a.rows);
+
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut ab = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+          };
+          let rb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
+
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut ab, CL_NON_BLOCKING, 0, a.data(), &[]).unwrap() };
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_VALUE_NAME).unwrap();
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&ab)
+                .set_arg(&rb)
+                .set_arg(&value)
+                .set_global_work_size(a.data().len())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+          let error = ret.wait();
+
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }  
+        }
+      }
+    }
+    println!("OpenCL transpose matrix = {:?}", result);
+    result
   }
 
   fn sum_row(&self, a:&Tensor) -> Tensor {
