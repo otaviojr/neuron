@@ -10,6 +10,7 @@ __kernel void add(__global double *a, __global double *b, __global double *c, in
   int col = gid % width;
   c[gid] = a[gid] + b[gid];
 }
+
 __kernel void multiply(__global double *a, __global double *b, __global double *c, int width) {
   int gid = get_global_id(0);
   int row = gid / width;
@@ -166,7 +167,7 @@ impl MatrixMath for MatrixMathOCL {
                 .set_arg(&bb)
                 .set_arg(&rb)
                 .set_arg(&width)
-                .set_global_work_size(result.data().len())
+                .set_global_work_size(a.data().len())
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
