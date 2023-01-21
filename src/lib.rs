@@ -64,7 +64,7 @@ impl Neuron {
     i
   }
 
-  pub fn enableOpenCL() {
+  pub fn enable_opencl() {
     *MATH_PROCESSOR.lock().unwrap() = Box::new(MatrixMathOCL::init());
   }
 
