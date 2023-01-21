@@ -133,9 +133,6 @@ impl MatrixMath for MatrixMathOCL {
 
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {
     // Check that the tensors are compatible for multiplication
-    //if a.cols != b.rows {
-    //  return Tensor::zeros(0,0);
-    //}
     assert!(a.cols == b.rows);
 
     // Create a new tensor to store the result
@@ -176,8 +173,12 @@ impl MatrixMath for MatrixMathOCL {
           events.push(kernel_event.get());
           
           let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-          let _ = ret.wait().unwrap();
+          let error = ret.wait();
 
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }
         }
       }
     }
