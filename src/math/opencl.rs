@@ -18,6 +18,13 @@ __kernel void sub(__global double *a, __global double *b, __global double *c, in
   c[gid] = a[gid] - b[gid];
 }
 
+__kernel void mul_wise(__global double *a, __global double *b, __global double *c, int width) {
+  int gid = get_global_id(0);
+  int row = gid / width;
+  int col = gid % width;
+  c[gid] = a[gid] * b[gid];
+}
+
 __kernel void multiply(__global double *a, __global double *b, __global double *c, int width_a, int width_b, int width_c) {
   int gid = get_global_id(0);
   int row = gid / width_c;
@@ -33,6 +40,7 @@ __kernel void multiply(__global double *a, __global double *b, __global double *
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
 const KERNEL_MATRIX_SUB_NAME: &str = "sub";
 const KERNEL_MATRIX_MULTIPLY_NAME: &str = "multiply";
+const KERNEL_MATRIX_MULTIPLY_WISE_NAME: &str = "mul_wise";
 
 pub struct MatrixMathOCL {
   device: Option<Device>,
@@ -129,58 +137,58 @@ impl MatrixMath for MatrixMathOCL {
   }
 
   fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor {
-      // Check that the tensors are the same size
-      assert!(a.rows == b.rows && a.cols == b.cols);
+    // Check that the tensors are the same size
+    assert!(a.rows == b.rows && a.cols == b.cols);
 
-      // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(a.rows, a.cols);
 
-      if let Some(ref context) = self.context {
-        if let Some(ref queue) = self.queue {
-          if let Some(ref program) = self.program {
-            let mut ab = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-            };
-            let mut bb = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
-            };
-            let rb = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
-            };  
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut ab = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+          };
+          let mut bb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
+          };
+          let rb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
 
-            let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-            let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
+          let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
 
-            let kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
 
-            let width: cl_int = result.cols as i32;
+          let width: cl_int = result.cols as i32;
 
-            let kernel_event = unsafe {
-              ExecuteKernel::new(&kernel)
-                  .set_arg(&ab)
-                  .set_arg(&bb)
-                  .set_arg(&rb)
-                  .set_arg(&width)
-                  .set_global_work_size(result.data().len())
-                  .set_wait_event(&write_event)
-                  .enqueue_nd_range(&queue).unwrap()
-            };
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&ab)
+                .set_arg(&bb)
+                .set_arg(&rb)
+                .set_arg(&width)
+                .set_global_work_size(result.data().len())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
 
-            let mut events: Vec<cl_event> = Vec::default();
-            events.push(kernel_event.get());
-            
-            let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-            let error = ret.wait();
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+          let error = ret.wait();
 
-            if let Err(error) = error {
-              println!("OpenCL Error: {:?}", error);
-              std::process::exit(0);
-            }  
-          }
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }  
         }
       }
-      println!("OpenCL add matrix = {:?}", result);
-      result
+    }
+    println!("OpenCL add matrix = {:?}", result);
+    result
   }
 
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {
@@ -242,13 +250,55 @@ impl MatrixMath for MatrixMathOCL {
     // Check that the tensors are compatible for multiplication
     assert!(a.rows == b.rows && a.cols == b.cols);
 
-    let data: Vec<f64> = a.data()
-    .iter()
-    .zip(b.data().iter())
-    .map(|(v1, v2)| v1 * v2).collect();
+    // Create a new tensor to store the result
+    let mut result = Tensor::zeros(a.rows, a.cols);
 
-    
-    Tensor::from_data(a.rows, a.cols, data)
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut ab = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
+          };
+          let mut bb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
+          };
+          let rb = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
+
+          let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, &b.data(), &[]).unwrap() };
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MULTIPLY_WISE_NAME).unwrap();
+
+          let width: cl_int = result.cols as i32;
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&ab)
+                .set_arg(&bb)
+                .set_arg(&rb)
+                .set_arg(&width)
+                .set_global_work_size(result.data().len())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
+          let error = ret.wait();
+
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }  
+        }
+      }
+    }
+    println!("OpenCL add matrix = {:?}", result);
+    result
   }
 
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
