@@ -16,7 +16,7 @@ __kernel void multiply(__global double *a, __global double *b, __global double *
   int row = gid / width_c;
   int col = gid % width_c;
   double sum = 0.0;
-  for (int i = 0; i < width; i++) {
+  for (int i = 0; i < width_a; i++) {
       sum += a[row * width_a + i] * b[i * width_b + col];
   }
   c[gid] = sum;
