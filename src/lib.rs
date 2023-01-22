@@ -3,11 +3,13 @@ pub mod layers;
 pub mod activations;
 pub mod cost;
 pub mod pipeline;
+pub mod util;
 
-use std::{sync::Mutex, any::Any, io::{Write, Read}};
+use std::{sync::{Mutex, MutexGuard}, any::Any, io::{Write, Read}, fs::File};
 
 use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU}, ConvLayerExecutor, opencl::ConvLayerOCL};
 use math::{Tensor, MatrixMathExecutor, cpu::MatrixMathCPU, opencl::MatrixMathOCL};
+use util::Logger;
 use lazy_static::lazy_static;
 
 pub struct Executors {
@@ -18,6 +20,7 @@ pub struct Executors {
 lazy_static! {
   static ref MATRIX_EXECUTOR: Mutex<Option<Box<dyn MatrixMathExecutor + Sync + Send>>> = Mutex::new(None);
   static ref EXECUTORS: Mutex<Option<Box<Executors>>> = Mutex::new(None);
+  static ref LOGGER: Mutex<Box<Logger>> = Mutex::new(Box::new(Logger::new(util::LogLevel::Error)));
 }
 
 pub trait Propagation: Any {
@@ -46,7 +49,6 @@ pub struct Neuron {
 
 impl Neuron {
   pub fn new() -> Self {
-
     //init Neuron with CPU executor
     *MATRIX_EXECUTOR.lock().unwrap() = Some(Box::new(MatrixMathCPU::init()));
     *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
@@ -57,6 +59,10 @@ impl Neuron {
     Neuron {
       pipelines: Vec::new()
     }
+  }
+
+  pub fn set_log(&mut self, file: Option<File>, level: util::LogLevel) {
+    *LOGGER.lock().unwrap() = Box::new(Logger::new_with_file(file, level));
   }
 
   pub fn forward(&self, input: Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
@@ -85,6 +91,10 @@ impl Neuron {
       dense: Box::new(DenseLayerCPU::init()),
       conv: Box::new(ConvLayerOCL::init())
     }));
+  }
+
+  pub fn logger() -> MutexGuard<'static,Box<Logger>> {
+    LOGGER.lock().unwrap()
   }
 
   pub fn matrix() -> &'static Mutex<Option<Box<dyn MatrixMathExecutor + Send + Sync>>> {

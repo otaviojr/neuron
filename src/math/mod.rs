@@ -77,8 +77,9 @@ impl Tensor {
     let start = Instant::now();
     data.iter_mut().for_each(|x| *x = rng.sample(Uniform::new(low, high)));
     let elapsed = start.elapsed();
-    println!("Random tensor loaded after: {} seconds", elapsed.as_secs());
 
+    Neuron::logger().debug(&format!("Random tensor loaded after: {} seconds", elapsed.as_secs()));
+ 
     Tensor {
       rows,
       cols,
@@ -102,7 +103,8 @@ impl Tensor {
       *x =  ((-2.0 * f1.ln()).sqrt() * (2.0 * pi * f2).cos()) * he_scale;
     });
     let elapsed = start.elapsed();
-    println!("Random tensor loaded after: {} seconds", elapsed.as_secs());
+
+    Neuron::logger().debug(&format!("Random tensor loaded after: {} seconds", elapsed.as_secs()));
 
     Tensor {
       rows,

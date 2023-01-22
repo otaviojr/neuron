@@ -1,5 +1,4 @@
-use crate::math::Tensor;
-use std::f64::consts::E;
+use crate::{math::Tensor, Neuron};
 
 pub trait Activation {
   fn forward(&self, value: &Tensor) -> Tensor;
@@ -78,10 +77,8 @@ impl Tanh {
 
 impl Activation for Tanh {
   fn forward(&self, value: &Tensor) -> Tensor {
-    //println!("Sigmoid Entry: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| Tanh::tanh(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
-    //println!("Sigmoid result: {}", ret);
     ret
   }
 
@@ -106,7 +103,7 @@ impl Activation for SoftMax {
 
     let mut output = Tensor::zeros(value.rows(), value.cols());
 
-    println!("SoftMax Activation Input = {:?}", value);
+    Neuron::logger().debug(&format!("SoftMax Activation Input = {:?}", value));
 
     let mut sums = Vec::new();
     for j in 0..value.cols(){
@@ -124,8 +121,7 @@ impl Activation for SoftMax {
       }
     }
 
-    println!("SoftMax Activation Output = {:?}", output);
-
+    Neuron::logger().debug(&format!("SoftMax Activation Output = {:?}", output));
     output
   }
 

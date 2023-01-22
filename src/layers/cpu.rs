@@ -1,4 +1,4 @@
-use crate::math::Tensor;
+use crate::{math::Tensor, Neuron};
 
 use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig};
 
@@ -13,31 +13,36 @@ impl DenseLayerCPU {
 impl DenseLayerExecutor for DenseLayerCPU {
     fn forward(&self, input: &Vec<Box<Tensor>>, weights: &Tensor, bias: &Tensor, config: &DenseLayerConfig) -> Option<(Vec<Box<Tensor>>, Tensor, Vec<Box<Tensor>>)> {
       let input = &input[0];
-      println!("Bias = {:?}", bias);
-      println!("Layer weights size = {}x{}", weights.rows(), weights.cols());
-      println!("Layer weights = {:?}", weights);
-      println!("DenseLayer Input (Forward) = {:?}", input);
+
+      Neuron::logger().debug(&format!("Bias = {:?}", bias));
+      Neuron::logger().debug(&format!("Layer weights size = {}x{}", weights.rows(), weights.cols()));
+      Neuron::logger().debug(&format!("Layer weights = {:?}", weights));
+      Neuron::logger().debug(&format!("DenseLayer Input (Forward) = {:?}", input));
+
       let z1_1 = weights.mul(&input);
-      println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
-      println!("z1_1 = {:?}", z1_1);
+
+      Neuron::logger().debug(&format!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols()));
+      Neuron::logger().debug(&format!("z1_1 = {:?}", z1_1));
+
       let b_bias = bias.broadcast(z1_1.rows(), z1_1.cols());
-      println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
-      println!("b_bias = {:?}", b_bias);
-      let z1 = z1_1.add(&b_bias);
-  
+
+      Neuron::logger().debug(&format!("b_bias = {}x{}", b_bias.rows(), b_bias.cols()));
+      Neuron::logger().debug(&format!("b_bias = {:?}", b_bias));
+
+      let z1 = z1_1.add(&b_bias);  
       let last_z1 = z1.clone();
       let last_input = vec![input.clone()];
       let ret = vec![Box::new(config.activation.forward(&z1))];
   
-      println!("DenseLayer Output Before Activation(Forward) = {:?}", z1);
-      println!("DenseLayer Output (Forward) = {:?}", ret);
+      Neuron::logger().debug(&format!("DenseLayer Output Before Activation(Forward) = {:?}", z1));
+      Neuron::logger().debug(&format!("DenseLayer Output (Forward) = {:?}", ret));
   
       Some((last_input, last_z1, ret))
     }
 
     fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Tensor, weights: &mut Tensor, bias: &mut Tensor, activate: bool, config: &DenseLayerConfig) -> Option<Vec<Box<Tensor>>> {
-      println!("DenseLayer input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
-      println!("DenseLayer input (Backward) = {:?}", input);
+      Neuron::logger().debug(&format!("DenseLayer input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+      Neuron::logger().debug(&format!("DenseLayer input (Backward) = {:?}", input));
   
       let input = &input[0];
   
@@ -47,23 +52,31 @@ impl DenseLayerExecutor for DenseLayerCPU {
       } else {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       }
-      println!("dz size = {}x{}", dz.rows(), dz.cols());
-      //println!("dz = {}", dz);
+
+      Neuron::logger().debug(&format!("dz size = {}x{}", dz.rows(), dz.cols()));
+
       let forward_input = &forward_input[0];
-      println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
+
+      Neuron::logger().debug(&format!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols()));
+
       let dw = dz.mul(&forward_input.transpose()).div_value(forward_input.cols() as f64);
-      println!("dw size = {}x{}", dw.rows(), dw.cols());
-      //println!("dw = {}", dw);
+
+      Neuron::logger().debug(&format!("dw size = {}x{}", dw.rows(), dw.cols()));
+
       let mut db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
       db = db.sum_row().div_value(forward_input.cols() as f64);
-      println!("db size = {}x{}", db.rows(), db.cols());
+
+      Neuron::logger().debug(&format!("db size = {}x{}", db.rows(), db.cols()));
 
       let zl = vec![Box::new(weights.transpose().mul(&dz))];
-      println!("DenseLayer output size (Backward) = {}x{}x{}", zl[0].rows(), zl[0].cols(), zl.len());
-      println!("DenseLayer output (Backward) = {:?}", zl);
+
+      Neuron::logger().debug(&format!("DenseLayer output size (Backward) = {}x{}x{}", zl[0].rows(), zl[0].cols(), zl.len()));
+      Neuron::logger().debug(&format!("DenseLayer output (Backward) = {:?}", zl));
+
       let ret = Some(zl);
 
-      println!("weights size = {}x{}", weights.rows(), weights.cols());
+      Neuron::logger().debug(&format!("weights size = {}x{}", weights.rows(), weights.cols()));
+
       *weights = weights.sub(&dw.mul_value(config.learn_rate));
       *bias = bias.sub(&db.mul_value(config.learn_rate));
   
@@ -86,8 +99,8 @@ impl ConvLayerExecutor for ConvLayerCPU {
     let mut result_final = Vec::new();
     let mut z1_final = Vec::new();
 
-    println!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
-    println!("CNN Input (Forward) = {:?}", input);
+    Neuron::logger().debug(&format!("ConvLayer input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(&format!("ConvLayer input (Forward) = {:?}", input));
 
     for (f,b) in filters.iter().zip(bias.iter()) {
       let mut result_channels = Vec::new();
@@ -132,14 +145,10 @@ impl ConvLayerExecutor for ConvLayerCPU {
     let last_input = input.clone();
     let last_z1 = z1.clone();
 
-    //println!("CNN Filter (Forward) = {:?}", output);
-
-    println!("CNN Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len());
-    println!("CNN Filter (Forward) = {:?}", filters);
-    println!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len());
-    println!("CNN Output (Forward) = {:?}", output);
-
-
+    Neuron::logger().debug(&format!("ConvLayer Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len()));
+    Neuron::logger().debug(&format!("ConvLayer Filter (Forward) = {:?}", filters));
+    Neuron::logger().debug(&format!("ConvLayer Output Size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
+    Neuron::logger().debug(&format!("ConvLayer Output (Forward) = {:?}", output));
     Some((last_input, last_z1, output))
   }
 
@@ -148,8 +157,8 @@ impl ConvLayerExecutor for ConvLayerCPU {
     let mut final_dw = Vec::new();
     let mut final_db= Vec::new();
     
-    println!("CNN Input (Backward) = {:?}", input);
-    println!("CNN Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
+    Neuron::logger().debug(&format!("ConvLayer Input (Backward) = {:?}", input));
+    Neuron::logger().debug(&format!("ConvLayer Input Size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
 
     for (((f,inp), b),z1) in filters.iter_mut().zip(input.iter()).zip(bias.iter()).zip(last_z1.iter()) {
       let mut dw_channel = Vec::new();
@@ -180,8 +189,8 @@ impl ConvLayerExecutor for ConvLayerCPU {
       final_dw.push(dw_channel);
     }
 
-    println!("CNN final_dw (Backward) = {:?}", final_dw);
-    println!("CNN final_db (Backward) = {:?}", final_db);
+    Neuron::logger().debug(&format!("CNN final_dw (Backward) = {:?}", final_dw));
+    Neuron::logger().debug(&format!("CNN final_db (Backward) = {:?}", final_db));
 
     for (((f,dw),b),db) in filters.iter_mut().zip(final_dw.iter()).zip(bias.iter_mut()).zip(final_db.iter()) {
       for (fc,dw_channel) in f.iter_mut().zip(dw.iter()) {
@@ -193,11 +202,10 @@ impl ConvLayerExecutor for ConvLayerCPU {
         }
       }
     }
-    println!("CNN Filters (Backward) = {:?}", filters);
 
-    println!("CNN Output (Backward) = {:?}", final_output);
-    println!("CNN Output size (Backward) = {}x{}x{}", final_output[0].rows(), final_output[0].cols(), final_output.len());
-
+    Neuron::logger().debug(&format!("CNN Filters (Backward) = {:?}", filters));
+    Neuron::logger().debug(&format!("CNN Output (Backward) = {:?}", final_output));
+    Neuron::logger().debug(&format!("CNN Output size (Backward) = {}x{}x{}", final_output[0].rows(), final_output[0].cols(), final_output.len()));
     Some(final_output)  
   }
 }

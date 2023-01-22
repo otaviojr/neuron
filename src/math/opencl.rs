@@ -1,6 +1,8 @@
 use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
 use std::{ptr};
 
+use crate::Neuron;
+
 use super::{MatrixMathExecutor, Tensor};
 
 const PROGRAM_SOURCE: &str = r#"
@@ -93,7 +95,9 @@ impl MatrixMathOCL {
 
     if let Ok(device_id) = get_all_devices(CL_DEVICE_TYPE_GPU){
       let d = Device::new(device_id.first().unwrap().clone());
-      println!("OpenCL device: {}", d.name().unwrap());
+
+      Neuron::logger().info(&format!("OpenCL device: {}", d.name().unwrap()));
+
       if let Ok(c) = Context::from_device(&d) {
         if let Ok(q) = CommandQueue::create_default(&c, CL_QUEUE_PROFILING_ENABLE) {
           if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
@@ -161,13 +165,14 @@ impl MatrixMathExecutor for MatrixMathOCL {
             let error = ret.wait();
 
             if let Err(error) = error {
-              println!("OpenCL Error: {:?}", error);
+              Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
               std::process::exit(0);
             }  
           }
         }
       }
-      println!("OpenCL add matrix = {:?}", result);
+
+      Neuron::logger().debug(&format!("OpenCL add matrix = {:?}", result));
       result
   }
 
@@ -216,13 +221,14 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let error = ret.wait();
 
           if let Err(error) = error {
-            println!("OpenCL Error: {:?}", error);
+            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }  
         }
       }
     }
-    println!("OpenCL add matrix = {:?}", result);
+
+    Neuron::logger().debug(&format!("OpenCL add matrix = {:?}", result));
     result
   }
 
@@ -271,13 +277,14 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let error = ret.wait();
 
           if let Err(error) = error {
-            println!("OpenCL Error: {:?}", error);
+            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }
         }
       }
     }
-    println!("OpenCL multiply matrix = {:?}", result);
+
+    Neuron::logger().debug(&format!("OpenCL multiply matrix = {:?}", result));
     result
   }
 
@@ -326,13 +333,14 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let error = ret.wait();
 
           if let Err(error) = error {
-            println!("OpenCL Error: {:?}", error);
+            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }  
         }
       }
     }
-    println!("OpenCL multiply wise matrix = {:?}", result);
+
+    Neuron::logger().debug(&format!("OpenCL multiply wise matrix = {:?}", result));
     result
   }
 
@@ -381,13 +389,13 @@ impl MatrixMathExecutor for MatrixMathOCL {
             let error = ret.wait();
 
             if let Err(error) = error {
-              println!("OpenCL Error: {:?}", error);
+              Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
               std::process::exit(0);
             }  
           }
         }
       }
-      println!("OpenCL div matrix = {:?}", result);
+      Neuron::logger().debug(&format!("OpenCL div matrix = {:?}", result));
       result
   }
 
@@ -443,13 +451,14 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let error = ret.wait();
 
           if let Err(error) = error {
-            println!("OpenCL Error: {:?}", error);
+            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }  
         }
       }
     }
-    println!("OpenCL transpose matrix = {:?}", result);
+
+    Neuron::logger().debug(&format!("OpenCL transpose matrix = {:?}", result));
     result
   }
 
@@ -487,13 +496,13 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let error = ret.wait();
 
           if let Err(error) = error {
-            println!("OpenCL Error: {:?}", error);
+            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }  
         }
       }
     }
-    println!("OpenCL add value matrix = {:?}", result);
+    Neuron::logger().debug(&format!("OpenCL add value matrix = {:?}", result));
     result
   }
 
@@ -531,13 +540,15 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let error = ret.wait();
 
           if let Err(error) = error {
-            println!("OpenCL Error: {:?}", error);
+            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }  
         }
       }
     }
-    println!("OpenCL div value matrix = {:?}", result);
+
+    Neuron::logger().debug(&format!("OpenCL div value matrix = {:?}", result));
+
     result
   }
 
@@ -575,13 +586,15 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let error = ret.wait();
 
           if let Err(error) = error {
-            println!("OpenCL Error: {:?}", error);
+            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }  
         }
       }
     }
-    println!("OpenCL mul value matrix = {:?}", result);
+
+    Neuron::logger().debug(&format!("OpenCL mul value matrix = {:?}", result));
+
     result
   }
 
