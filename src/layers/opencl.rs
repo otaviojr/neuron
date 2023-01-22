@@ -7,7 +7,7 @@ use crate::math::Tensor;
 use super::{ConvLayerExecutor, cpu::ConvLayerCPU, ConvLayerConfig};
 
 const PROGRAM_SOURCE: &str = r#"
-__kernel void conv(__global double *input, __global double *filter, __global double *result, _global double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
+__kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
   int gid_x = get_global_id(0);
   int gid_y = get_global_id(1);
 
