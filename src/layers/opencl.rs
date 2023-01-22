@@ -1,85 +1,131 @@
+use std::ptr;
+
+use opencl3::{device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, context::Context, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, memory::{CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, Buffer}, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_event}, kernel::{Kernel, ExecuteKernel}};
+
 use crate::math::Tensor;
 
-use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig};
+use super::{ConvLayerExecutor, cpu::ConvLayerCPU, ConvLayerConfig};
 
-pub struct DenseLayerCPU;
+const PROGRAM_SOURCE: &str = r#"
+__kernel void conv(__global double *input, __global double *filter, __global double *result, _global double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
+  int gid_x = get_global_id(0);
+  int gid_y = get_global_id(1);
 
-impl DenseLayerCPU {
-  pub fn init() -> Self {
-    DenseLayerCPU
+  int input_x = gid_x * stride;
+  int input_y = gid_y * stride;
+
+  double sum = bias;
+  for(int i_y = 0; i_y < filter_height; i_y++) {
+    for(int i_x = 0; i_x < filter_width; i_x++) {
+      int filter_index = i_y * filter_width + i_x;
+      int input_index = (input_y + i_y) * input_width + (input_x + i_x);
+      sum += input[input_index] * filter[fulter_index];
+    }
   }
+  int result_index = gid_x + gid_y * result_width;
+  result[result_index] = sum;
+}
+"#;
+
+const KERNEL_MATRIX_CONV_NAME: &str = "conv";
+
+pub struct ConvLayerOCL {
+  device: Option<Device>,
+  context: Option<Context>,
+  queue: Option<CommandQueue>,
+  program: Option<Program>,
+  cpu: ConvLayerCPU
 }
 
-impl DenseLayerExecutor for DenseLayerCPU {
-    fn forward(&self, input: &Vec<Box<Tensor>>, weights: &Tensor, bias: &Tensor, config: &DenseLayerConfig) -> Option<(Vec<Box<Tensor>>, Tensor, Vec<Box<Tensor>>)> {
-      let input = &input[0];
-      println!("Bias = {:?}", bias);
-      println!("Layer weights size = {}x{}", weights.rows(), weights.cols());
-      println!("Layer weights = {:?}", weights);
-      println!("DenseLayer Input (Forward) = {:?}", input);
-      let z1_1 = weights.mul(&input);
-      println!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols());
-      println!("z1_1 = {:?}", z1_1);
-      let b_bias = bias.broadcast(z1_1.rows(), z1_1.cols());
-      println!("b_bias = {}x{}", b_bias.rows(), b_bias.cols());
-      println!("b_bias = {:?}", b_bias);
-      let z1 = z1_1.add(&b_bias);
-  
-      let last_z1 = z1.clone();
-      let last_input = vec![input.clone()];
-      let ret = vec![Box::new(config.activation.forward(&z1))];
-  
-      println!("DenseLayer Output Before Activation(Forward) = {:?}", z1);
-      println!("DenseLayer Output (Forward) = {:?}", ret);
-  
-      Some((last_input, last_z1, ret))
-    }
+impl ConvLayerOCL {
+  pub fn init() -> Self {
+    let mut device = None;
+    let mut context = None;
+    let mut queue = None;
+    let mut program = None;
 
-    fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Tensor, weights: &mut Tensor, bias: &mut Tensor, activate: bool, config: &DenseLayerConfig) -> Option<Vec<Box<Tensor>>> {
-      println!("DenseLayer input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
-      println!("DenseLayer input (Backward) = {:?}", input);
-  
-      let input = &input[0];
-  
-      let dz;
-      if activate {
-        dz = input.mul_wise(&config.activation.backward(&last_z1));
-      } else {
-        dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
+    if let Ok(device_id) = get_all_devices(CL_DEVICE_TYPE_GPU){
+      let d = Device::new(device_id.first().unwrap().clone());
+      println!("OpenCL device: {}", d.name().unwrap());
+      if let Ok(c) = Context::from_device(&d) {
+        if let Ok(q) = CommandQueue::create_default(&c, CL_QUEUE_PROFILING_ENABLE) {
+          if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
+            device= Some(d);
+            context = Some(c);
+            queue = Some(q);
+            program = Some(p);
+          }
+        }
       }
-      println!("dz size = {}x{}", dz.rows(), dz.cols());
-      //println!("dz = {}", dz);
-      let forward_input = &forward_input[0];
-      println!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols());
-      let dw = dz.mul(&forward_input.transpose()).div_value(forward_input.cols() as f64);
-      println!("dw size = {}x{}", dw.rows(), dw.cols());
-      //println!("dw = {}", dw);
-      let mut db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
-      db = db.sum_row().div_value(forward_input.cols() as f64);
-      println!("db size = {}x{}", db.rows(), db.cols());
-
-      let zl = vec![Box::new(weights.transpose().mul(&dz))];
-      println!("DenseLayer output size (Backward) = {}x{}x{}", zl[0].rows(), zl[0].cols(), zl.len());
-      println!("DenseLayer output (Backward) = {:?}", zl);
-      let ret = Some(zl);
-
-      println!("weights size = {}x{}", weights.rows(), weights.cols());
-      *weights = weights.sub(&dw.mul_value(config.learn_rate));
-      *bias = bias.sub(&db.mul_value(config.learn_rate));
-  
-      return ret;
     }
-}
 
-pub struct ConvLayerCPU;
-
-impl ConvLayerCPU {
-  pub fn init() -> Self {
-    ConvLayerCPU
+    ConvLayerOCL {
+      device,
+      context,
+      queue,
+      program,
+      cpu: ConvLayerCPU::init()
+    }
   }
 }
 
-impl ConvLayerExecutor for ConvLayerCPU {
+impl ConvLayerOCL{
+  fn do_conv(&self, input: &Box<Tensor>, filter: &Tensor, bias: &f64, result: &mut Tensor, config: &ConvLayerConfig) {
+    if let Some(ref context) = self.context {
+      if let Some(ref queue) = self.queue {
+        if let Some(ref program) = self.program {
+          let mut input_buffer = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, input.data().len(), ptr::null_mut()).unwrap()
+          };
+          let mut filter_buffer = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, filter.data().len(), ptr::null_mut()).unwrap()
+          };
+          let result_buffer = unsafe {
+            Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
+          };  
+
+          let _ = unsafe { queue.enqueue_write_buffer(&mut input_buffer, CL_BLOCKING, 0, input.data(), &[]).unwrap() };
+          let write_event = unsafe { queue.enqueue_write_buffer(&mut filter_buffer, CL_NON_BLOCKING, 0, filter.data(), &[]).unwrap() };
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&input_buffer)
+                .set_arg(&filter_buffer)
+                .set_arg(&result_buffer)
+                .set_arg(&bias)
+                .set_arg(&(input.cols() as i32))
+                .set_arg(&(input.rows() as i32))
+                .set_arg(&(filter.cols() as i32))
+                .set_arg(&(filter.rows() as i32))
+                .set_arg(&(result.cols() as i32))
+                .set_arg(&(result.rows() as i32))
+                .set_arg(&config.stride)
+                .set_global_work_size(input.cols())
+                .set_global_work_size(input.rows())
+                .set_wait_event(&write_event)
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+          
+          let ret = unsafe { queue.enqueue_read_buffer(&result_buffer, CL_NON_BLOCKING, 0, &mut result.mut_data(), &events).unwrap() };
+          let error = ret.wait();
+
+          if let Err(error) = error {
+            println!("OpenCL Error: {:?}", error);
+            std::process::exit(0);
+          }
+        }
+      }
+    }
+    println!("OpenCL convalution = {:?}", result);
+  }
+}
+
+impl ConvLayerExecutor for ConvLayerOCL {
   fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f64>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
     let result_height = (((input[0].rows() as f64 + 2.0* config.padding as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 + 2.0* config.padding as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
@@ -94,17 +140,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
       let mut z1_channels = Vec::new();
       for (inp,fc) in input.iter().zip(f.iter()) {
         let mut result = Tensor::zeros(result_height, result_width);
-        for i in (0..inp.rows() - filter_size.0).step_by(config.stride) {
-          for j in (0..inp.cols() - filter_size.1).step_by(config.stride) {
-            let mut sum = *b;
-            for k in 0 .. filter_size.0 {
-              for l in 0 .. filter_size.1 {
-                sum += inp.get(i+k,j+l) * fc.get(k,l);
-              }
-            }
-            result.set(i/config.stride, j/config.stride, sum);
-          }
-        }
+        self.do_conv(inp, fc, b, &mut result, config);
         let z1 = config.activation.forward(&result);
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(result));

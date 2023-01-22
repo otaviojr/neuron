@@ -143,6 +143,10 @@ impl Tensor {
     self.data.as_ref()
   }
 
+  pub fn mut_data(&mut self) -> &mut Vec<f64> {
+    self.data.as_mut()
+  }
+
   // Transpose the tensor
   pub fn transpose(&self) -> Tensor {
     return Neuron::matrix().lock().unwrap().as_ref().unwrap().transpose(self);

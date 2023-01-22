@@ -1,4 +1,5 @@
 pub mod cpu;
+pub mod opencl;
 
 use crate::{Propagation, Loader, Weigths, Neuron};
 use crate::math::Tensor;
