@@ -6,12 +6,13 @@ pub mod pipeline;
 
 use std::{sync::Mutex, any::Any, io::{Write, Read}};
 
-use layers::{DenseLayerExecutor, cpu::DenseLayerCPU};
+use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU}, ConvLayerExecutor};
 use math::{Tensor, MatrixMathExecutor, cpu::MatrixMathCPU, opencl::MatrixMathOCL};
 use lazy_static::lazy_static;
 
 pub struct Executors {
-  dense: Box<dyn DenseLayerExecutor + Send + Sync>
+  dense: Box<dyn DenseLayerExecutor + Send + Sync>,
+  conv: Box<dyn ConvLayerExecutor + Send + Sync>
 }
 
 lazy_static! {
@@ -49,7 +50,8 @@ impl Neuron {
     //init Neuron with CPU executor
     *MATRIX_EXECUTOR.lock().unwrap() = Some(Box::new(MatrixMathCPU::init()));
     *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
-      dense: Box::new(DenseLayerCPU::init())
+      dense: Box::new(DenseLayerCPU::init()),
+      conv: Box::new(ConvLayerCPU::init())
     }));
 
     Neuron {
@@ -80,7 +82,8 @@ impl Neuron {
   pub fn enable_opencl() {
     *MATRIX_EXECUTOR.lock().unwrap() = Some(Box::new(MatrixMathOCL::init()));
     *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
-      dense: Box::new(DenseLayerCPU::init())
+      dense: Box::new(DenseLayerCPU::init()),
+      conv: Box::new(ConvLayerCPU::init())
     }));
   }
 
