@@ -21,7 +21,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
     for(int i_x = 0; i_x < filter_width; i_x++) {
       int filter_index = i_y * filter_width + i_x;
       int input_index = (input_y + i_y) * input_width + (input_x + i_x);
-      sum += input[input_index] * filter[fulter_index];
+      sum += input[input_index] * filter[filter_index];
     }
   }
   int result_index = gid_x + gid_y * result_width;
