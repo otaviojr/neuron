@@ -5,10 +5,10 @@ use std::io::{self, Write};
 #[derive(PartialEq, PartialOrd, Debug)]
 #[allow(unused_variables)]
 pub enum LogLevel {
-  Error,
-  Warn,
-  Info,
   Debug,
+  Info,
+  Warn,
+  Error,
 }
 
 impl fmt::Display for LogLevel {
