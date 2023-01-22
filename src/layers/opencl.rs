@@ -107,7 +107,7 @@ impl ConvLayerOCL{
                 .set_arg(&(result.rows() as i32))
                 .set_arg(&(config.stride as i32))
                 .set_arg(&(config.padding as i32))
-                .set_global_work_size((input.rows()-config.stride) * (input.cols()-config.stride))
+                .set_global_work_size(result.data().len())
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
