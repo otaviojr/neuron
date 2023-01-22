@@ -61,7 +61,7 @@ impl Neuron {
     }
   }
 
-  pub fn set_log(&mut self, file: Option<File>, level: util::LogLevel) {
+  pub fn set_log(file: Option<File>, level: util::LogLevel) {
     *LOGGER.lock().unwrap() = Box::new(Logger::new_with_file(file, level));
   }
 

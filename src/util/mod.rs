@@ -8,6 +8,7 @@ pub enum LogLevel {
   Debug,
   Info,
   Warn,
+  Profiling,
   Error,
 }
 
@@ -17,6 +18,7 @@ impl fmt::Display for LogLevel {
           LogLevel::Error => write!(f, "Error"),
           LogLevel::Warn => write!(f, "Warn"),
           LogLevel::Info => write!(f, "Info"),
+          LogLevel::Profiling => write!(f, "Profiling"),
           LogLevel::Debug => write!(f, "Debug"),
       }
   }
@@ -80,5 +82,9 @@ impl Logger {
 
     pub fn warn(&mut self, message: &str) {
         self.log(LogLevel::Warn, message);
+    }
+
+    pub fn profiling(&mut self, message: &str) {
+        self.log(LogLevel::Profiling, message);
     }
 }

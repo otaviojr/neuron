@@ -96,7 +96,7 @@ impl MatrixMathOCL {
     if let Ok(device_id) = get_all_devices(CL_DEVICE_TYPE_GPU){
       let d = Device::new(device_id.first().unwrap().clone());
 
-      Neuron::logger().info(&format!("OpenCL device: {}", d.name().unwrap()));
+      Neuron::logger().info(&format!("OpenCL device (MatrixMathOCL): {}", d.name().unwrap()));
 
       if let Ok(c) = Context::from_device(&d) {
         if let Ok(q) = CommandQueue::create_default(&c, CL_QUEUE_PROFILING_ENABLE) {

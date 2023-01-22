@@ -50,7 +50,7 @@ impl ConvLayerOCL {
 
     if let Ok(device_id) = get_all_devices(CL_DEVICE_TYPE_GPU){
       let d = Device::new(device_id.first().unwrap().clone());
-      println!("OpenCL device: {}", d.name().unwrap());
+      Neuron::logger().info(&format!("OpenCL device (ConvLayerOCL): {}", d.name().unwrap()));
       if let Ok(c) = Context::from_device(&d) {
         if let Ok(q) = CommandQueue::create_default(&c, CL_QUEUE_PROFILING_ENABLE) {
           if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
