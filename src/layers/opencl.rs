@@ -8,8 +8,10 @@ use super::{ConvLayerExecutor, cpu::ConvLayerCPU, ConvLayerConfig};
 
 const PROGRAM_SOURCE: &str = r#"
 __kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
-  int gid_x = get_global_id(0);
-  int gid_y = get_global_id(1);
+  int gid = get_global_id(0);
+
+  int gid_x = gid % width;
+  int gid_y = gid / width;
 
   int input_x = gid_x * stride;
   int input_y = gid_y * stride;
@@ -101,9 +103,8 @@ impl ConvLayerOCL{
                 .set_arg(&(filter.rows() as i32))
                 .set_arg(&(result.cols() as i32))
                 .set_arg(&(result.rows() as i32))
-                .set_arg(&config.stride)
-                .set_global_work_size(input.cols())
-                .set_global_work_size(input.rows())
+                .set_arg(&(config.stride as i32))
+                .set_global_work_size(input.rows()-config.stride * input.cols()-config.stride)
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
