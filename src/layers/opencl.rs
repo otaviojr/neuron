@@ -16,7 +16,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
   int input_x = gid_x * stride;
   int input_y = gid_y * stride;
 
-  double sum = 0.0;
+  double sum = bias;
   for(int i_y = -padding; i_y < filter_height + padding; i_y++) {
     for(int i_x = -padding; i_x < filter_width + padding; i_x++) {
       int filter_index = (i_y + padding) * (filter_width + 2 * padding) + (i_x + padding);
@@ -27,7 +27,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
     }
   }
   int result_index = gid_y * result_width + gid_x;
-  result[result_index] = sum + bias;
+  result[result_index] = sum;
 }
 "#;
 
