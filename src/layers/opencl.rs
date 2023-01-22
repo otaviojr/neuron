@@ -10,8 +10,8 @@ const PROGRAM_SOURCE: &str = r#"
 __kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
   int gid = get_global_id(0);
 
-  int gid_x = gid % width;
-  int gid_y = gid / width;
+  int gid_x = gid % input_width;
+  int gid_y = gid / input_width;
 
   int input_x = gid_x * stride;
   int input_y = gid_y * stride;
@@ -24,7 +24,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
       sum += input[input_index] * filter[filter_index];
     }
   }
-  int result_index = gid_x + gid_y * result_width;
+  int result_index = gid_y * result_width + gid_x;
   result[result_index] = sum;
 }
 "#;
