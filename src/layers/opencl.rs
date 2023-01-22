@@ -7,21 +7,23 @@ use crate::math::Tensor;
 use super::{ConvLayerExecutor, cpu::ConvLayerCPU, ConvLayerConfig};
 
 const PROGRAM_SOURCE: &str = r#"
-__kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
+__kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
-  int gid_x = gid % input_width;
-  int gid_y = gid / input_width;
+  int gid_x = gid % result_width;
+  int gid_y = gid / result_width;
 
   int input_x = gid_x * stride;
   int input_y = gid_y * stride;
 
   double sum = bias;
-  for(int i_y = 0; i_y < filter_height; i_y++) {
-    for(int i_x = 0; i_x < filter_width; i_x++) {
-      int filter_index = i_y * filter_width + i_x;
+  for(int i_y = -padding; i_y < filter_height + padding; i_y++) {
+    for(int i_x = -padding; i_x < filter_width + padding; i_x++) {
+      int filter_index = (i_y + padding) * (filter_width + 2 * padding) + (i_x + padding);
       int input_index = (input_y + i_y) * input_width + (input_x + i_x);
-      sum += input[input_index] * filter[filter_index];
+      if (input_y + i_y >= 0 && input_x + i_x >= 0 && input_y + i_y < input_height && input_x + i_x < input_width) {
+        sum += input[input_index] * filter[filter_index];
+      }
     }
   }
   int result_index = gid_y * result_width + gid_x;
@@ -104,6 +106,7 @@ impl ConvLayerOCL{
                 .set_arg(&(result.cols() as i32))
                 .set_arg(&(result.rows() as i32))
                 .set_arg(&(config.stride as i32))
+                .set_arg(&(config.padding as i32))
                 .set_global_work_size((input.rows()-config.stride) * (input.cols()-config.stride))
                 .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
@@ -141,7 +144,9 @@ impl ConvLayerExecutor for ConvLayerOCL {
       let mut z1_channels = Vec::new();
       for (inp,fc) in input.iter().zip(f.iter()) {
         let mut result = Tensor::zeros(result_height, result_width);
+
         self.do_conv(inp, fc, b, &mut result, config);
+        
         let z1 = config.activation.forward(&result);
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(result));
