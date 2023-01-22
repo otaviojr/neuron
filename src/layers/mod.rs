@@ -155,7 +155,7 @@ impl Loader for ConvLayer {
     for (idx, filter )in self.filters.iter().enumerate() {
       let mut weigths = Vec::new();
       for channel in filter.iter() {
-        println!("filter size = {}x{}", channel.rows(), channel.cols());
+        Neuron::logger().debug(&format!("filter size = {}x{}", channel.rows(), channel.cols()));
         weigths.push(Box::new(channel.clone()));
       }
       
@@ -239,8 +239,8 @@ impl Propagation for FlattenLayer {
     self.input_cols = input[0].cols();
     self.n_channels = input.len();
 
-    println!("FlattenLayer Input Size (Forward) = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
-    println!("FlattenLayer Input (Forward) = {:?}",input);
+    Neuron::logger().debug(&format!("FlattenLayer Input Size (Forward) = {}x{}x{}",input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(&format!("FlattenLayer Input (Forward) = {:?}",input));
 
     let mut tmp = Vec::new();
     for i in input.iter() {
@@ -252,8 +252,10 @@ impl Propagation for FlattenLayer {
     }
 
     let t = Tensor::from_data(tmp.len(), 1, tmp);
-    println!("FlattenLayer Output Size (Forward) = {}x{}",t.rows(), t.cols());
-    println!("FlattenLayer Output (Forward) = {:?}",t);
+
+    Neuron::logger().debug(&format!("FlattenLayer Output Size (Forward) = {}x{}",t.rows(), t.cols()));
+    Neuron::logger().debug(&format!("FlattenLayer Output (Forward) = {:?}",t));
+
     Some(vec![Box::new(t)])
   }
 
@@ -261,7 +263,7 @@ impl Propagation for FlattenLayer {
 
     let mut output = Vec::new();
 
-    println!("FlattenLayer Input (Backward) = {}x{}x{}",input[0].rows(), input[0].cols(), input.len());
+    Neuron::logger().debug(&format!("FlattenLayer Input Size (Backward) = {}x{}x{}",input[0].rows(), input[0].cols(), input.len()));
 
     for n_channel in 0..self.n_channels {
       let mut tmp = Tensor::zeros(self.input_rows, self.input_cols);
@@ -273,8 +275,8 @@ impl Propagation for FlattenLayer {
       output.push(Box::new(tmp));
     }
 
-    println!("FlattenLayer Output Size (Backward) = {}x{}x{}",output[0].rows(), output[0].cols(),output.len());
-    println!("FlattenLayer Output (Backward) = {:?}",output);
+    Neuron::logger().debug(&format!("FlattenLayer Output Size (Backward) = {}x{}x{}",output[0].rows(), output[0].cols(),output.len()));
+    Neuron::logger().debug(&format!("FlattenLayer Output (Backward) = {:?}",output));
 
     Some(output)
   }
@@ -317,9 +319,9 @@ impl Propagation for PoolingLayer {
     let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     
-    println!("PoolingLayer Input (Forward) = {:?}", input);
-    println!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
-    println!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len());
+    Neuron::logger().debug(&format!("PoolingLayer Input (Forward) = {:?}", input));
+    Neuron::logger().debug(&format!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(&format!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len()));
 
     let mut result_final = Vec::new();
     for inp in input.iter() {
@@ -343,7 +345,7 @@ impl Propagation for PoolingLayer {
 
     self.last_input = Some(input.clone());
 
-    println!("PoolingLayer Output (Forward) = {:?}", result_final);
+    Neuron::logger().debug(&format!("PoolingLayer Output (Forward) = {:?}", result_final));
 
     Some(result_final)
   }
@@ -352,8 +354,8 @@ impl Propagation for PoolingLayer {
 
     let mut result_final = Vec::new();
 
-    println!("Pooling Input (Backward) = {:?}", input);
-    println!("Pooling Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len());
+    Neuron::logger().debug(&format!("PoolingLayer Input (Backward) = {:?}", input));
+    Neuron::logger().debug(&format!("PoolingLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
 
     if let Some(ref fic) = self.last_input {
       for (inp,fi) in input.iter().zip(fic.iter()) {
@@ -380,8 +382,8 @@ impl Propagation for PoolingLayer {
       }
     }
 
-    println!("Pooling Output (Backward) = {:?}", result_final);
-    println!("Pooling Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len());
+    Neuron::logger().debug(&format!("PoolingLayer Output (Backward) = {:?}", result_final));
+    Neuron::logger().debug(&format!("PoolingLayer Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len()));
 
     Some(result_final)
   }
