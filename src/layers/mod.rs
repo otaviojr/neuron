@@ -1,6 +1,8 @@
 pub mod cpu;
 pub mod opencl;
 
+use std::time::Instant;
+
 use crate::{Propagation, Loader, Weigths, Neuron};
 use crate::math::Tensor;
 use crate::activations::Activation;
@@ -235,6 +237,8 @@ impl FlattenLayer {
 impl Propagation for FlattenLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
 
+    let timer = Instant::now();
+
     self.input_rows = input[0].rows();
     self.input_cols = input[0].cols();
     self.n_channels = input.len();
@@ -256,10 +260,14 @@ impl Propagation for FlattenLayer {
     Neuron::logger().debug(&format!("FlattenLayer Output Size (Forward) = {}x{}",t.rows(), t.cols()));
     Neuron::logger().debug(&format!("FlattenLayer Output (Forward) = {:?}",t));
 
+    Neuron::logger().profiling(&format!("FlattenLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+
     Some(vec![Box::new(t)])
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
+
+    let timer = Instant::now();
 
     let mut output = Vec::new();
 
@@ -277,6 +285,8 @@ impl Propagation for FlattenLayer {
 
     Neuron::logger().debug(&format!("FlattenLayer Output Size (Backward) = {}x{}x{}",output[0].rows(), output[0].cols(),output.len()));
     Neuron::logger().debug(&format!("FlattenLayer Output (Backward) = {:?}",output));
+
+    Neuron::logger().profiling(&format!("FlattenLayer Backward Time = {}ms", timer.elapsed().as_millis()));
 
     Some(output)
   }
@@ -316,6 +326,8 @@ impl PoolingLayer {
 impl Propagation for PoolingLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
     
+    let timer = Instant::now();
+
     let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
     
@@ -347,10 +359,14 @@ impl Propagation for PoolingLayer {
 
     Neuron::logger().debug(&format!("PoolingLayer Output (Forward) = {:?}", result_final));
 
+    Neuron::logger().profiling(&format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+
     Some(result_final)
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
+
+    let timer = Instant::now();
 
     let mut result_final = Vec::new();
 
@@ -385,6 +401,8 @@ impl Propagation for PoolingLayer {
     Neuron::logger().debug(&format!("PoolingLayer Output (Backward) = {:?}", result_final));
     Neuron::logger().debug(&format!("PoolingLayer Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len()));
 
+    Neuron::logger().profiling(&format!("PoolingLayer Backward Time = {}ms", timer.elapsed().as_millis()));
+    
     Some(result_final)
   }
   

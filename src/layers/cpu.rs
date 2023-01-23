@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::{math::Tensor, Neuron};
 
 use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig};
@@ -12,6 +14,9 @@ impl DenseLayerCPU {
 
 impl DenseLayerExecutor for DenseLayerCPU {
     fn forward(&self, input: &Vec<Box<Tensor>>, weights: &Tensor, bias: &Tensor, config: &DenseLayerConfig) -> Option<(Vec<Box<Tensor>>, Tensor, Vec<Box<Tensor>>)> {
+
+      let timer = Instant::now();
+
       let input = &input[0];
 
       Neuron::logger().debug(&format!("Bias = {:?}", bias));
@@ -37,10 +42,14 @@ impl DenseLayerExecutor for DenseLayerCPU {
       Neuron::logger().debug(&format!("DenseLayer Output Before Activation(Forward) = {:?}", z1));
       Neuron::logger().debug(&format!("DenseLayer Output (Forward) = {:?}", ret));
   
+      Neuron::logger().profiling(&format!("DenseLayer Forward Time = {}ms", timer.elapsed().as_millis()));
       Some((last_input, last_z1, ret))
     }
 
     fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Tensor, weights: &mut Tensor, bias: &mut Tensor, activate: bool, config: &DenseLayerConfig) -> Option<Vec<Box<Tensor>>> {
+
+      let timer = Instant::now();
+
       Neuron::logger().debug(&format!("DenseLayer input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
       Neuron::logger().debug(&format!("DenseLayer input (Backward) = {:?}", input));
   
@@ -79,6 +88,8 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       *weights = weights.sub(&dw.mul_value(config.learn_rate));
       *bias = bias.sub(&db.mul_value(config.learn_rate));
+
+      Neuron::logger().profiling(&format!("DenseLayer Backward Time = {}ms", timer.elapsed().as_millis()));
   
       return ret;
     }
@@ -94,6 +105,9 @@ impl ConvLayerCPU {
 
 impl ConvLayerExecutor for ConvLayerCPU {
   fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f64>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+
+    let timer = Instant::now();
+
     let result_height = (((input[0].rows() as f64 + 2.0* config.padding as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 + 2.0* config.padding as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
     let mut result_final = Vec::new();
@@ -149,10 +163,16 @@ impl ConvLayerExecutor for ConvLayerCPU {
     Neuron::logger().debug(&format!("ConvLayer Filter (Forward) = {:?}", filters));
     Neuron::logger().debug(&format!("ConvLayer Output Size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
     Neuron::logger().debug(&format!("ConvLayer Output (Forward) = {:?}", output));
+
+    Neuron::logger().profiling(&format!("ConvLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+
     Some((last_input, last_z1, output))
   }
 
   fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, _: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
+ 
+    let timer = Instant::now();
+ 
     let mut final_output = Vec::new();
     let mut final_dw = Vec::new();
     let mut final_db= Vec::new();
@@ -206,6 +226,9 @@ impl ConvLayerExecutor for ConvLayerCPU {
     Neuron::logger().debug(&format!("CNN Filters (Backward) = {:?}", filters));
     Neuron::logger().debug(&format!("CNN Output (Backward) = {:?}", final_output));
     Neuron::logger().debug(&format!("CNN Output size (Backward) = {}x{}x{}", final_output[0].rows(), final_output[0].cols(), final_output.len()));
+
+    Neuron::logger().profiling(&format!("ConvLayer Backward Time = {}ms", timer.elapsed().as_millis()));
+
     Some(final_output)  
   }
 }
