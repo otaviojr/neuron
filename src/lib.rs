@@ -162,7 +162,7 @@ impl Neuron {
       index += 1;
       let name = String::from_utf8(name).unwrap();
 
-      Neuron::logger().debug(&format!("Reading data: {}",name));
+      Neuron::logger().debug(|| format!("Reading data: {}",name));
 
       let mut weights = Vec::new();
       let mut bias = Vec::new();
@@ -191,7 +191,7 @@ impl Neuron {
         }
         index += 8;
 
-        Neuron::logger().debug(&format!("Reading weights: {}",size));
+        Neuron::logger().debug(|| format!("Reading weights: {}",size));
 
         let mut data = Vec::new();
         for _ in 0..size {
@@ -203,7 +203,7 @@ impl Neuron {
           index += 8;
         }
 
-        Neuron::logger().debug(&format!("Loading weights: {}x{}x{}-{}", rows, cols, c, data.len()));
+        Neuron::logger().debug(|| format!("Loading weights: {}x{}x{}-{}", rows, cols, c, data.len()));
 
         weights.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
       }
@@ -233,7 +233,7 @@ impl Neuron {
         }
         index += 8;
 
-        Neuron::logger().debug(&format!("Reading bias: {}",size));
+        Neuron::logger().debug(|| format!("Reading bias: {}",size));
 
         let mut data = Vec::new();
         for _ in 0..size {
@@ -245,7 +245,7 @@ impl Neuron {
           index += 8;
         }
 
-        Neuron::logger().debug(&format!("Loading bias: {}x{}x{}-{}", rows, cols, c, data.len()));
+        Neuron::logger().debug(|| format!("Loading bias: {}x{}x{}-{}", rows, cols, c, data.len()));
         
         bias.push(Box::new(Tensor::from_data(rows as usize, cols as usize, data)));
       }

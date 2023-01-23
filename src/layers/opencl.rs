@@ -50,7 +50,7 @@ impl ConvLayerOCL {
 
     if let Ok(device_id) = get_all_devices(CL_DEVICE_TYPE_GPU){
       let d = Device::new(device_id.first().unwrap().clone());
-      Neuron::logger().info(&format!("OpenCL device (ConvLayerOCL): {}", d.name().unwrap()));
+      Neuron::logger().info(|| format!("OpenCL device (ConvLayerOCL): {}", d.name().unwrap()));
       if let Ok(c) = Context::from_device(&d) {
         if let Ok(q) = CommandQueue::create_default(&c, CL_QUEUE_PROFILING_ENABLE) {
           if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
@@ -119,13 +119,13 @@ impl ConvLayerOCL{
           let error = ret.wait();
 
           if let Err(error) = error {
-            Neuron::logger().error(&format!("OpenCL Error: {:?}", error));
+            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }
         }
       }
     }
-    Neuron::logger().debug(&format!("OpenCL convolution result = {:?}", result));
+    Neuron::logger().debug(|| format!("OpenCL convolution result = {:?}", result));
   }
 }
 
@@ -136,8 +136,8 @@ impl ConvLayerExecutor for ConvLayerOCL {
     let mut result_final = Vec::new();
     let mut z1_final = Vec::new();
 
-    Neuron::logger().debug(&format!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
-    Neuron::logger().debug(&format!("CNN Input (Forward) = {:?}", input));
+    Neuron::logger().debug(|| format!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(|| format!("CNN Input (Forward) = {:?}", input));
 
     for (f,b) in filters.iter().zip(bias.iter()) {
       let mut result_channels = Vec::new();
@@ -174,10 +174,10 @@ impl ConvLayerExecutor for ConvLayerOCL {
     let last_input = input.clone();
     let last_z1 = z1.clone();
 
-    Neuron::logger().debug(&format!("CNN Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len()));
-    Neuron::logger().debug(&format!("CNN Filter (Forward) = {:?}", filters));
-    Neuron::logger().debug(&format!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
-    Neuron::logger().debug(&format!("CNN Output (Forward) = {:?}", output));
+    Neuron::logger().debug(|| format!("CNN Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len()));
+    Neuron::logger().debug(|| format!("CNN Filter (Forward) = {:?}", filters));
+    Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
+    Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", output));
 
     Some((last_input, last_z1, output))
   }

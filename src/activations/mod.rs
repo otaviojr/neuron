@@ -103,7 +103,7 @@ impl Activation for SoftMax {
 
     let mut output = Tensor::zeros(value.rows(), value.cols());
 
-    Neuron::logger().debug(&format!("SoftMax Activation Input = {:?}", value));
+    Neuron::logger().debug( || format!("SoftMax Activation Input = {:?}", value));
 
     let mut sums = Vec::new();
     for j in 0..value.cols(){
@@ -121,7 +121,7 @@ impl Activation for SoftMax {
       }
     }
 
-    Neuron::logger().debug(&format!("SoftMax Activation Output = {:?}", output));
+    Neuron::logger().debug( || format!("SoftMax Activation Output = {:?}", output));
     output
   }
 

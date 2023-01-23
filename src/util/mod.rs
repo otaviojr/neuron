@@ -68,23 +68,43 @@ impl Logger {
         }
     }
 
-    pub fn debug(&mut self, message: &str) {
-        self.log(LogLevel::Debug, message);
+    pub fn debug<F>(&mut self, f: F) 
+    where F: FnOnce() -> String {
+      if self.log_level <= LogLevel::Debug {
+          let message = f();
+          self.log(LogLevel::Debug, &message);
+      }
     }
 
-    pub fn info(&mut self, message: &str) {
-        self.log(LogLevel::Info, message);
+    pub fn info<F>(&mut self, f: F) 
+    where F: FnOnce() -> String {
+      if self.log_level <= LogLevel::Info {
+          let message = f();
+          self.log(LogLevel::Info, &message);
+      }
     }
 
-    pub fn error(&mut self, message: &str) {
-        self.log(LogLevel::Error, message);
+    pub fn error<F>(&mut self, f: F) 
+    where F: FnOnce() -> String {
+      if self.log_level <= LogLevel::Error {
+          let message = f();
+          self.log(LogLevel::Error, &message);
+      }
     }
 
-    pub fn warn(&mut self, message: &str) {
-        self.log(LogLevel::Warn, message);
+    pub fn warn<F>(&mut self, f: F) 
+    where F: FnOnce() -> String {
+      if self.log_level <= LogLevel::Warn {
+          let message = f();
+          self.log(LogLevel::Warn, &message);
+      }
     }
 
-    pub fn profiling(&mut self, message: &str) {
-        self.log(LogLevel::Profiling, message);
+    pub fn profiling<F>(&mut self, f: F) 
+    where F: FnOnce() -> String {
+      if self.log_level <= LogLevel::Profiling {
+          let message = f();
+          self.log(LogLevel::Profiling, &message);
+      }
     }
 }
