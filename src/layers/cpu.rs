@@ -29,12 +29,12 @@ impl DenseLayerExecutor for DenseLayerCPU {
       Neuron::logger().debug(&format!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols()));
       Neuron::logger().debug(&format!("z1_1 = {:?}", z1_1));
 
+      Neuron::logger().profiling(&format!("DenseLayer Forward Time (Before Broadcast) = {}ms", timer.elapsed().as_millis()));
+
       let b_bias = bias.broadcast(z1_1.rows(), z1_1.cols());
 
       Neuron::logger().debug(&format!("b_bias = {}x{}", b_bias.rows(), b_bias.cols()));
       Neuron::logger().debug(&format!("b_bias = {:?}", b_bias));
-
-      Neuron::logger().profiling(&format!("DenseLayer Forward Time (Before Activation) = {}ms", timer.elapsed().as_millis()));
 
       let z1 = z1_1.add(&b_bias);  
       let last_z1 = z1.clone();
