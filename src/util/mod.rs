@@ -6,9 +6,9 @@ use std::io::{self, Write};
 #[allow(unused_variables)]
 pub enum LogLevel {
   Debug,
+  Profiling,
   Info,
   Warn,
-  Profiling,
   Error,
 }
 
