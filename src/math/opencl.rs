@@ -1,5 +1,5 @@
 use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
-use std::{ptr};
+use std::{ptr, time::Instant};
 
 use crate::Neuron;
 
@@ -236,8 +236,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
     // Check that the tensors are compatible for multiplication
     assert!(a.cols == b.rows);
 
+    let timer = Instant::now();
+
     // Create a new tensor to store the result
     let mut result = Tensor::zeros(a.rows, b.cols);
+
+    Neuron::logger().profiling(|| format!("Matrix Mul (results created) = {}ms", timer.elapsed().as_millis()));
 
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
@@ -252,10 +256,16 @@ impl MatrixMathExecutor for MatrixMathOCL {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
 
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl memory) = {}ms", timer.elapsed().as_millis()));
+
           let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
           let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl write memory) = {}ms", timer.elapsed().as_millis()));
+
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_NAME).unwrap();
+
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl kernel created) = {}ms", timer.elapsed().as_millis()));
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
@@ -273,6 +283,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let mut events: Vec<cl_event> = Vec::default();
           events.push(kernel_event.get());
           
+          Neuron::logger().profiling(|| format!("Matrix Mul (kernel executed) = {}ms", timer.elapsed().as_millis()));
+
           let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
           let error = ret.wait();
 
@@ -280,6 +292,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
             Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
           }
+
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl result readed) = {}ms", timer.elapsed().as_millis()));
+
         }
       }
     }
