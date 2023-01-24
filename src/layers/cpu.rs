@@ -24,19 +24,19 @@ impl DenseLayerExecutor for DenseLayerCPU {
       Neuron::logger().debug(|| format!("Layer weights = {:?}", weights));
       Neuron::logger().debug(|| format!("DenseLayer Input (Forward) = {:?}", input));
 
-      let z1_1 = weights.mul(&input);
+      let z1_1 = weights.mul(&input).unwrap();
 
       Neuron::logger().profiling(|| format!("DenseLayer Forward Time (weights mul) = {}ms", timer.elapsed().as_millis()));
 
       Neuron::logger().debug(|| format!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols()));
       Neuron::logger().debug(|| format!("z1_1 = {:?}", z1_1));
 
-      let b_bias = bias.broadcast(z1_1.rows(), z1_1.cols());
+      let b_bias = bias.broadcast(z1_1.rows(), z1_1.cols()).unwrap();
 
       Neuron::logger().debug(|| format!("b_bias = {}x{}", b_bias.rows(), b_bias.cols()));
       Neuron::logger().debug(|| format!("b_bias = {:?}", b_bias));
 
-      let z1 = z1_1.add(&b_bias);  
+      let z1 = z1_1.add(&b_bias).unwrap();  
 
       Neuron::logger().profiling(|| format!("DenseLayer Forward Time (add bias) = {}ms", timer.elapsed().as_millis()));
 
@@ -45,7 +45,7 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       Neuron::logger().profiling(|| format!("DenseLayer Forward Time (clone) = {}ms", timer.elapsed().as_millis()));
 
-      let ret = vec![Box::new(config.activation.forward(&z1))];
+      let ret = vec![Box::new(config.activation.forward(&z1).unwrap())];
   
       Neuron::logger().profiling(|| format!("DenseLayer Forward Time (activation) = {}ms", timer.elapsed().as_millis()));
 
@@ -67,7 +67,7 @@ impl DenseLayerExecutor for DenseLayerCPU {
   
       let dz;
       if activate {
-        dz = input.mul_wise(&config.activation.backward(&last_z1));
+        dz = input.mul_wise(&config.activation.backward(&last_z1).unwrap()).unwrap();
       } else {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       }
@@ -78,16 +78,16 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       Neuron::logger().debug(|| format!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols()));
 
-      let dw = dz.mul(&forward_input.transpose()).div_value(forward_input.cols() as f64);
+      let dw = dz.mul(&forward_input.transpose().unwrap()).unwrap().div_value(forward_input.cols() as f64).unwrap();
 
       Neuron::logger().debug(|| format!("dw size = {}x{}", dw.rows(), dw.cols()));
 
       let mut db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
-      db = db.sum_row().div_value(forward_input.cols() as f64);
+      db = db.sum_row().unwrap().div_value(forward_input.cols() as f64).unwrap();
 
       Neuron::logger().debug(|| format!("db size = {}x{}", db.rows(), db.cols()));
 
-      let zl = vec![Box::new(weights.transpose().mul(&dz))];
+      let zl = vec![Box::new(weights.transpose().unwrap().mul(&dz).unwrap())];
 
       Neuron::logger().debug(|| format!("DenseLayer output size (Backward) = {}x{}x{}", zl[0].rows(), zl[0].cols(), zl.len()));
       Neuron::logger().debug(|| format!("DenseLayer output (Backward) = {:?}", zl));
@@ -96,8 +96,8 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       Neuron::logger().debug(|| format!("weights size = {}x{}", weights.rows(), weights.cols()));
 
-      *weights = weights.sub(&dw.mul_value(config.learn_rate));
-      *bias = bias.sub(&db.mul_value(config.learn_rate));
+      *weights = weights.sub(&dw.mul_value(config.learn_rate).unwrap()).unwrap();
+      *bias = bias.sub(&db.mul_value(config.learn_rate).unwrap()).unwrap();
 
       Neuron::logger().profiling(|| format!("DenseLayer Backward Time = {}ms", timer.elapsed().as_millis()));
   
@@ -142,7 +142,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
             result.set(i/config.stride, j/config.stride, sum);
           }
         }
-        let z1 = config.activation.forward(&result);
+        let z1 = config.activation.forward(&result).unwrap();
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(result));
       }
@@ -154,13 +154,13 @@ impl ConvLayerExecutor for ConvLayerCPU {
     let mut z1 = Vec::new();
     for (i,z) in result_final.iter().zip(z1_final.iter()) {
       let final_result = i.iter()
-                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
+                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b).unwrap()))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
 
       output.push(Box::new(final_result));
 
       let final_z1 = z.iter()
-                                .fold(Some(Tensor::zeros(z[0].rows(), z[0].cols())), |a,b| Some(a.unwrap().add(b)))
+                                .fold(Some(Tensor::zeros(z[0].rows(), z[0].cols())), |a,b| Some(a.unwrap().add(b).unwrap()))
                                 .unwrap_or(Tensor::zeros(z[0].rows(), z[0].cols()));
 
       z1.push(Box::new(final_z1))
@@ -194,11 +194,11 @@ impl ConvLayerExecutor for ConvLayerCPU {
       let mut dw_channel = Vec::new();
       let row_pad = (forward_input[0].rows() - inp.rows())/2;
       let col_pad = (forward_input[0].cols() - inp.cols())/2;
-      let mut output = inp.pad(row_pad, col_pad);
+      let mut output = inp.pad(row_pad, col_pad).unwrap();
       let mut db = 0.0;
       for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
-        let dz = inp.mul_wise(&config.activation.backward(&z1));
+        let dz = inp.mul_wise(&config.activation.backward(&z1).unwrap()).unwrap();
         let mut dw = Tensor::zeros(fc.rows(), fc.cols());
 
         for i in (0..fi.rows()-filter_size.0).step_by(config.stride) {
@@ -214,7 +214,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
         }
         dw_channel.push(dw);
       }
-      final_output.push(Box::new(config.activation.backward(&output.add_value(*b))));
+      final_output.push(Box::new(config.activation.backward(&output.add_value(*b).unwrap()).unwrap()));
       final_db.push(db);
       final_dw.push(dw_channel);
     }

@@ -1,4 +1,6 @@
 pub mod cpu;
+
+#[cfg(feature = "opencl")]
 pub mod opencl;
 
 use std::time::Instant;

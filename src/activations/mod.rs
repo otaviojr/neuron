@@ -1,8 +1,8 @@
 use crate::{math::Tensor, Neuron};
 
 pub trait Activation {
-  fn forward(&self, value: &Tensor) -> Tensor;
-  fn backward(&self, value: &Tensor) -> Tensor;
+  fn forward(&self, value: &Tensor) -> Result<Tensor, String>;
+  fn backward(&self, value: &Tensor) -> Result<Tensor, String>;
 }
 
 pub struct ReLU {
@@ -16,17 +16,17 @@ impl ReLU {
 }
 
 impl Activation for ReLU {
-  fn forward(&self, value: &Tensor) -> Tensor {
+  fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
     //println!("ReLU Entry: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| value.max(0.0) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     //println!("ReLU Result: {}", ret);
-    ret
+    Ok(ret)
   }
 
-  fn backward(&self, value: &Tensor) -> Tensor {
+  fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
     let data:Vec<f64> = value.data().iter().map(|value| {if *value > 0.0 { 1.0 } else { 0.0 }} ).collect();
-    Tensor::from_data(value.rows(), value.cols(), data)
+    Ok(Tensor::from_data(value.rows(), value.cols(), data))
   }
 }
 
@@ -46,17 +46,17 @@ impl Sigmoid {
 }
 
 impl Activation for Sigmoid {
-  fn forward(&self, value: &Tensor) -> Tensor {
+  fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
     //println!("Sigmoid Entry: {}", value);
     let data:Vec<f64> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     //println!("Sigmoid result: {}", ret);
-    ret
+    Ok(ret)
   }
 
-  fn backward(&self, value: &Tensor) -> Tensor {
+  fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
     let data:Vec<f64> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) * (1.0 - Sigmoid::sigmoid(*value)) ).collect();
-    Tensor::from_data(value.rows(), value.cols(), data)
+    Ok(Tensor::from_data(value.rows(), value.cols(), data))
   }
 }
 
@@ -76,15 +76,15 @@ impl Tanh {
 }
 
 impl Activation for Tanh {
-  fn forward(&self, value: &Tensor) -> Tensor {
+  fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
     let data:Vec<f64> = value.data().iter().map(|value| Tanh::tanh(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
-    ret
+    Ok(ret)
   }
 
-  fn backward(&self, value: &Tensor) -> Tensor {
+  fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
     let data:Vec<f64> = value.data().iter().map(|value| 1.0 - Tanh::tanh(*value).powi(2) ).collect();
-    Tensor::from_data(value.rows(), value.cols(), data)
+    Ok(Tensor::from_data(value.rows(), value.cols(), data))
   }
 }
 
@@ -99,7 +99,7 @@ impl SoftMax {
 }
 
 impl Activation for SoftMax {
-  fn forward(&self, value: &Tensor) -> Tensor {
+  fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
 
     let mut output = Tensor::zeros(value.rows(), value.cols());
 
@@ -122,13 +122,13 @@ impl Activation for SoftMax {
     }
 
     Neuron::logger().debug( || format!("SoftMax Activation Output = {:?}", output));
-    output
+    Ok(output)
   }
 
-  fn backward(&self, value: &Tensor) -> Tensor {
-    let softmax = self.forward(value);
+  fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
+    let softmax = self.forward(value)?;
     let softmax_1 = Tensor::from_data(softmax.rows(), softmax.cols(), vec![1.0; softmax.rows()*softmax.cols()]);
     
-    softmax.mul(&softmax_1.sub(&softmax))
+    softmax.mul(&softmax_1.sub(&softmax)?)
   }
 }

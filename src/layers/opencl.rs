@@ -2,7 +2,7 @@ use std::{ptr, time::Instant};
 
 use opencl3::{device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, context::Context, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, memory::{CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, Buffer}, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_event}, kernel::{Kernel, ExecuteKernel}};
 
-use crate::{math::Tensor, Neuron};
+use crate::{math::{Tensor, opencl::OCL}, Neuron};
 
 use super::{ConvLayerExecutor, cpu::ConvLayerCPU, ConvLayerConfig};
 
@@ -78,12 +78,11 @@ impl ConvLayerOCL{
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut input_buffer = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, input.data().len(), ptr::null_mut()).unwrap()
-          };
-          let mut filter_buffer = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, filter.data().len(), ptr::null_mut()).unwrap()
-          };
+          let input_ocl = input.get_ocl_buffer();
+          let filter_ocl = filter.get_ocl_buffer();
+
+          let mut input_buffer = input_ocl.lock().unwrap();
+          let mut filter_buffer = filter_ocl.lock().unwrap();
           let result_buffer = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -150,7 +149,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
         self.do_conv(inp, fc, b, &mut result, config);
         
-        let z1 = config.activation.forward(&result);
+        let z1 = config.activation.forward(&mut result).unwrap();
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(result));
       }
@@ -160,16 +159,20 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     let mut output = Vec::new();
     let mut z1 = Vec::new();
-    for (i,z) in result_final.iter().zip(z1_final.iter()) {
-      let final_result = i.iter()
-                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b)))
+
+    for (i,z) in result_final.iter_mut().zip(z1_final.iter_mut()) {
+      let final_result = i.iter_mut()
+                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b).unwrap()))
                                 .unwrap_or(Tensor::zeros(result_height, result_width));
 
       output.push(Box::new(final_result));
 
-      let final_z1 = z.iter()
-                                .fold(Some(Tensor::zeros(z[0].rows(), z[0].cols())), |a,b| Some(a.unwrap().add(b)))
-                                .unwrap_or(Tensor::zeros(z[0].rows(), z[0].cols()));
+      let z1_rows = z[0].rows();
+      let z1_cols = z[0].cols();
+
+      let final_z1 = z.iter_mut()
+                                .fold(Some(Tensor::zeros(z1_rows, z1_cols)), |a,b| Some(a.unwrap().add(b).unwrap()))
+                                .unwrap_or(Tensor::zeros(z1_rows, z1_cols));
 
       z1.push(Box::new(final_z1))
     }

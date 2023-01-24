@@ -1,9 +1,8 @@
 use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
-use std::{ptr, time::Instant};
-
+use std::{ptr, time::Instant, sync::{Arc, Mutex}};
 use crate::Neuron;
 
-use super::{MatrixMathExecutor, Tensor};
+use super::{MatrixMathExecutor, Tensor, MatrixMathExecutorEnum};
 
 const PROGRAM_SOURCE: &str = r#"
 __kernel void add(__global double *a, __global double *b, __global double *c, int width) {
@@ -117,9 +116,17 @@ impl MatrixMathOCL {
       program,
     }
   }
+
+  pub fn get_ocl_context(&self) -> Option<&Context> {
+    self.context.as_ref()
+  }
+
+  pub fn get_ocl_queue(&self) -> Option<&CommandQueue> {
+    self.queue.as_ref()
+  }
 }
 
-impl MatrixMathExecutor for MatrixMathOCL {
+impl MatrixMathExecutor for MatrixMathOCL {  
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);
@@ -130,12 +137,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
       if let Some(ref context) = self.context {
         if let Some(ref queue) = self.queue {
           if let Some(ref program) = self.program {
-            let mut ab = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-            };
-            let mut bb = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
-            };
+            let a_ocl = a.get_ocl_buffer();
+            let b_ocl = b.get_ocl_buffer();
+  
+            let mut ab = a_ocl.lock().unwrap();
+            let mut bb = b_ocl.lock().unwrap();
+  
             let rb = unsafe {
               Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
             };  
@@ -186,12 +193,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut ab = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-          };
-          let mut bb = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
-          };
+          let a_ocl = a.get_ocl_buffer();
+          let b_ocl = b.get_ocl_buffer();
+
+          let mut ab = a_ocl.lock().unwrap();
+          let mut bb = b_ocl.lock().unwrap();
+
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -246,12 +253,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut ab = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-          };
-          let mut bb = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
-          };
+          let a_ocl = a.get_ocl_buffer();
+          let b_ocl = b.get_ocl_buffer();
+
+          let mut ab = a_ocl.lock().unwrap();
+          let mut bb = b_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -313,12 +319,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut ab = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-          };
-          let mut bb = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
-          };
+          let a_ocl = a.get_ocl_buffer();
+          let b_ocl = b.get_ocl_buffer();
+
+          let mut ab = a_ocl.lock().unwrap();
+          let mut bb = b_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -369,13 +374,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
       if let Some(ref context) = self.context {
         if let Some(ref queue) = self.queue {
           if let Some(ref program) = self.program {
-            let mut ab = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-            };
-            let mut bb = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, b.data().len(), ptr::null_mut()).unwrap()
-            };
-            let rb = unsafe {
+            let a_ocl = a.get_ocl_buffer();
+            let b_ocl = b.get_ocl_buffer();
+  
+            let mut ab = a_ocl.lock().unwrap();
+            let mut bb = b_ocl.lock().unwrap();
+              let rb = unsafe {
               Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
             };  
 
@@ -437,9 +441,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut ab = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-          };
+          let a_ocl = a.get_ocl_buffer();
+          let mut ab = a_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -483,9 +486,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut ab = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-          };
+          let a_ocl = a.get_ocl_buffer();
+          let mut ab = a_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -527,9 +529,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut ab = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-          };
+          let a_ocl = a.get_ocl_buffer();
+          let mut ab = a_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -573,9 +574,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
     if let Some(ref context) = self.context {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut ab = unsafe {
-            Buffer::<cl_double>::create(context, CL_MEM_READ_ONLY, a.data().len(), ptr::null_mut()).unwrap()
-          };
+          let a_ocl = a.get_ocl_buffer();
+          let mut ab = a_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
@@ -667,4 +667,47 @@ impl MatrixMathExecutor for MatrixMathOCL {
   }
 
 
+}
+
+#[derive(Debug)]
+pub struct TensorOCL {
+  buffer: Arc<Mutex<Buffer<cl_double>>>,
+}
+
+impl TensorOCL {
+  pub fn new(buffer: &Vec<f64>) -> Option<TensorOCL> {
+
+    let executor = Neuron::matrix().lock().unwrap();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = *executor {
+
+      let mut ocl_buffer = unsafe {
+        Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_ONLY, buffer.len(), ptr::null_mut()).unwrap()
+      };
+  
+      let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut ocl_buffer, CL_BLOCKING, 0, buffer, &[]).unwrap() };
+      let error = write_event.wait();
+  
+      if let Err(error) = error {
+        Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+        std::process::exit(0);
+      }  
+  
+      return Some(TensorOCL {
+        buffer: Arc::new(Mutex::new(ocl_buffer)),
+      });
+    }
+    None 
+  }
+}
+
+pub trait OCL {
+  fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_double>>>;
+}
+
+impl OCL for Tensor {
+  fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_double>>> {
+      let r = self.tensor_ocl.as_ref().unwrap().clone();
+      let r1 = r.lock().unwrap();
+      r1.buffer.clone()
+  }
 }
