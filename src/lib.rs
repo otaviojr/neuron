@@ -103,7 +103,7 @@ impl Neuron {
 
     *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
       dense: Box::new(DenseLayerCPU::init()),
-      conv: Box::new(ConvLayerOCL::init())
+      conv: Box::new(ConvLayerCPU::init())
     }));
   }
 
