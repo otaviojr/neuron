@@ -81,14 +81,11 @@ impl ConvLayerOCL{
           let input_ocl = input.get_ocl_buffer();
           let filter_ocl = filter.get_ocl_buffer();
 
-          let mut input_buffer = input_ocl.lock().unwrap();
-          let mut filter_buffer = filter_ocl.lock().unwrap();
+          let input_buffer = input_ocl.lock().unwrap();
+          let filter_buffer = filter_ocl.lock().unwrap();
           let result_buffer = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
-
-          let _ = unsafe { queue.enqueue_write_buffer(&mut input_buffer, CL_BLOCKING, 0, input.data(), &[]).unwrap() };
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut filter_buffer, CL_NON_BLOCKING, 0, filter.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
 
@@ -107,7 +104,6 @@ impl ConvLayerOCL{
                 .set_arg(&(config.stride as i32))
                 .set_arg(&(config.padding as i32))
                 .set_global_work_size(result.data().len())
-                .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
 

@@ -140,15 +140,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
             let a_ocl = a.get_ocl_buffer();
             let b_ocl = b.get_ocl_buffer();
   
-            let mut ab = a_ocl.lock().unwrap();
-            let mut bb = b_ocl.lock().unwrap();
+            let ab = a_ocl.lock().unwrap();
+            let bb = b_ocl.lock().unwrap();
   
             let rb = unsafe {
               Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
             };  
-
-            let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-            let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
             let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
 
@@ -161,7 +158,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                   .set_arg(&rb)
                   .set_arg(&width)
                   .set_global_work_size(result.data().len())
-                  .set_wait_event(&write_event)
                   .enqueue_nd_range(&queue).unwrap()
             };
 
@@ -196,15 +192,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let a_ocl = a.get_ocl_buffer();
           let b_ocl = b.get_ocl_buffer();
 
-          let mut ab = a_ocl.lock().unwrap();
-          let mut bb = b_ocl.lock().unwrap();
+          let ab = a_ocl.lock().unwrap();
+          let bb = b_ocl.lock().unwrap();
 
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
-
-          let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
 
@@ -217,7 +210,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&rb)
                 .set_arg(&width)
                 .set_global_work_size(result.data().len())
-                .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
@@ -264,11 +256,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
           Neuron::logger().profiling(|| format!("Matrix Mul (opencl memory) = {}ms", timer.elapsed().as_millis()));
 
-          let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
-
-          Neuron::logger().profiling(|| format!("Matrix Mul (opencl write memory) = {}ms", timer.elapsed().as_millis()));
-
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_NAME).unwrap();
 
           Neuron::logger().profiling(|| format!("Matrix Mul (opencl kernel created) = {}ms", timer.elapsed().as_millis()));
@@ -282,7 +269,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&(b.cols as i32))
                 .set_arg(&(result.cols as i32))
                 .set_global_work_size(result.data().len())
-                .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
@@ -322,14 +308,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let a_ocl = a.get_ocl_buffer();
           let b_ocl = b.get_ocl_buffer();
 
-          let mut ab = a_ocl.lock().unwrap();
-          let mut bb = b_ocl.lock().unwrap();
+          let ab = a_ocl.lock().unwrap();
+          let bb = b_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
-
-          let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_WISE_NAME).unwrap();
 
@@ -342,7 +325,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&rb)
                 .set_arg(&width)
                 .set_global_work_size(result.data().len())
-                .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
@@ -377,14 +359,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
             let a_ocl = a.get_ocl_buffer();
             let b_ocl = b.get_ocl_buffer();
   
-            let mut ab = a_ocl.lock().unwrap();
-            let mut bb = b_ocl.lock().unwrap();
+            let ab = a_ocl.lock().unwrap();
+            let bb = b_ocl.lock().unwrap();
               let rb = unsafe {
               Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
             };  
-
-            let _ = unsafe { queue.enqueue_write_buffer(&mut ab, CL_BLOCKING, 0, a.data(), &[]).unwrap() };
-            let write_event = unsafe { queue.enqueue_write_buffer(&mut bb, CL_NON_BLOCKING, 0, b.data(), &[]).unwrap() };
 
             let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_NAME).unwrap();
 
@@ -397,7 +376,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                   .set_arg(&rb)
                   .set_arg(&width)
                   .set_global_work_size(result.data().len())
-                  .set_wait_event(&write_event)
                   .enqueue_nd_range(&queue).unwrap()
             };
 
@@ -442,12 +420,10 @@ impl MatrixMathExecutor for MatrixMathOCL {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
           let a_ocl = a.get_ocl_buffer();
-          let mut ab = a_ocl.lock().unwrap();
+          let ab = a_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
-
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut ab, CL_NON_BLOCKING, 0, a.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_TRANSPOSE_NAME).unwrap();
 
@@ -458,7 +434,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&(a.cols as i32))
                 .set_arg(&(a.rows as i32))
                 .set_global_work_size(a.data().len())
-                .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
@@ -487,12 +462,10 @@ impl MatrixMathExecutor for MatrixMathOCL {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
           let a_ocl = a.get_ocl_buffer();
-          let mut ab = a_ocl.lock().unwrap();
+          let ab = a_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
-
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut ab, CL_NON_BLOCKING, 0, a.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_VALUE_NAME).unwrap();
 
@@ -502,7 +475,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&rb)
                 .set_arg(&value)
                 .set_global_work_size(a.data().len())
-                .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
@@ -575,12 +547,10 @@ impl MatrixMathExecutor for MatrixMathOCL {
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
           let a_ocl = a.get_ocl_buffer();
-          let mut ab = a_ocl.lock().unwrap();
+          let ab = a_ocl.lock().unwrap();
           let rb = unsafe {
             Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
           };  
-
-          let write_event = unsafe { queue.enqueue_write_buffer(&mut ab, CL_NON_BLOCKING, 0, a.data(), &[]).unwrap() };
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_VALUE_NAME).unwrap();
 
@@ -590,7 +560,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&rb)
                 .set_arg(&value)
                 .set_global_work_size(a.data().len())
-                .set_wait_event(&write_event)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
