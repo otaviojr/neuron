@@ -1,4 +1,4 @@
-use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
+use opencl3::{memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
 use std::{ptr, time::Instant, sync::{Arc, Mutex}};
 use crate::Neuron;
 
@@ -609,10 +609,12 @@ pub struct TensorOCL {
 impl TensorOCL {
   pub fn new(buffer: &Vec<f64>) -> Option<TensorOCL> {
 
+    let timer = Instant::now();
+
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       let mut ocl_buffer = unsafe {
-        Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_ONLY, buffer.len(), ptr::null_mut()).unwrap()
+        Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, buffer.len(), ptr::null_mut()).unwrap()
       };
   
       let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut ocl_buffer, CL_BLOCKING, 0, buffer, &[]).unwrap() };
@@ -623,6 +625,8 @@ impl TensorOCL {
         std::process::exit(0);
       }  
   
+      Neuron::logger().profiling(|| format!("OpenCL Tensor (new) = {}ms", timer.elapsed().as_millis()));
+
       return Some(TensorOCL {
         buffer: Arc::new(Mutex::new(ocl_buffer)),
       });
