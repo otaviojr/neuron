@@ -1,4 +1,4 @@
-use std::ptr;
+use std::{ptr, time::Instant};
 
 use opencl3::{device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, context::Context, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, memory::{CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, Buffer}, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_event}, kernel::{Kernel, ExecuteKernel}};
 
