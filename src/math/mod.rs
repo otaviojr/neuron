@@ -95,8 +95,9 @@ impl Tensor {
     let mut tensor_ocl = None;
 
     if cfg!(feature = "opencl") {
-      let t = TensorOCL::new(&data).unwrap();
-      tensor_ocl = Some(Arc::new(Mutex::new(t)));
+      if let Some(t) = TensorOCL::new(&data) {
+        tensor_ocl = Some(Arc::new(Mutex::new(t)));
+      }
     }
 
     Neuron::logger().debug(|| format!("Zero tensor loaded after: {} seconds", start.elapsed().as_secs()));
