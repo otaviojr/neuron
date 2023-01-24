@@ -131,6 +131,9 @@ impl ConvLayerOCL{
 
 impl ConvLayerExecutor for ConvLayerOCL {
   fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f64>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+
+    let timer = Instant::now();
+
     let result_height = (((input[0].rows() as f64 + 2.0* config.padding as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 + 2.0* config.padding as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
     let mut result_final = Vec::new();
@@ -178,6 +181,8 @@ impl ConvLayerExecutor for ConvLayerOCL {
     Neuron::logger().debug(|| format!("CNN Filter (Forward) = {:?}", filters));
     Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
     Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", output));
+
+    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ms", timer.elapsed().as_millis()));
 
     Some((last_input, last_z1, output))
   }
