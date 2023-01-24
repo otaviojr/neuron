@@ -13,7 +13,7 @@ use crate::Neuron;
 #[cfg(feature = "opencl")]
 use opencl::{TensorOCL,MatrixMathOCL};
 
-use self::cpu::MatrixMathCPU;
+use self::{cpu::MatrixMathCPU, opencl::OCL};
 
 pub trait MatrixMathExecutor: Any + Send + Sync {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor;

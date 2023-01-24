@@ -132,7 +132,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
-      let result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::zeros(a.rows, a.cols);
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
@@ -154,7 +154,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&*bb)
                 .set_arg(&*rb)
                 .set_arg(&width)
-                .set_global_work_size(result.data().len())
+                .set_global_work_size(result.cols * result.rows)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
@@ -164,6 +164,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
 
       Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
+      result.sync_ocl_buffer();
       result
   }
 
@@ -194,7 +195,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*bb)
               .set_arg(&*rb)
               .set_arg(&width)
-              .set_global_work_size(result.data().len())
+              .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -212,6 +213,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
+    result.sync_ocl_buffer();
     result
   }
 
@@ -250,7 +252,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&(a.cols as i32))
               .set_arg(&(b.cols as i32))
               .set_arg(&(result.cols as i32))
-              .set_global_work_size(result.data().len())
+              .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -272,6 +274,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL multiply matrix = {:?}", result));
+    result.sync_ocl_buffer();
     result
   }
 
@@ -320,6 +323,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL multiply wise matrix = {:?}", result));
+    result.sync_ocl_buffer();
     result
   }
 
@@ -350,7 +354,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&*bb)
                 .set_arg(&*rb)
                 .set_arg(&width)
-                .set_global_work_size(result.data().len())
+                .set_global_work_size(result.cols * result.rows)
                 .enqueue_nd_range(&queue).unwrap()
           };
 
@@ -367,6 +371,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         }
       }
       Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
+      result.sync_ocl_buffer();
       result
   }
 
@@ -406,7 +411,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*rb)
               .set_arg(&(a.cols as i32))
               .set_arg(&(a.rows as i32))
-              .set_global_work_size(a.data().len())
+              .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -424,6 +429,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", result));
+    result.sync_ocl_buffer();
     result
   }
 
@@ -445,7 +451,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*ab)
               .set_arg(&rb)
               .set_arg(&value)
-              .set_global_work_size(a.data().len())
+              .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -462,6 +468,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
     Neuron::logger().debug(|| format!("OpenCL add value matrix = {:?}", result));
+    result.sync_ocl_buffer();
     result
   }
 
@@ -483,7 +490,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*ab)
               .set_arg(&rb)
               .set_arg(&value)
-              .set_global_work_size(a.data().len())
+              .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -501,7 +508,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL div value matrix = {:?}", result));
-
+    result.sync_ocl_buffer();
     result
   }
 
@@ -523,7 +530,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*ab)
               .set_arg(&rb)
               .set_arg(&value)
-              .set_global_work_size(a.data().len())
+              .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -541,7 +548,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL mul value matrix = {:?}", result));
-
+    result.sync_ocl_buffer();
     result
   }
 
@@ -577,7 +584,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         }
       }  
     }
-
+    result.sync_ocl_buffer();
     result
   }
 
@@ -594,7 +601,6 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     //println!("pad output = {}", result);
-
     result
   }
 
@@ -637,6 +643,7 @@ impl TensorOCL {
 
 pub trait OCL {
   fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_double>>>;
+  fn sync_ocl_buffer(&mut self);
 }
 
 impl OCL for Tensor {
@@ -644,5 +651,21 @@ impl OCL for Tensor {
       let r = self.tensor_ocl.as_ref().unwrap().clone();
       let r1 = r.lock().unwrap();
       r1.buffer.clone()
+  }
+
+  fn sync_ocl_buffer(&mut self) {
+    let buffer_ocl = self.get_ocl_buffer();
+    let buffer = buffer_ocl.lock().unwrap();
+
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      let ret = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_read_buffer(&buffer, CL_NON_BLOCKING, 0, &mut self.mut_data(), &[]).unwrap() };
+      let error = ret.wait();
+  
+      if let Err(error) = error {
+        println!("OpenCL Error: {:?}", error);
+        std::process::exit(0);
+      }
+    }
   }
 }

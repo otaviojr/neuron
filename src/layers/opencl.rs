@@ -61,48 +61,40 @@ impl ConvLayerOCL{
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Some(context) = matrix_ocl.get_ocl_context() {
-        if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
-          if let Some(ref program) = self.program {
-            let input_ocl = input.get_ocl_buffer();
-            let filter_ocl = filter.get_ocl_buffer();
-            let result_ocl = result.get_ocl_buffer();
+      if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
+        if let Some(ref program) = self.program {
+          let input_ocl = input.get_ocl_buffer();
+          let filter_ocl = filter.get_ocl_buffer();
+          let result_ocl = result.get_ocl_buffer();
 
-            let input_buffer = input_ocl.lock().unwrap();
-            let filter_buffer = filter_ocl.lock().unwrap();
-            let result_buffer = result_ocl.lock().unwrap();
+          let input_buffer = input_ocl.lock().unwrap();
+          let filter_buffer = filter_ocl.lock().unwrap();
+          let result_buffer = result_ocl.lock().unwrap();
 
-            let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
 
-            let kernel_event = unsafe {
-              ExecuteKernel::new(&kernel)
-                  .set_arg(&*input_buffer)
-                  .set_arg(&*filter_buffer)
-                  .set_arg(&*result_buffer)
-                  .set_arg(&bias)
-                  .set_arg(&(input.cols() as i32))
-                  .set_arg(&(input.rows() as i32))
-                  .set_arg(&(filter.cols() as i32))
-                  .set_arg(&(filter.rows() as i32))
-                  .set_arg(&(result.cols() as i32))
-                  .set_arg(&(result.rows() as i32))
-                  .set_arg(&(config.stride as i32))
-                  .set_arg(&(config.padding as i32))
-                  .set_global_work_size(result.data().len())
-                  .enqueue_nd_range(&queue).unwrap()
-            };
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*input_buffer)
+                .set_arg(&*filter_buffer)
+                .set_arg(&*result_buffer)
+                .set_arg(&bias)
+                .set_arg(&(input.cols() as i32))
+                .set_arg(&(input.rows() as i32))
+                .set_arg(&(filter.cols() as i32))
+                .set_arg(&(filter.rows() as i32))
+                .set_arg(&(result.cols() as i32))
+                .set_arg(&(result.rows() as i32))
+                .set_arg(&(config.stride as i32))
+                .set_arg(&(config.padding as i32))
+                .set_global_work_size(result.rows()*result.cols())
+                .enqueue_nd_range(&queue).unwrap()
+          };
 
-            let mut events: Vec<cl_event> = Vec::default();
-            events.push(kernel_event.get());
-            
-            let ret = unsafe { queue.enqueue_read_buffer(&result_buffer, CL_NON_BLOCKING, 0, &mut result.mut_data(), &events).unwrap() };
-            let error = ret.wait();
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
 
-            if let Err(error) = error {
-              Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-              std::process::exit(0);
-            }
-          }
+          result.sync_ocl_buffer();
         }
       }
     }
