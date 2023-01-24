@@ -34,28 +34,22 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
 const KERNEL_MATRIX_CONV_NAME: &str = "conv";
 
 pub struct ConvLayerOCL {
-  queue: Option<CommandQueue>,
   program: Option<Program>,
   cpu: ConvLayerCPU
 }
 
 impl ConvLayerOCL {
   pub fn init() -> Self {
-    let mut queue = None;
     let mut program = None;
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Ok(q) = CommandQueue::create_default(&matrix_ocl.get_ocl_context().unwrap(), CL_QUEUE_PROFILING_ENABLE) {
-        if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), PROGRAM_SOURCE, "") {
-          queue = Some(q);
-          program = Some(p);
-        }
+      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), PROGRAM_SOURCE, "") {
+        program = Some(p);
       }
     }
     
     ConvLayerOCL {
-      queue,
       program,
       cpu: ConvLayerCPU::init()
     }
@@ -68,7 +62,7 @@ impl ConvLayerOCL{
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       if let Some(context) = matrix_ocl.get_ocl_context() {
-        if let Some(ref queue) = self.queue {
+        if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
           if let Some(ref program) = self.program {
             let input_ocl = input.get_ocl_buffer();
             let filter_ocl = filter.get_ocl_buffer();
