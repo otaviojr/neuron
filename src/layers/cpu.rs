@@ -26,6 +26,8 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       let z1_1 = weights.mul(&input);
 
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (weights mul) = {}ms", timer.elapsed().as_millis()));
+
       Neuron::logger().debug(|| format!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols()));
       Neuron::logger().debug(|| format!("z1_1 = {:?}", z1_1));
 
@@ -35,10 +37,18 @@ impl DenseLayerExecutor for DenseLayerCPU {
       Neuron::logger().debug(|| format!("b_bias = {:?}", b_bias));
 
       let z1 = z1_1.add(&b_bias);  
+
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (add bias) = {}ms", timer.elapsed().as_millis()));
+
       let last_z1 = z1.clone();
       let last_input = vec![input.clone()];
+
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (clone) = {}ms", timer.elapsed().as_millis()));
+
       let ret = vec![Box::new(config.activation.forward(&z1))];
   
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (activation) = {}ms", timer.elapsed().as_millis()));
+
       Neuron::logger().debug(|| format!("DenseLayer Output Before Activation(Forward) = {:?}", z1));
       Neuron::logger().debug(|| format!("DenseLayer Output (Forward) = {:?}", ret));
   
