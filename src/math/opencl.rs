@@ -677,8 +677,8 @@ pub struct TensorOCL {
 impl TensorOCL {
   pub fn new(buffer: &Vec<f64>) -> Option<TensorOCL> {
 
-    let executor = Neuron::matrix().lock().unwrap();
-    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = *executor {
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       let mut ocl_buffer = unsafe {
         Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_ONLY, buffer.len(), ptr::null_mut()).unwrap()
       };

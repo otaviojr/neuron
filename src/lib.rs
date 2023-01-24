@@ -8,7 +8,8 @@ pub mod util;
 use std::{sync::{Mutex, MutexGuard}, any::Any, io::{Write, Read}, fs::File};
 
 use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU}, ConvLayerExecutor};
-use math::{Tensor, MatrixMathExecutor, cpu::MatrixMathCPU};
+use math::{Tensor, cpu::MatrixMathCPU};
+use once_cell::sync::Lazy;
 use util::Logger;
 use lazy_static::lazy_static;
 
@@ -25,8 +26,9 @@ pub struct Executors {
   conv: Box<dyn ConvLayerExecutor + Send + Sync>
 }
 
+static mut MATRIX_EXECUTOR: Lazy<Box<MatrixMathExecutorEnum>> = Lazy::new(||Box::new(MatrixMathExecutorEnum::NONE));
+
 lazy_static! {
-  static ref MATRIX_EXECUTOR: Mutex<MatrixMathExecutorEnum> = Mutex::new(MatrixMathExecutorEnum::NONE);
   static ref EXECUTORS: Mutex<Option<Box<Executors>>> = Mutex::new(None);
   static ref LOGGER: Mutex<Box<Logger>> = Mutex::new(Box::new(Logger::new(util::LogLevel::Error)));
 }
@@ -58,7 +60,8 @@ pub struct Neuron {
 impl Neuron {
   pub fn new() -> Self {
     //init Neuron with CPU executor
-    *MATRIX_EXECUTOR.lock().unwrap() = MatrixMathExecutorEnum::CPU(MatrixMathCPU::init());
+    unsafe { let _ = std::mem::replace(&mut  *MATRIX_EXECUTOR.as_mut(), MatrixMathExecutorEnum::CPU(MatrixMathCPU::init())); }
+
     *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
       dense: Box::new(DenseLayerCPU::init()),
       conv: Box::new(ConvLayerCPU::init())
@@ -95,7 +98,9 @@ impl Neuron {
 
   #[cfg(feature = "opencl")]
   pub fn enable_opencl() {
-    *MATRIX_EXECUTOR.lock().unwrap() = MatrixMathExecutorEnum::OCL(MatrixMathOCL::init());
+
+    unsafe { let _ = std::mem::replace(&mut *MATRIX_EXECUTOR.as_mut(), MatrixMathExecutorEnum::OCL(MatrixMathOCL::init())); }
+
     *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
       dense: Box::new(DenseLayerCPU::init()),
       conv: Box::new(ConvLayerOCL::init())
@@ -106,8 +111,9 @@ impl Neuron {
     LOGGER.lock().unwrap()
   }
 
-  pub fn matrix() -> &'static Mutex<MatrixMathExecutorEnum> {
-    let r = &*MATRIX_EXECUTOR;
+  pub fn matrix() -> &'static Box<MatrixMathExecutorEnum> {
+    let r;
+    unsafe{ r = &MATRIX_EXECUTOR; }
     r
   }
 
