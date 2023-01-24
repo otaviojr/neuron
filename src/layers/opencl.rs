@@ -91,8 +91,8 @@ impl ConvLayerOCL{
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
-                .set_arg(&input_buffer)
-                .set_arg(&filter_buffer)
+                .set_arg(&*input_buffer)
+                .set_arg(&*filter_buffer)
                 .set_arg(&result_buffer)
                 .set_arg(&bias)
                 .set_arg(&(input.cols() as i32))
