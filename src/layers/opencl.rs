@@ -66,12 +66,11 @@ impl ConvLayerOCL{
           if let Some(ref program) = self.program {
             let input_ocl = input.get_ocl_buffer();
             let filter_ocl = filter.get_ocl_buffer();
+            let result_ocl = result.get_ocl_buffer();
 
             let input_buffer = input_ocl.lock().unwrap();
             let filter_buffer = filter_ocl.lock().unwrap();
-            let result_buffer = unsafe {
-              Buffer::<cl_double>::create(context, CL_MEM_WRITE_ONLY, result.data().len(), ptr::null_mut()).unwrap()
-            };  
+            let result_buffer = result_ocl.lock().unwrap();
 
             let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
 
@@ -79,7 +78,7 @@ impl ConvLayerOCL{
               ExecuteKernel::new(&kernel)
                   .set_arg(&*input_buffer)
                   .set_arg(&*filter_buffer)
-                  .set_arg(&result_buffer)
+                  .set_arg(&*result_buffer)
                   .set_arg(&bias)
                   .set_arg(&(input.cols() as i32))
                   .set_arg(&(input.rows() as i32))
