@@ -449,7 +449,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         let kernel_event = unsafe {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
-              .set_arg(&rb)
+              .set_arg(&*rb)
               .set_arg(&value)
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
@@ -488,7 +488,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         let kernel_event = unsafe {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
-              .set_arg(&rb)
+              .set_arg(&*rb)
               .set_arg(&value)
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
@@ -528,7 +528,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         let kernel_event = unsafe {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
-              .set_arg(&rb)
+              .set_arg(&*rb)
               .set_arg(&value)
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
