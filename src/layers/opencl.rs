@@ -32,7 +32,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
 "#;
 
 const POOLING_PROGRAM_SOURCE: &str = r#"
-__kernel void conv(__global double *input, __global double *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
+__kernel void pooling(__global double *input, __global double *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
   int gid = get_global_id(0);
 
   int gid_y = gid / result_width;
@@ -57,7 +57,8 @@ __kernel void conv(__global double *input, __global double *result, int input_wi
 }
 "#;
 
-const KERNEL_MATRIX_CONV_NAME: &str = "conv";
+const KERNEL_CONV_NAME: &str = "conv";
+const KERNEL_POOLING_NAME: &str = "pooling";
 
 pub struct ConvLayerOCL {
   program: Option<Program>,
@@ -97,7 +98,7 @@ impl ConvLayerOCL{
           let filter_buffer = filter_ocl.lock().unwrap();
           let result_buffer = result_ocl.lock().unwrap();
 
-          let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
+          let kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
@@ -229,7 +230,7 @@ impl PoolingLayerOCL {
           let input_buffer = input_ocl.lock().unwrap();
           let result_buffer = result_ocl.lock().unwrap();
 
-          let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
+          let kernel = Kernel::create(&program, KERNEL_POOLING_NAME).unwrap();
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
