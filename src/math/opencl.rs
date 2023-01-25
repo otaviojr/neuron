@@ -151,7 +151,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .set_arg(&*ab)
                 .set_arg(&*bb)
                 .set_arg(&*rb)
-                .set_arg(&(result.cols as i32))
+                .set_arg(&(result.cols as cl_int))
                 .set_global_work_size(result.cols * result.rows)
                 .enqueue_nd_range(&queue).unwrap()
           };
@@ -193,7 +193,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*ab)
               .set_arg(&*bb)
               .set_arg(&*rb)
-              .set_arg(&(result.cols as i32))
+              .set_arg(&(result.cols as cl_int))
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };        let error = kernel_event.wait();
@@ -243,9 +243,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*ab)
               .set_arg(&*bb)
               .set_arg(&*rb)
-              .set_arg(&(a.cols as i32))
-              .set_arg(&(b.cols as i32))
-              .set_arg(&(result.cols as i32))
+              .set_arg(&(a.cols as cl_int))
+              .set_arg(&(b.cols as cl_int))
+              .set_arg(&(result.cols as cl_int))
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
@@ -289,8 +289,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*ab)
               .set_arg(&*bb)
               .set_arg(&*rb)
-              .set_arg(&(result.cols as i32))
-              .set_global_work_size(result.data().len())
+              .set_arg(&(result.cols as cl_int))
+              .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -326,14 +326,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_NAME).unwrap();
 
-          let width: cl_int = result.cols as i32;
-
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
                 .set_arg(&*ab)
                 .set_arg(&*bb)
                 .set_arg(&*rb)
-                .set_arg(&width)
+                .set_arg(&(result.cols as cl_int))
                 .set_global_work_size(result.cols * result.rows)
                 .enqueue_nd_range(&queue).unwrap()
           };
@@ -384,8 +382,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&(a.cols as i32))
-              .set_arg(&(a.rows as i32))
+              .set_arg(&(a.cols as cl_int))
+              .set_arg(&(a.rows as cl_int))
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
@@ -577,7 +575,7 @@ impl TensorOCL {
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
 
-      let mut ocl_buffer = unsafe {
+      let ocl_buffer = unsafe {
         Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, size, ptr::null_mut()).unwrap()
       };
     
@@ -601,7 +599,7 @@ impl TensorOCL {
         Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, buffer.len(), ptr::null_mut()).unwrap()
       };
   
-      let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut ocl_buffer, CL_BLOCKING, 0, buffer, &[]).unwrap() };
+      let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut ocl_buffer, CL_NON_BLOCKING, 0, buffer, &[]).unwrap() };
       let error = write_event.wait();
   
       if let Err(error) = error {
