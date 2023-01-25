@@ -120,11 +120,10 @@ impl ConvLayerOCL{
 
           let mut events: Vec<cl_event> = Vec::default();
           events.push(kernel_event.get());
-
-          result.sync_ocl_cpu();
         }
       }
     }
+    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL convolution result = {:?}", result));
   }
 }
@@ -249,11 +248,10 @@ impl PoolingLayerOCL {
 
           let mut events: Vec<cl_event> = Vec::default();
           events.push(kernel_event.get());
-
-          result.sync_ocl_cpu();
         }
       }
     }
+    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL pooling result = {:?}", result));
   }
 
