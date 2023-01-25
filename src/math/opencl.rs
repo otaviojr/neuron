@@ -156,8 +156,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };
 
-          let mut events: Vec<cl_event> = Vec::default();
-          events.push(kernel_event.get());            
+          let error = kernel_event.wait();
+          if let Err(error) = error {
+            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+            std::process::exit(0);
+          }
         }
       }
 
@@ -194,22 +197,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };        let error = kernel_event.wait();
+
+        let error = kernel_event.wait();
         if let Err(error) = error {
           Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
           std::process::exit(0);
         }
-
-
-        let mut events: Vec<cl_event> = Vec::default();
-        events.push(kernel_event.get());
-        
-        let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-        let error = ret.wait();
-
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }  
       }
     }
 
