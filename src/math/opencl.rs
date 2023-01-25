@@ -146,14 +146,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
           let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
 
-          let width: cl_int = result.cols as i32;
-
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
                 .set_arg(&*ab)
                 .set_arg(&*bb)
                 .set_arg(&*rb)
-                .set_arg(&width)
+                .set_arg(&(result.cols as i32))
                 .set_global_work_size(result.cols * result.rows)
                 .enqueue_nd_range(&queue).unwrap()
           };
@@ -187,17 +185,20 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
         let kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
 
-        let width: cl_int = result.cols as i32;
-
         let kernel_event = unsafe {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*bb)
               .set_arg(&*rb)
-              .set_arg(&width)
+              .set_arg(&(result.cols as i32))
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
-        };
+        };        let error = kernel_event.wait();
+        if let Err(error) = error {
+          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+          std::process::exit(0);
+        }
+
 
         let mut events: Vec<cl_event> = Vec::default();
         events.push(kernel_event.get());
@@ -256,14 +257,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let mut events: Vec<cl_event> = Vec::default();
-        events.push(kernel_event.get());
-        
-        Neuron::logger().profiling(|| format!("Matrix Mul (kernel executed) = {}ms", timer.elapsed().as_millis()));
-
-        let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-        let error = ret.wait();
-
+        let error = kernel_event.wait();
         if let Err(error) = error {
           Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
           std::process::exit(0);
@@ -297,28 +291,21 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
         let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_WISE_NAME).unwrap();
 
-        let width: cl_int = result.cols as i32;
-
         let kernel_event = unsafe {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*bb)
               .set_arg(&*rb)
-              .set_arg(&width)
+              .set_arg(&(result.cols as i32))
               .set_global_work_size(result.data().len())
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let mut events: Vec<cl_event> = Vec::default();
-        events.push(kernel_event.get());
-        
-        let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-        let error = ret.wait();
-
+        let error = kernel_event.wait();
         if let Err(error) = error {
           Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
           std::process::exit(0);
-        }  
+        }
       }
     }
 
@@ -358,16 +345,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };
 
-          let mut events: Vec<cl_event> = Vec::default();
-          events.push(kernel_event.get());
-          
-          let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-          let error = ret.wait();
-
+          let error = kernel_event.wait();
           if let Err(error) = error {
             Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
             std::process::exit(0);
-          }  
+          }
         }
       }
       Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
@@ -415,16 +397,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let mut events: Vec<cl_event> = Vec::default();
-        events.push(kernel_event.get());
-        
-        let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-        let error = ret.wait();
-
+        let error = kernel_event.wait();
         if let Err(error) = error {
           Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
           std::process::exit(0);
-        }  
+        }
       }
     }
 
@@ -455,16 +432,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let mut events: Vec<cl_event> = Vec::default();
-        events.push(kernel_event.get());
-        
-        let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-        let error = ret.wait();
-
+        let error = kernel_event.wait();
         if let Err(error) = error {
           Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
           std::process::exit(0);
-        }  
+        }
       }
     }
     Neuron::logger().debug(|| format!("OpenCL add value matrix = {:?}", result));
@@ -494,16 +466,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let mut events: Vec<cl_event> = Vec::default();
-        events.push(kernel_event.get());
-        
-        let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-        let error = ret.wait();
-
+        let error = kernel_event.wait();
         if let Err(error) = error {
           Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
           std::process::exit(0);
-        }  
+        }
       }
     }
 
@@ -534,16 +501,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let mut events: Vec<cl_event> = Vec::default();
-        events.push(kernel_event.get());
-        
-        let ret = unsafe { queue.enqueue_read_buffer(&rb, CL_NON_BLOCKING, 0, &mut result.data, &events).unwrap() };
-        let error = ret.wait();
-
+        let error = kernel_event.wait();
         if let Err(error) = error {
           Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
           std::process::exit(0);
-        }  
+        }
       }
     }
 
@@ -564,6 +526,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       result.set(i, 0, sum);
     }
 
+    result.sync_cpu_ocl();
     result
   }
 
@@ -584,7 +547,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         }
       }  
     }
-    result.sync_ocl_cpu();
+    result.sync_cpu_ocl();
     result
   }
 
@@ -601,6 +564,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     //println!("pad output = {}", result);
+    result.sync_cpu_ocl();
     result
   }
 
