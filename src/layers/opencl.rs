@@ -105,7 +105,7 @@ impl ConvLayerOCL{
                 .set_arg(&*input_buffer)
                 .set_arg(&*filter_buffer)
                 .set_arg(&*result_buffer)
-                .set_arg(&bias)
+                .set_arg(bias)
                 .set_arg(&(input.cols() as i32))
                 .set_arg(&(input.rows() as i32))
                 .set_arg(&(filter.cols() as i32))
