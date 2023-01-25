@@ -201,7 +201,7 @@ pub struct PoolingLayerOCL {
 }
 
 impl PoolingLayerOCL {
-  fn init() -> Self {
+  pub fn init() -> Self {
     let mut program = None;
 
     let executor = Neuron::matrix();
@@ -284,7 +284,7 @@ impl PoolingLayerExecutor for PoolingLayerOCL {
     Some((input.clone(), result_final))
   }
 
-  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>> {
-    self.cpu.backward(input, forward_input, filter_size, bias, activate, config)
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>> {
+    self.cpu.backward(input, forward_input, filter_size, activate, config)
   }
 }

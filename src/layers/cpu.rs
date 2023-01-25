@@ -298,7 +298,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
     Some((last_input,result_final))
   }
 
-  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>> {
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>> {
     let timer = Instant::now();
 
     let mut result_final = Vec::new();

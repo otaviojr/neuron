@@ -7,7 +7,7 @@ pub mod util;
 
 use std::{sync::{Mutex, MutexGuard}, any::Any, io::{Write, Read}, fs::File};
 
-use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU}, ConvLayerExecutor};
+use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU, PoolingLayerCPU}, ConvLayerExecutor, PoolingLayerExecutor};
 use math::{Tensor, cpu::MatrixMathCPU};
 use once_cell::sync::Lazy;
 use util::Logger;
@@ -15,18 +15,25 @@ use lazy_static::lazy_static;
 
 #[cfg(feature = "opencl")]
 use math::{opencl::MatrixMathOCL};
+#[cfg(feature = "opencl")]
+use layers::{opencl::{ConvLayerOCL, PoolingLayerOCL}};
 
 use crate::math::MatrixMathExecutorEnum;
 
 pub struct Executors {
   dense: Box<dyn DenseLayerExecutor + Send + Sync>,
-  conv: Box<dyn ConvLayerExecutor + Send + Sync>
+  conv: Box<dyn ConvLayerExecutor + Send + Sync>,
+  pooling: Box<dyn PoolingLayerExecutor + Send + Sync>
 }
 
-static mut MATRIX_EXECUTOR: Lazy<Box<MatrixMathExecutorEnum>> = Lazy::new(||Box::new(MatrixMathExecutorEnum::NONE));
+static mut MATRIX_EXECUTOR: Lazy<Box<MatrixMathExecutorEnum>> = Lazy::new(|| Box::new(MatrixMathExecutorEnum::CPU(MatrixMathCPU::init())));
+static mut EXECUTORS: Lazy<Box<Executors>> = Lazy::new(|| Box::new(Executors {
+  dense: Box::new(DenseLayerCPU::init()),
+  conv: Box::new(ConvLayerCPU::init()),
+  pooling: Box::new(PoolingLayerCPU::init())
+}));
 
 lazy_static! {
-  static ref EXECUTORS: Mutex<Option<Box<Executors>>> = Mutex::new(None);
   static ref LOGGER: Mutex<Box<Logger>> = Mutex::new(Box::new(Logger::new(util::LogLevel::Error)));
 }
 
@@ -56,14 +63,6 @@ pub struct Neuron {
 
 impl Neuron {
   pub fn new() -> Self {
-    //init Neuron with CPU executor
-    unsafe { let _ = std::mem::replace(&mut  *MATRIX_EXECUTOR.as_mut(), MatrixMathExecutorEnum::CPU(MatrixMathCPU::init())); }
-
-    *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
-      dense: Box::new(DenseLayerCPU::init()),
-      conv: Box::new(ConvLayerCPU::init())
-    }));
-
     Neuron {
       pipelines: Vec::new()
     }
@@ -95,13 +94,14 @@ impl Neuron {
 
   #[cfg(feature = "opencl")]
   pub fn enable_opencl() {
-
-    unsafe { let _ = std::mem::replace(&mut *MATRIX_EXECUTOR.as_mut(), MatrixMathExecutorEnum::OCL(MatrixMathOCL::init())); }
-
-    *EXECUTORS.lock().unwrap() = Some(Box::new(Executors {
-      dense: Box::new(DenseLayerCPU::init()),
-      conv: Box::new(ConvLayerCPU::init())
-    }));
+    unsafe { 
+      let _ = std::mem::replace(&mut *MATRIX_EXECUTOR.as_mut(), MatrixMathExecutorEnum::OCL(MatrixMathOCL::init())); 
+      let _ = std::mem::replace(&mut  *EXECUTORS.as_mut(), Executors {
+        dense: Box::new(DenseLayerCPU::init()),
+        conv: Box::new(ConvLayerOCL::init()),
+        pooling: Box::new(PoolingLayerOCL::init())
+      }); 
+    }
   }
 
   pub fn logger() -> MutexGuard<'static,Box<Logger>> {
@@ -109,14 +109,12 @@ impl Neuron {
   }
 
   pub fn matrix() -> &'static Box<MatrixMathExecutorEnum> {
-    let r;
-    unsafe{ r = &MATRIX_EXECUTOR; }
+    let r = unsafe{ &MATRIX_EXECUTOR };
     r
   }
 
-  pub fn executors() -> &'static Mutex<Option<Box<Executors>>> {
-
-    let r = &*EXECUTORS;
+  pub fn executors() -> &'static Box<Executors> {
+    let r = unsafe {&*EXECUTORS};
     r
   }
 

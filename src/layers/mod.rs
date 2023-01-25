@@ -68,7 +68,7 @@ impl Loader for DenseLayer {
 impl Propagation for DenseLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
 
-    if let Some((forward_input,z1,ret)) = Neuron::executors().lock().unwrap().as_ref().unwrap().dense.forward(input, &self.weights, &self.bias, &self.config) {
+    if let Some((forward_input,z1,ret)) = Neuron::executors().dense.forward(input, &self.weights, &self.bias, &self.config) {
       self.last_z1 = Some(z1.clone());
       self.last_input = Some(forward_input.clone());
       return Some(ret);
@@ -79,7 +79,7 @@ impl Propagation for DenseLayer {
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
     if let Some(ref forward_input) = self.last_input {
       if let Some(ref z1) = self.last_z1{
-        if let Some(ret) = Neuron::executors().lock().unwrap().as_ref().unwrap().dense.backward(input, forward_input, z1, &mut self.weights, &mut self.bias, !first, &self.config) {
+        if let Some(ret) = Neuron::executors().dense.backward(input, forward_input, z1, &mut self.weights, &mut self.bias, !first, &self.config) {
           self.last_z1 = Some(z1.clone());
           self.last_input = Some(forward_input.clone());
           return Some(ret);
@@ -191,7 +191,7 @@ impl Loader for ConvLayer {
 
 impl Propagation for ConvLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
-    if let Some((forward_input, z1, ret)) = Neuron::executors().lock().unwrap().as_ref().unwrap().conv.forward(input, self.filters.clone(), self.filter_size, self.bias.clone(), &self.config){
+    if let Some((forward_input, z1, ret)) = Neuron::executors().conv.forward(input, self.filters.clone(), self.filter_size, self.bias.clone(), &self.config){
       self.last_z1 = Some(z1);
       self.last_input = Some(forward_input);
       return Some(ret);
@@ -203,7 +203,7 @@ impl Propagation for ConvLayer {
 
     if let Some(ref last_z1) = self.last_z1 {
       if let Some(ref forward_input) = self.last_input {
-        return Neuron::executors().lock().unwrap().as_ref().unwrap().conv.backward(input, forward_input, last_z1, &mut self.filters, self.filter_size, &mut self.bias, !first, &self.config);
+        return Neuron::executors().conv.backward(input, forward_input, last_z1, &mut self.filters, self.filter_size, &mut self.bias, !first, &self.config);
       }
     }
     None
@@ -309,7 +309,7 @@ pub struct PoolingLayerConfig {
 
 pub trait PoolingLayerExecutor {
   fn forward(&self, input: &Vec<Box<Tensor>>, filter_size: (usize, usize), config: &PoolingLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
-  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>>;
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>>;
 }
 
 pub struct PoolingLayer {
@@ -330,86 +330,19 @@ impl PoolingLayer {
 }
 
 impl Propagation for PoolingLayer {
-  fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
-    
-    let timer = Instant::now();
-
-    let result_height = (((input[0].rows() as f64 - self.filter_size.0 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
-    let result_width = (((input[0].cols() as f64 - self.filter_size.1 as f64)/self.config.stride as f64) + 1.0).floor() as usize;
-    
-    Neuron::logger().debug(|| format!("PoolingLayer Input (Forward) = {:?}", input));
-    Neuron::logger().debug(|| format!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
-    Neuron::logger().debug(|| format!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len()));
-
-    let mut result_final = Vec::new();
-    for inp in input.iter() {
-      let mut result = Tensor::zeros(result_height, result_width);
-      for i in (0 .. inp.rows() - self.filter_size.0).step_by(self.config.stride) {
-        for j in (0 .. inp.cols() - self.filter_size.1).step_by(self.config.stride) {
-          let mut max = 0.0;
-          for k in 0 .. self.filter_size.0 {
-            for l in 0 .. self.filter_size.1 {
-              let value = inp.get(i+k,j+l);
-              if  value > max {
-                max = value;
-              }
-            }
-          }
-          result.set(i/self.config.stride, j/self.config.stride, max);
-        }
-      }
-      result_final.push(Box::new(result));
+  fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {    
+    if let Some((forward_input,ret)) = Neuron::executors().pooling.forward(input, self.filter_size, &self.config) {
+      self.last_input = Some(forward_input.clone());
+      return Some(ret);
     }
-
-    self.last_input = Some(input.clone());
-
-    Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result_final));
-
-    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
-
-    Some(result_final)
+    None
   }
 
-  fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
-
-    let timer = Instant::now();
-
-    let mut result_final = Vec::new();
-
-    Neuron::logger().debug(|| format!("PoolingLayer Input (Backward) = {:?}", input));
-    Neuron::logger().debug(|| format!("PoolingLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
-
-    if let Some(ref fic) = self.last_input {
-      for (inp,fi) in input.iter().zip(fic.iter()) {
-        let mut result =  Tensor::zeros(fi.rows(), fi.cols());
-        for i in (0 .. fi.rows()-self.filter_size.0).step_by(self.config.stride) {
-          for j in (0 .. fi.cols()-self.filter_size.1).step_by(self.config.stride) {
-            let mut max = 0.0;
-            let mut max_k = 0;
-            let mut max_l = 0;
-            for k in 0 .. self.filter_size.0 {
-              for l in 0 .. self.filter_size.1 {
-                let value = fi.get(i+k,j+l);
-                if value > max {
-                  max = value;
-                  max_k = k;
-                  max_l = l;
-                }
-              }
-            }
-            result.set(i+max_k,j+max_l, inp.get(i/self.config.stride,j/self.config.stride));
-          }
-        }
-        result_final.push(Box::new(result));  
-      }
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>> {
+    if let Some(ref forward_input) = self.last_input {
+      return Neuron::executors().pooling.backward(input, forward_input,  self.filter_size, !first, &self.config);
     }
-
-    Neuron::logger().debug(|| format!("PoolingLayer Output (Backward) = {:?}", result_final));
-    Neuron::logger().debug(|| format!("PoolingLayer Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len()));
-
-    Neuron::logger().profiling(|| format!("PoolingLayer Backward Time = {}ms", timer.elapsed().as_millis()));
-    
-    Some(result_final)
+    None
   }
   
   fn as_loader(&self) -> Option<&dyn Loader> {
