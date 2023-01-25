@@ -164,7 +164,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
 
       Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
-      result.sync_ocl_buffer();
+      result.sync_ocl_cpu();
       result
   }
 
@@ -213,7 +213,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -274,7 +274,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL multiply matrix = {:?}", result));
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -323,7 +323,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL multiply wise matrix = {:?}", result));
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -371,7 +371,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         }
       }
       Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
-      result.sync_ocl_buffer();
+      result.sync_ocl_cpu();
       result
   }
 
@@ -429,7 +429,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", result));
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -468,7 +468,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
     Neuron::logger().debug(|| format!("OpenCL add value matrix = {:?}", result));
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -508,7 +508,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL div value matrix = {:?}", result));
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -548,7 +548,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL mul value matrix = {:?}", result));
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -584,7 +584,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         }
       }  
     }
-    result.sync_ocl_buffer();
+    result.sync_ocl_cpu();
     result
   }
 
@@ -664,7 +664,8 @@ impl TensorOCL {
 
 pub trait OCL {
   fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_double>>>;
-  fn sync_ocl_buffer(&mut self);
+  fn sync_ocl_cpu(&mut self);
+  fn sync_cpu_ocl(&self);
 }
 
 impl OCL for Tensor {
@@ -674,13 +675,29 @@ impl OCL for Tensor {
       r1.buffer.clone()
   }
 
-  fn sync_ocl_buffer(&mut self) {
-    let buffer_ocl = self.get_ocl_buffer();
-    let buffer = buffer_ocl.lock().unwrap();
-
+  fn sync_ocl_cpu(&mut self) {
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      let buffer_ocl = self.get_ocl_buffer();
+      let buffer = buffer_ocl.lock().unwrap();
+        
       let ret = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_read_buffer(&buffer, CL_NON_BLOCKING, 0, &mut self.mut_data(), &[]).unwrap() };
+      let error = ret.wait();
+  
+      if let Err(error) = error {
+        println!("OpenCL Error: {:?}", error);
+        std::process::exit(0);
+      }
+    }
+  }
+
+  fn sync_cpu_ocl(&self) {
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      let buffer_ocl = self.get_ocl_buffer();
+      let mut buffer = buffer_ocl.lock().unwrap();
+        
+      let ret = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut buffer, CL_NON_BLOCKING, 0, &self.data(), &[]).unwrap() };
       let error = ret.wait();
   
       if let Err(error) = error {

@@ -1,8 +1,8 @@
 use std::time::Instant;
 
-use crate::{math::Tensor, Neuron};
+use crate::{math::Tensor, Neuron, Propagation};
 
-use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig};
+use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
 pub struct DenseLayerCPU;
 
@@ -240,5 +240,100 @@ impl ConvLayerExecutor for ConvLayerCPU {
     Neuron::logger().profiling(|| format!("ConvLayer Backward Time = {}ms", timer.elapsed().as_millis()));
 
     Some(final_output)  
+  }
+}
+
+pub struct PoolingLayerCPU;
+
+impl PoolingLayerCPU {
+  pub fn new() -> PoolingLayerCPU {
+    PoolingLayerCPU
+  }
+}
+
+impl PoolingLayerCPU {
+  pub fn init() -> PoolingLayerCPU {
+    PoolingLayerCPU
+  }
+}
+
+impl PoolingLayerExecutor for PoolingLayerCPU {
+  fn forward(&self, input: &Vec<Box<Tensor>>, filter_size: (usize, usize), config: &PoolingLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+
+    
+    let timer = Instant::now();
+
+    let result_height = (((input[0].rows() as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    
+    Neuron::logger().debug(|| format!("PoolingLayer Input (Forward) = {:?}", input));
+    Neuron::logger().debug(|| format!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(|| format!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len()));
+
+    let mut result_final = Vec::new();
+    for inp in input.iter() {
+      let mut result = Tensor::zeros(result_height, result_width);
+      for i in (0 .. inp.rows() - filter_size.0).step_by(config.stride) {
+        for j in (0 .. inp.cols() - filter_size.1).step_by(config.stride) {
+          let mut max = 0.0;
+          for k in 0 .. filter_size.0 {
+            for l in 0 .. filter_size.1 {
+              let value = inp.get(i+k,j+l);
+              if  value > max {
+                max = value;
+              }
+            }
+          }
+          result.set(i/config.stride, j/config.stride, max);
+        }
+      }
+      result_final.push(Box::new(result));
+    }
+
+    let last_input = input.clone();
+
+    Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result_final));
+    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+
+    Some((last_input,result_final))
+  }
+
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>> {
+    let timer = Instant::now();
+
+    let mut result_final = Vec::new();
+
+    Neuron::logger().debug(|| format!("PoolingLayer Input (Backward) = {:?}", input));
+    Neuron::logger().debug(|| format!("PoolingLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+
+    for (inp,fi) in input.iter().zip(forward_input.iter()) {
+      let mut result =  Tensor::zeros(fi.rows(), fi.cols());
+      for i in (0 .. fi.rows()-filter_size.0).step_by(config.stride) {
+        for j in (0 .. fi.cols()-filter_size.1).step_by(config.stride) {
+          let mut max = 0.0;
+          let mut max_k = 0;
+          let mut max_l = 0;
+          for k in 0 .. filter_size.0 {
+            for l in 0 .. filter_size.1 {
+              let value = fi.get(i+k,j+l);
+              if value > max {
+                max = value;
+                max_k = k;
+                max_l = l;
+              }
+            }
+          }
+          result.set(i+max_k,j+max_l, inp.get(i/config.stride,j/config.stride));
+        }
+      }
+      result_final.push(Box::new(result));  
+    }
+
+    Neuron::logger().debug(|| format!("PoolingLayer Output (Backward) = {:?}", result_final));
+    Neuron::logger().debug(|| format!("PoolingLayer Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len()));
+
+    Neuron::logger().profiling(|| format!("PoolingLayer Backward Time = {}ms", timer.elapsed().as_millis()));
+    
+    Some(result_final)
   }
 }

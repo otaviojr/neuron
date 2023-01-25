@@ -4,9 +4,9 @@ use opencl3::{device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, context::Co
 
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 
-use super::{ConvLayerExecutor, cpu::ConvLayerCPU, ConvLayerConfig};
+use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
-const PROGRAM_SOURCE: &str = r#"
+const CONV_PROGRAM_SOURCE: &str = r#"
 __kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
@@ -31,6 +31,32 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
 }
 "#;
 
+const POOLING_PROGRAM_SOURCE: &str = r#"
+__kernel void conv(__global double *input, __global double *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
+  int gid = get_global_id(0);
+
+  int gid_y = gid / result_width;
+  int gid_x = gid % result_width;
+
+  int i = gid_y * stride;
+  int j = gid_x * stride;
+
+  double max = 0.0;
+  for(int k = 0; k < filter_height; k++) {
+    for(int l = 0; l < filter_width; l++) {
+      int input_index = (i + k) * input_width + (j + l);
+      double value = input[input_index];
+      if(value > max) {
+        max = value;
+      }
+    }
+  }
+
+  int result_index = gid_y * result_width + gid_x;
+  result[result_index] = max;
+}
+"#;
+
 const KERNEL_MATRIX_CONV_NAME: &str = "conv";
 
 pub struct ConvLayerOCL {
@@ -44,7 +70,7 @@ impl ConvLayerOCL {
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), PROGRAM_SOURCE, "") {
+      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "") {
         program = Some(p);
       }
     }
@@ -94,7 +120,7 @@ impl ConvLayerOCL{
           let mut events: Vec<cl_event> = Vec::default();
           events.push(kernel_event.get());
 
-          result.sync_ocl_buffer();
+          result.sync_ocl_cpu();
         }
       }
     }
@@ -166,5 +192,99 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
   fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
     self.cpu.backward(input, forward_input, last_z1, filters, filter_size, bias, activate, config)
+  }
+}
+
+pub struct PoolingLayerOCL {
+  program: Option<Program>,
+  cpu: PoolingLayerCPU
+}
+
+impl PoolingLayerOCL {
+  fn init() -> Self {
+    let mut program = None;
+
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), POOLING_PROGRAM_SOURCE, "") {
+        program = Some(p);
+      }
+    }
+    
+    PoolingLayerOCL {
+      program,
+      cpu: PoolingLayerCPU::init()
+    }
+  }
+
+  fn do_pooling(&self, input: &Box<Tensor>, filter_size:(usize, usize), result: &mut Tensor, config: &PoolingLayerConfig) {
+
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
+        if let Some(ref program) = self.program {
+          let input_ocl = input.get_ocl_buffer();
+          let result_ocl = result.get_ocl_buffer();
+
+          let input_buffer = input_ocl.lock().unwrap();
+          let result_buffer = result_ocl.lock().unwrap();
+
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_CONV_NAME).unwrap();
+
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*input_buffer)
+                .set_arg(&*result_buffer)
+                .set_arg(&(input.cols() as i32))
+                .set_arg(&(input.rows() as i32))
+                .set_arg(&(filter_size.1 as i32))
+                .set_arg(&(filter_size.0 as i32))
+                .set_arg(&(result.cols() as i32))
+                .set_arg(&(result.rows() as i32))
+                .set_arg(&(config.stride as i32))
+                .set_global_work_size(result.rows()*result.cols())
+                .enqueue_nd_range(&queue).unwrap()
+          };
+
+          let mut events: Vec<cl_event> = Vec::default();
+          events.push(kernel_event.get());
+
+          result.sync_ocl_cpu();
+        }
+      }
+    }
+    Neuron::logger().debug(|| format!("OpenCL pooling result = {:?}", result));
+  }
+
+}
+
+impl PoolingLayerExecutor for PoolingLayerOCL {
+  fn forward(&self, input: &Vec<Box<Tensor>>, filter_size: (usize, usize), config: &PoolingLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)>{
+    let timer = Instant::now();
+
+    let result_height = (((input[0].rows() as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    
+    Neuron::logger().debug(|| format!("PoolingLayer Input (Forward) = {:?}", input));
+    Neuron::logger().debug(|| format!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(|| format!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len()));
+
+    let mut result_final = Vec::new();
+    for inp in input.iter() {
+      let mut result = Tensor::zeros(result_height, result_width);
+
+      self.do_pooling(inp, filter_size, &mut result, config);
+
+      result_final.push(Box::new(result));
+    }
+
+    Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result_final));
+    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+
+    Some((input.clone(), result_final))
+  }
+
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>> {
+    self.cpu.backward(input, forward_input, filter_size, bias, activate, config)
   }
 }

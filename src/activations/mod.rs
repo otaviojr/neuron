@@ -122,6 +122,7 @@ impl Activation for SoftMax {
     }
 
     Neuron::logger().debug( || format!("SoftMax Activation Output = {:?}", output));
+    output.sync_gpu();
     Ok(output)
   }
 
@@ -129,6 +130,8 @@ impl Activation for SoftMax {
     let softmax = self.forward(value)?;
     let softmax_1 = Tensor::from_data(softmax.rows(), softmax.cols(), vec![1.0; softmax.rows()*softmax.cols()]);
     
-    softmax.mul(&softmax_1.sub(&softmax)?)
+    let mut ret = softmax.mul(&softmax_1.sub(&softmax)?)?;
+    ret.sync_gpu();
+    Ok(ret)
   }
 }

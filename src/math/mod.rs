@@ -321,4 +321,16 @@ impl Tensor {
     }
     Err(format!("No executor found"))
   }
+
+  pub fn sync_gpu(&mut self) {
+    if cfg!(feature = "opencl") {
+      self.sync_cpu_ocl();
+    }
+  }
+
+  pub fn sync_cpu(&mut self) {
+    if cfg!(feature = "opencl") {
+      self.sync_ocl_cpu();
+    }
+  }
 }

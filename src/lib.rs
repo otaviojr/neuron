@@ -14,9 +14,6 @@ use util::Logger;
 use lazy_static::lazy_static;
 
 #[cfg(feature = "opencl")]
-use layers::{opencl::ConvLayerOCL};
-
-#[cfg(feature = "opencl")]
 use math::{opencl::MatrixMathOCL};
 
 use crate::math::MatrixMathExecutorEnum;

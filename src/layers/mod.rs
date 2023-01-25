@@ -307,6 +307,11 @@ pub struct PoolingLayerConfig {
   pub stride: usize
 }
 
+pub trait PoolingLayerExecutor {
+  fn forward(&self, input: &Vec<Box<Tensor>>, filter_size: (usize, usize), config: &PoolingLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &PoolingLayerConfig) -> Option<Vec<Box<Tensor>>>;
+}
+
 pub struct PoolingLayer {
   config: PoolingLayerConfig,
   filter_size: (usize,usize),
@@ -319,7 +324,6 @@ impl PoolingLayer {
     PoolingLayer {
       config,
       filter_size,
-
       last_input: None
     }
   }
