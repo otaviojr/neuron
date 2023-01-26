@@ -143,44 +143,43 @@ impl ConvLayerExecutor for ConvLayerOCL {
     Neuron::logger().debug(|| format!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
     Neuron::logger().debug(|| format!("CNN Input (Forward) = {:?}", input));
 
-    let (result_sender, result_receiver) = mpsc::channel();
-    let (z1_sender, z1_receiver) = mpsc::channel();
+    if let Some(ref p) = self.program {
+      for (f,b) in filters.iter().zip(bias.iter()) {
+        let mut result_channels = Vec::new();
+        let mut z1_channels = Vec::new();
+                  
+        let (result_sender, result_receiver) = mpsc::channel();
+        let (z1_sender, z1_receiver) = mpsc::channel();
 
-    for (f,b) in filters.iter().zip(bias.iter()) {
-      let b = b.clone();
-      let fc = f.clone();
-      let inp = input.clone();
-      let c = config.clone();
+        for (inp,fc) in input.iter().zip(f.iter()) {
+          let fc = fc.clone();
+          let inp = inp.clone();
+          let b = b.clone();
+          let c = config.clone();
+          let p = p.clone();
 
-      let result_sender = result_sender.clone();
-      let z1_sender = z1_sender.clone();
+          let result_sender = result_sender.clone();
+          let z1_sender = z1_sender.clone();
 
-      if let Some(ref p) = self.program {
-        let p = p.clone();
-        thread::spawn(move || {
-          let mut result_channels = Vec::new();
-          let mut z1_channels = Vec::new();
-                    
-          for (inp,fc) in inp.iter().zip(fc.iter()) {
+          thread::spawn(move || {
             let mut result = Tensor::zeros(result_height, result_width);
-
-            ConvLayerOCL::do_conv(&p.clone(), inp, fc, &b, &mut result, &c);
-            
+            ConvLayerOCL::do_conv(&p.clone(), &inp, &fc, &b, &mut result, &c);
             let z1 = c.activation.forward(&mut result).unwrap();
-            result_channels.push(Box::new(z1.clone()));
-            z1_channels.push(Box::new(result));
-          }
-          result_sender.send(result_channels).unwrap();
-          z1_sender.send(z1_channels).unwrap();
-        });
+
+            result_sender.send(Box::new(result)).unwrap();
+            z1_sender.send(Box::new(z1.clone())).unwrap();
+          });            
+        }
+
+        for _ in 0..input.len() {
+          result_channels.push(result_receiver.recv().unwrap());
+          z1_channels.push(z1_receiver.recv().unwrap());
+        }
+
+        result_final.push(result_channels);
+        z1_final.push(z1_channels);
       }
     }
-
-    for _ in 0..filters.len() {
-      result_final.push(result_receiver.recv().unwrap());
-      z1_final.push(z1_receiver.recv().unwrap());
-    }
-
     let mut output = Vec::new();
     let mut z1 = Vec::new();
 
