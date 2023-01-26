@@ -99,9 +99,9 @@ impl ConvLayerOCL{
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
-                .set_arg(&*input_buffer)
-                .set_arg(&*filter_buffer)
-                .set_arg(&*result_buffer)
+                .set_arg(&input_buffer)
+                .set_arg(&filter_buffer)
+                .set_arg(&result_buffer)
                 .set_arg(&(*bias as cl_double))
                 .set_arg(&(input.cols() as cl_int))
                 .set_arg(&(input.rows() as cl_int))
@@ -233,8 +233,8 @@ impl PoolingLayerOCL {
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
-                .set_arg(&*input_buffer)
-                .set_arg(&*result_buffer)
+                .set_arg(&input_buffer)
+                .set_arg(&result_buffer)
                 .set_arg(&(input.cols() as cl_int))
                 .set_arg(&(input.rows() as cl_int))
                 .set_arg(&(filter_size.1 as cl_int))
