@@ -122,6 +122,7 @@ impl Activation for SoftMax {
     }
 
     Neuron::logger().debug( || format!("SoftMax Activation Output = {:?}", output));
+    
     output.sync_gpu();
     Ok(output)
   }

@@ -27,7 +27,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
     }
   }
   int result_index = gid_y * result_width + gid_x;
-  result[result_index] = sum;
+  result[gid] = sum;
 }
 "#;
 
@@ -53,7 +53,7 @@ __kernel void pooling(__global double *input, __global double *result, int input
   }
 
   int result_index = gid_y * result_width + gid_x;
-  result[result_index] = max;
+  result[gid] = max;
 }
 "#;
 

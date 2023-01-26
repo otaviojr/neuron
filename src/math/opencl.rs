@@ -35,8 +35,10 @@ __kernel void mul_wise(__global double *a, __global double *b, __global double *
 
 __kernel void mul(__global double *a, __global double *b, __global double *c, int width_a, int width_b, int width_c) {
   int gid = get_global_id(0);
+
   int row = gid / width_c;
   int col = gid % width_c;
+
   double sum = 0.0;
   for (int i = 0; i < width_a; i++) {
       sum += a[row * width_a + i] * b[i * width_b + col];
@@ -46,8 +48,10 @@ __kernel void mul(__global double *a, __global double *b, __global double *c, in
 
 __kernel void transpose(__global double *a, __global double *b, int width, int height) {
   int gid = get_global_id(0);
+
   int row = gid / width;
   int col = gid % width;
+  
   b[col * height + row] = a[gid];
 }
 
@@ -196,7 +200,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&(result.cols as cl_int))
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
-        };        let error = kernel_event.wait();
+        };
 
         let error = kernel_event.wait();
         if let Err(error) = error {
@@ -384,7 +388,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_arg(&*rb)
               .set_arg(&(a.cols as cl_int))
               .set_arg(&(a.rows as cl_int))
-              .set_global_work_size(a.cols * a.rows)
+              .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
@@ -418,7 +422,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&value)
+              .set_arg(&(value as cl_double))
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
@@ -452,7 +456,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&value)
+              .set_arg(&(value as cl_double))
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
@@ -487,7 +491,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&value)
+              .set_arg(&(value as cl_double))
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
