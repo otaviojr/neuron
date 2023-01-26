@@ -212,8 +212,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
     result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
     result
   }
 
@@ -266,8 +266,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL multiply matrix = {:?}", result));
     result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL multiply matrix = {:?}", result));
     result
   }
 
@@ -308,8 +308,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL multiply wise matrix = {:?}", result));
     result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL multiply wise matrix = {:?}", result));
     result
   }
 
@@ -349,8 +349,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
           }
         }
       }
-      Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
       result.sync_ocl_cpu();
+      Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
       result
   }
 
@@ -402,8 +402,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", result));
     result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", result));
     result
   }
 
@@ -436,8 +436,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
         }
       }
     }
-    Neuron::logger().debug(|| format!("OpenCL add value matrix = {:?}", result));
     result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL add value matrix = {:?}", result));
     result
   }
 
@@ -471,8 +471,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL div value matrix = {:?}", result));
     result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL div value matrix = {:?}", result));
     result
   }
 
@@ -506,8 +506,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL mul value matrix = {:?}", result));
     result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL mul value matrix = {:?}", result));
     result
   }
 
