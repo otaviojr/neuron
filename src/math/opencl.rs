@@ -154,9 +154,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
           let kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
-                .set_arg(&ab)
-                .set_arg(&bb)
-                .set_arg(&rb)
+                .set_arg(&*ab)
+                .set_arg(&*bb)
+                .set_arg(&*rb)
                 .set_arg(&(result.cols as cl_int))
                 .set_global_work_size(result.cols * result.rows)
                 .enqueue_nd_range(&queue).unwrap()
