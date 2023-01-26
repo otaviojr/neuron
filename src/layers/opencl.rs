@@ -118,8 +118,11 @@ impl ConvLayerOCL{
                 .enqueue_nd_range(&queue).unwrap()
           };
 
-          let mut events: Vec<cl_event> = Vec::default();
-          events.push(kernel_event.get());
+          let error = kernel_event.wait();
+          if let Err(error) = error {
+            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+            std::process::exit(0);
+          }
         }
       }
     }
@@ -246,8 +249,11 @@ impl PoolingLayerOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };
 
-          let mut events: Vec<cl_event> = Vec::default();
-          events.push(kernel_event.get());
+          let error = kernel_event.wait();
+          if let Err(error) = error {
+            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+            std::process::exit(0);
+          }
         }
       }
     }
