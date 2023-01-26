@@ -58,9 +58,12 @@ const KERNEL_CONV_NAME: &str = "conv";
 const KERNEL_POOLING_NAME: &str = "pooling";
 
 pub struct ConvLayerOCL {
-  program: Option<Program>,
+  program: Option<Arc<Program>>,
   cpu: ConvLayerCPU
 }
+
+unsafe impl Sync for ConvLayerOCL {}
+unsafe impl Send for ConvLayerOCL {}
 
 impl ConvLayerOCL {
   pub fn init() -> Self {
@@ -69,7 +72,7 @@ impl ConvLayerOCL {
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "") {
-        program = Some(p);
+        program = Some(Arc::new(p));
       }
     }
     
@@ -133,6 +136,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     let result_height = (((input[0].rows() as f64 + 2.0* config.padding as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 + 2.0* config.padding as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
+
     let mut result_final = Vec::new();
     let mut z1_final = Vec::new();
 
@@ -143,9 +147,6 @@ impl ConvLayerExecutor for ConvLayerOCL {
     let (z1_sender, z1_receiver) = mpsc::channel();
 
     for (f,b) in filters.iter().zip(bias.iter()) {
-      let mut result_channels = Vec::new();
-      let mut z1_channels = Vec::new();
-
       let b = b.clone();
       let fc = f.clone();
       let inp = input.clone();
@@ -154,18 +155,21 @@ impl ConvLayerExecutor for ConvLayerOCL {
       let result_sender = result_sender.clone();
       let z1_sender = z1_sender.clone();
 
-      if let Some(ref program) = self.program {
+      if let Some(ref p) = self.program {
+        let p = p.clone();
         thread::spawn(move || {
+          let mut result_channels = Vec::new();
+          let mut z1_channels = Vec::new();
+                    
           for (inp,fc) in inp.iter().zip(fc.iter()) {
             let mut result = Tensor::zeros(result_height, result_width);
 
-            ConvLayerOCL::do_conv(program, inp, fc, &b, &mut result, &c);
+            ConvLayerOCL::do_conv(&p.clone(), inp, fc, &b, &mut result, &c);
             
             let z1 = c.activation.forward(&mut result).unwrap();
-            result_channels.push(z1.clone());
+            result_channels.push(Box::new(z1.clone()));
             z1_channels.push(Box::new(result));
           }
-
           result_sender.send(result_channels).unwrap();
           z1_sender.send(z1_channels).unwrap();
         });
