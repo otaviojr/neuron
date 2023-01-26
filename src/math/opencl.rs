@@ -574,7 +574,7 @@ pub struct TensorOCL {
 }
 
 impl TensorOCL {
-  pub fn new(size: usize) -> Option<TensorOCL> {
+  pub fn _new(size: usize) -> Option<TensorOCL> {
 
     let timer = Instant::now();
 

@@ -98,7 +98,7 @@ impl Tensor {
     let mut tensor_ocl = None;
 
     if cfg!(feature = "opencl") {
-      if let Some(t) = TensorOCL::new(data.len()) {
+      if let Some(t) = TensorOCL::init(&data) {
         tensor_ocl = Some(Arc::new(Mutex::new(t)));
       }
     }
