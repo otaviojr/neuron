@@ -11,7 +11,7 @@ use crate::math::Tensor;
 use crate::activations::Activation;
 
 pub struct DenseLayerConfig {
-  pub activation: Box<dyn Activation>,
+  pub activation: Arc<dyn Activation>,
   pub learn_rate: f64,
 }
 
