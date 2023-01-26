@@ -1,14 +1,10 @@
-use std::{ptr, time::Instant};
-
-use opencl3::{device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, context::Context, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, memory::{CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, Buffer}, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_event, cl_int}, kernel::{Kernel, ExecuteKernel}};
-
+use std::{time::Instant};
+use opencl3::{program::Program, types::{cl_double, cl_int}, kernel::{Kernel, ExecuteKernel}};
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
-
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
 const CONV_PROGRAM_SOURCE: &str = r#"
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
-
 __kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
@@ -33,6 +29,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
 "#;
 
 const POOLING_PROGRAM_SOURCE: &str = r#"
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 __kernel void pooling(__global double *input, __global double *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
   int gid = get_global_id(0);
 
