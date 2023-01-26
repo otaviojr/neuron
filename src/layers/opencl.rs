@@ -39,7 +39,7 @@ __kernel void pooling(__global double *input, __global double *result, int input
   int i = gid_y * stride;
   int j = gid_x * stride;
 
-  double max = 0.0;
+  double max = -DBL_MAX;
   for(int k = 0; k < filter_height; k++) {
     for(int l = 0; l < filter_width; l++) {
       int input_index = (i + k) * input_width + (j + l);

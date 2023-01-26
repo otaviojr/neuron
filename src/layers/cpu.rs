@@ -275,7 +275,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
       let mut result = Tensor::zeros(result_height, result_width);
       for i in (0 .. inp.rows() - filter_size.0).step_by(config.stride) {
         for j in (0 .. inp.cols() - filter_size.1).step_by(config.stride) {
-          let mut max = 0.0;
+          let mut max = std::f64::NEG_INFINITY;
           for k in 0 .. filter_size.0 {
             for l in 0 .. filter_size.1 {
               let value = inp.get(i+k,j+l);
