@@ -574,26 +574,6 @@ pub struct TensorOCL {
 }
 
 impl TensorOCL {
-  pub fn _new(size: usize) -> Option<TensorOCL> {
-
-    let timer = Instant::now();
-
-    let executor = Neuron::matrix();
-    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-
-      let ocl_buffer = unsafe {
-        Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, size, ptr::null_mut()).unwrap()
-      };
-    
-      Neuron::logger().profiling(|| format!("OpenCL Tensor (new) = {}ms", timer.elapsed().as_millis()));
-
-      return Some(TensorOCL {
-        buffer: Arc::new(Mutex::new(ocl_buffer)),
-      });
-    }
-    None 
-  }
-
   pub fn init(buffer: &Vec<f64>) -> Option<TensorOCL> {
 
     let timer = Instant::now();
