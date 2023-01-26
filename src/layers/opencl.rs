@@ -1,6 +1,6 @@
 use std::{ptr, time::Instant};
 
-use opencl3::{device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, context::Context, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, memory::{CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, Buffer}, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_event}, kernel::{Kernel, ExecuteKernel}};
+use opencl3::{device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, context::Context, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, memory::{CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY, Buffer}, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_event, cl_int}, kernel::{Kernel, ExecuteKernel}};
 
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 
@@ -105,15 +105,15 @@ impl ConvLayerOCL{
                 .set_arg(&*input_buffer)
                 .set_arg(&*filter_buffer)
                 .set_arg(&*result_buffer)
-                .set_arg(bias)
-                .set_arg(&(input.cols() as i32))
-                .set_arg(&(input.rows() as i32))
-                .set_arg(&(filter.cols() as i32))
-                .set_arg(&(filter.rows() as i32))
-                .set_arg(&(result.cols() as i32))
-                .set_arg(&(result.rows() as i32))
-                .set_arg(&(config.stride as i32))
-                .set_arg(&(config.padding as i32))
+                .set_arg(&(*bias as cl_double))
+                .set_arg(&(input.cols() as cl_int))
+                .set_arg(&(input.rows() as cl_int))
+                .set_arg(&(filter.cols() as cl_int))
+                .set_arg(&(filter.rows() as cl_int))
+                .set_arg(&(result.cols() as cl_int))
+                .set_arg(&(result.rows() as cl_int))
+                .set_arg(&(config.stride as cl_int))
+                .set_arg(&(config.padding as cl_int))
                 .set_global_work_size(result.rows()*result.cols())
                 .enqueue_nd_range(&queue).unwrap()
           };
@@ -235,13 +235,13 @@ impl PoolingLayerOCL {
             ExecuteKernel::new(&kernel)
                 .set_arg(&*input_buffer)
                 .set_arg(&*result_buffer)
-                .set_arg(&(input.cols() as i32))
-                .set_arg(&(input.rows() as i32))
-                .set_arg(&(filter_size.1 as i32))
-                .set_arg(&(filter_size.0 as i32))
-                .set_arg(&(result.cols() as i32))
-                .set_arg(&(result.rows() as i32))
-                .set_arg(&(config.stride as i32))
+                .set_arg(&(input.cols() as cl_int))
+                .set_arg(&(input.rows() as cl_int))
+                .set_arg(&(filter_size.1 as cl_int))
+                .set_arg(&(filter_size.0 as cl_int))
+                .set_arg(&(result.cols() as cl_int))
+                .set_arg(&(result.rows() as cl_int))
+                .set_arg(&(config.stride as cl_int))
                 .set_global_work_size(result.rows()*result.cols())
                 .enqueue_nd_range(&queue).unwrap()
           };
