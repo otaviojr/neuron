@@ -1,4 +1,4 @@
-use std::{time::Instant, thread, sync::{mpsc, Arc}};
+use std::{time::Instant};
 use opencl3::{program::Program, types::{cl_double, cl_int}, kernel::{Kernel, ExecuteKernel}};
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
@@ -58,12 +58,9 @@ const KERNEL_CONV_NAME: &str = "conv";
 const KERNEL_POOLING_NAME: &str = "pooling";
 
 pub struct ConvLayerOCL {
-  program: Option<Arc<Program>>,
+  program: Option<Program>,
   cpu: ConvLayerCPU
 }
-
-unsafe impl Sync for ConvLayerOCL {}
-unsafe impl Send for ConvLayerOCL {}
 
 impl ConvLayerOCL {
   pub fn init() -> Self {
@@ -72,7 +69,7 @@ impl ConvLayerOCL {
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "") {
-        program = Some(Arc::new(p));
+        program = Some(p);
       }
     }
     
@@ -84,43 +81,45 @@ impl ConvLayerOCL {
 }
 
 impl ConvLayerOCL{
-  fn do_conv(program: &Program, input: &Box<Tensor>, filter: &Tensor, bias: &f64, result: &mut Tensor, config: &ConvLayerConfig) {
+  fn do_conv(&self, input: &Box<Tensor>, filter: &Tensor, bias: &f64, result: &mut Tensor, config: &ConvLayerConfig) {
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
-        let input_ocl = input.get_ocl_buffer();
-        let filter_ocl = filter.get_ocl_buffer();
-        let result_ocl = result.get_ocl_buffer();
+        if let Some(ref program) = self.program {
+          let input_ocl = input.get_ocl_buffer();
+          let filter_ocl = filter.get_ocl_buffer();
+          let result_ocl = result.get_ocl_buffer();
 
-        let input_buffer = input_ocl.lock().unwrap();
-        let filter_buffer = filter_ocl.lock().unwrap();
-        let result_buffer = result_ocl.lock().unwrap();
+          let input_buffer = input_ocl.lock().unwrap();
+          let filter_buffer = filter_ocl.lock().unwrap();
+          let result_buffer = result_ocl.lock().unwrap();
 
-        let kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
+          let kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
 
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*input_buffer)
-              .set_arg(&*filter_buffer)
-              .set_arg(&*result_buffer)
-              .set_arg(&(*bias as cl_double))
-              .set_arg(&(input.cols() as cl_int))
-              .set_arg(&(input.rows() as cl_int))
-              .set_arg(&(filter.cols() as cl_int))
-              .set_arg(&(filter.rows() as cl_int))
-              .set_arg(&(result.cols() as cl_int))
-              .set_arg(&(result.rows() as cl_int))
-              .set_arg(&(config.stride as cl_int))
-              .set_arg(&(config.padding as cl_int))
-              .set_global_work_size(result.rows()*result.cols())
-              .enqueue_nd_range(&queue).unwrap()
-        };
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*input_buffer)
+                .set_arg(&*filter_buffer)
+                .set_arg(&*result_buffer)
+                .set_arg(&(*bias as cl_double))
+                .set_arg(&(input.cols() as cl_int))
+                .set_arg(&(input.rows() as cl_int))
+                .set_arg(&(filter.cols() as cl_int))
+                .set_arg(&(filter.rows() as cl_int))
+                .set_arg(&(result.cols() as cl_int))
+                .set_arg(&(result.rows() as cl_int))
+                .set_arg(&(config.stride as cl_int))
+                .set_arg(&(config.padding as cl_int))
+                .set_global_work_size(result.rows()*result.cols())
+                .enqueue_nd_range(&queue).unwrap()
+          };
 
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
+          let error = kernel_event.wait();
+          if let Err(error) = error {
+            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+            std::process::exit(0);
+          }
         }
       }
     }
@@ -136,50 +135,29 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     let result_height = (((input[0].rows() as f64 + 2.0* config.padding as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f64 + 2.0* config.padding as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
-
     let mut result_final = Vec::new();
     let mut z1_final = Vec::new();
 
     Neuron::logger().debug(|| format!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
     Neuron::logger().debug(|| format!("CNN Input (Forward) = {:?}", input));
 
-    if let Some(ref p) = self.program {
-      for (f,b) in filters.iter().zip(bias.iter()) {
-        let mut result_channels = Vec::new();
-        let mut z1_channels = Vec::new();
-                  
-        let (result_sender, result_receiver) = mpsc::channel();
-        let (z1_sender, z1_receiver) = mpsc::channel();
+    for (f,b) in filters.iter().zip(bias.iter()) {
+      let mut result_channels = Vec::new();
+      let mut z1_channels = Vec::new();
+      
+      for (inp,fc) in input.iter().zip(f.iter()) {
+        let mut result = Tensor::zeros(result_height, result_width);
 
-        for (inp,fc) in input.iter().zip(f.iter()) {
-          let fc = fc.clone();
-          let inp = inp.clone();
-          let b = b.clone();
-          let c = config.clone();
-          let p = p.clone();
-
-          let result_sender = result_sender.clone();
-          let z1_sender = z1_sender.clone();
-
-          thread::spawn(move || {
-            let mut result = Tensor::zeros(result_height, result_width);
-            ConvLayerOCL::do_conv(&p.clone(), &inp, &fc, &b, &mut result, &c);
-            let z1 = c.activation.forward(&mut result).unwrap();
-
-            result_sender.send(Box::new(result)).unwrap();
-            z1_sender.send(Box::new(z1.clone())).unwrap();
-          });            
-        }
-
-        for _ in 0..input.len() {
-          result_channels.push(result_receiver.recv().unwrap());
-          z1_channels.push(z1_receiver.recv().unwrap());
-        }
-
-        result_final.push(result_channels);
-        z1_final.push(z1_channels);
+        self.do_conv(inp, fc, b, &mut result, config);
+        
+        let z1 = config.activation.forward(&mut result).unwrap();
+        result_channels.push(z1.clone());
+        z1_channels.push(Box::new(result));
       }
+      result_final.push(result_channels); 
+      z1_final.push(z1_channels); 
     }
+
     let mut output = Vec::new();
     let mut z1 = Vec::new();
 
