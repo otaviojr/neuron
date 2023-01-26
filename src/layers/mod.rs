@@ -3,6 +3,7 @@ pub mod cpu;
 #[cfg(feature = "opencl")]
 pub mod opencl;
 
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::{Propagation, Loader, Weigths, Neuron};
@@ -99,8 +100,9 @@ impl Propagation for DenseLayer {
   }
 }
 
+#[derive(Clone)]
 pub struct ConvLayerConfig {
-  pub activation: Box<dyn Activation>,
+  pub activation: Arc<dyn Activation + Send + Sync>,
   pub learn_rate: f64,
   pub padding: usize,
   pub stride: usize,

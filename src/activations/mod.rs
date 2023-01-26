@@ -6,7 +6,6 @@ pub trait Activation {
 }
 
 pub struct ReLU {
-
 }
 
 impl ReLU {
