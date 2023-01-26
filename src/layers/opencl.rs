@@ -7,6 +7,8 @@ use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
 const CONV_PROGRAM_SOURCE: &str = r#"
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+
 __kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
@@ -26,7 +28,6 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
       }
     }
   }
-  int result_index = gid_y * result_width + gid_x;
   result[gid] = sum;
 }
 "#;
@@ -52,7 +53,6 @@ __kernel void pooling(__global double *input, __global double *result, int input
     }
   }
 
-  int result_index = gid_y * result_width + gid_x;
   result[gid] = max;
 }
 "#;
