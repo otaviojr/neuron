@@ -170,8 +170,8 @@ impl MatrixMathExecutor for MatrixMathOCL {
         }
       }
 
-      Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
       result.sync_ocl_cpu();
+      Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
       result
   }
 
@@ -213,7 +213,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     result.sync_ocl_cpu();
-    Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
+    Neuron::logger().debug(|| format!("OpenCL sub matrix = {:?}", result));
     result
   }
 
