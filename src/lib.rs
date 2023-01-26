@@ -33,9 +33,7 @@ static mut EXECUTORS: Lazy<Box<Executors>> = Lazy::new(|| Box::new(Executors {
   pooling: Box::new(PoolingLayerCPU::init())
 }));
 
-lazy_static! {
-  static ref LOGGER: Mutex<Box<Logger>> = Mutex::new(Box::new(Logger::new(util::LogLevel::Error)));
-}
+static mut LOGGER: Lazy<Box<Logger>> = Lazy::new(||Box::new(Logger::new(util::LogLevel::Error)));
 
 pub trait Propagation: Any {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>>;
@@ -69,7 +67,9 @@ impl Neuron {
   }
 
   pub fn set_log(file: Option<File>, level: util::LogLevel) {
-    *LOGGER.lock().unwrap() = Box::new(Logger::new_with_file(file, level));
+    unsafe {
+      let _ = std::mem::replace(&mut *LOGGER.as_mut(), Logger::new_with_file(file, level)); 
+    }
   }
 
   pub fn forward(&self, input: Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
@@ -104,8 +104,8 @@ impl Neuron {
     }
   }
 
-  pub fn logger() -> MutexGuard<'static,Box<Logger>> {
-    LOGGER.lock().unwrap()
+  pub fn logger() -> &'static mut Box<Logger> {
+    unsafe {&mut *LOGGER}
   }
 
   pub fn matrix() -> &'static Box<MatrixMathExecutorEnum> {
