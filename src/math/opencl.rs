@@ -13,9 +13,10 @@ __kernel void add(__global float *a, __global float *b, __global float *c, int w
 __kernel void add_bulk(__global float *a, __global float *b, int blocks, int len, int width, int height) {
   int gid = get_global_id(0);
 
-  for(int i = 0; i < blocks; i++)
-    for(int j = 0; i < len; i++)
-      b[gid + i * width * height ] += a[gid + i * j * width * height];
+  int pos = gid / blocks;
+
+  for(int i = 0; i < len; i++)
+    b[gid + pos * width * height ] += a[gid + i * width * height + pos * width * height];
 }
 
 __kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
@@ -169,7 +170,7 @@ impl MatrixMathOCL {
               .set_arg(&(len as cl_int))
               .set_arg(&(result.cols as cl_int))
               .set_arg(&(result.rows as cl_int))
-              .set_global_work_size(result.cols * result.rows)
+              .set_global_work_size(result.cols * result.rows * blocks)
               .enqueue_nd_range(queue).unwrap()
         };
 
