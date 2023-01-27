@@ -158,7 +158,7 @@ impl MatrixMathOCL {
 
         let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
 
-        let event = unsafe {
+        let kernel_event = unsafe {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ib)
               .set_arg(&*rb)
@@ -169,14 +169,15 @@ impl MatrixMathOCL {
               .enqueue_nd_range(queue).unwrap()
         };
 
-        Neuron::logger().debug(|| format!("Waiting add bulk kernel"));
-
-        let mut events = Vec::new();
-        events.push(event.get());
-
-        result.sync_ocl_cpu_wait(&events);
+        let error = kernel_event.wait();
+        if let Err(error) = error {
+          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+          std::process::exit(0);
+        }
       }
     }
+
+    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL add bulk matrix = {:?}", result));
     result
   }
