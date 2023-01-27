@@ -156,8 +156,6 @@ impl MatrixMathOCL {
         let i_ocl = input.get_ocl_buffer();
         let ib = i_ocl.lock().unwrap();
 
-        Neuron::logger().debug(|| format!("Executing add bulk kernel"));
-
         let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
 
         let event = unsafe {
@@ -170,6 +168,8 @@ impl MatrixMathOCL {
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(queue).unwrap()
         };
+
+        Neuron::logger().debug(|| format!("Waiting add bulk kernel"));
 
         let mut events = Vec::new();
         events.push(event.get());
