@@ -13,8 +13,8 @@ __kernel void add(__global float *a, __global float *b, __global float *c, int w
 __kernel void add_bulk(__global float *a, __global float *b, int blocks, int len, int width, int height) {
   int gid = get_global_id(0);
 
-  int block = gid / (len * width * height);
-  int pos = gid % (len * width * height);
+  int block = gid / (width * height);
+  int pos = gid % (width * height);
 
   int result_index = pos + (block * width * height); 
   
