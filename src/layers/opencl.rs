@@ -165,10 +165,11 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     let mut output = Vec::new();
     let mut z1 = Vec::new();
+    let mut new_tensor = Tensor::new(result_height, result_width).zero().unwrap();
 
     for (i,z) in result_final.iter_mut().zip(z1_final.iter_mut()) {
       let final_result = i.iter_mut()
-                                .fold(Some(Tensor::new(result_height, result_width).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
+                                .fold(Some(new_tensor.clone()), |a,b| Some(a.unwrap().add(b).unwrap()))
                                 .unwrap();
 
       output.push(Box::new(final_result));
@@ -177,7 +178,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
       let z1_cols = z[0].cols();
 
       let final_z1 = z.iter_mut()
-                                .fold(Some(Tensor::new(z1_rows, z1_cols).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
+                                .fold(Some(new_tensor.clone()), |a,b| Some(a.unwrap().add(b).unwrap()))
                                 .unwrap();
 
       z1.push(Box::new(final_z1))
