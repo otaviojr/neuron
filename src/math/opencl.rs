@@ -156,6 +156,8 @@ impl MatrixMathOCL {
         let i_ocl = input.get_ocl_buffer();
         let ib = i_ocl.lock().unwrap();
 
+        Neuron::logger().debug(|| format!("Executing add bulk kernel"));
+
         let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
 
         let event = unsafe {
