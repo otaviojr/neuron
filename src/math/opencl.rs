@@ -16,7 +16,7 @@ __kernel void add_bulk(__global float *a, __global float *b, int len, int width,
   int gid = get_global_id(0);
 
   for(int i = 0; i < len; i++)
-    b[gid + i * width * height] += a[gid];
+    b[gid] += a[gid + i * width * height];
 }
 
 __kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
@@ -146,7 +146,6 @@ impl MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
 
         let mut data = Vec::new();
         for a in a.iter_mut() {
@@ -157,6 +156,8 @@ impl MatrixMathOCL {
         let i_ocl = input.get_ocl_buffer();
         let ib = i_ocl.lock().unwrap();
 
+        let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
+
         let event = unsafe {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ib)
@@ -166,9 +167,11 @@ impl MatrixMathOCL {
               .set_arg(&(result.rows as cl_int))
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(queue).unwrap()
-        };  
+        };
+
         let mut events = Vec::new();
         events.push(event.get());
+
         result.sync_ocl_cpu_wait(&events);
       }
     }
