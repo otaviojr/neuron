@@ -712,14 +712,13 @@ impl OCL for Tensor {
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      let kernel = Kernel::create(matrix_ocl.program.as_ref().unwrap(), KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
       for a in a.iter() {
 
         assert!(a.rows == result.rows && a.cols == result.cols);
   
         let a_ocl = a.get_ocl_buffer();
         let ab = a_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(matrix_ocl.program.as_ref().unwrap(), KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
 
         events.push(unsafe {
           ExecuteKernel::new(&kernel)
