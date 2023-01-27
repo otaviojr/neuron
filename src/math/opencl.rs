@@ -13,13 +13,14 @@ __kernel void add(__global float *a, __global float *b, __global float *c, int w
 __kernel void add_bulk(__global float *a, __global float *b, int blocks, int len, int width, int height) {
   int gid = get_global_id(0);
 
-  int pos = gid / blocks;
+  int block = gid / blocks;
+  int pos = gid % blocks;
 
-  int result_index = gid + (pos * width * height); 
+  int result_index = pos + (block * width * height); 
   
   float sum = 0.0;
   for(int i = 0; i < len; i++){
-    int source_index = gid + (i * width * height) + (pos * len * width * height);
+    int source_index = pos + (i * width * height) + (block * len * width * height);
     sum += a[source_index];
   }
 
