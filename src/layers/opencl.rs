@@ -165,9 +165,9 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     let mut output = Vec::new();
     let mut z1 = Vec::new();
-    
-    let mut new_tensor = Tensor::new(result_height, result_width).zero().unwrap()
-    let mut new_tensor1 = Tensor::new(z1_final[0][0].rows(), z1_final[0][0].cols()).zero().unwrap()
+
+    let mut new_tensor = Tensor::new(result_height, result_width).zero().unwrap();
+    let mut new_tensor1 = Tensor::new(z1_final[0][0].rows(), z1_final[0][0].cols()).zero().unwrap();
 
     for (i,z) in result_final.iter_mut().zip(z1_final.iter_mut()) {
       let final_result = i.iter_mut()
