@@ -72,6 +72,11 @@ __kernel void div_value(__global double *a, __global double *b, double value) {
   b[gid] = a[gid] / value;
 }
 
+__kernel void zero(__global double *a) {
+  int gid = get_global_id(0);
+  a[gid] = 0;
+}
+
 "#;
 
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
@@ -83,6 +88,7 @@ const KERNEL_MATRIX_MUL_NAME: &str = "mul";
 const KERNEL_MATRIX_MUL_VALUE_NAME: &str = "mul_value";
 const KERNEL_MATRIX_MUL_WISE_NAME: &str = "mul_wise";
 const KERNEL_MATRIX_TRANSPOSE_NAME: &str = "transpose";
+const KERNEL_MATRIX_ZERO_NAME: &str = "zero";
 
 pub struct MatrixMathOCL {
   device: Option<Device>,
@@ -565,7 +571,33 @@ impl MatrixMathExecutor for MatrixMathOCL {
     result
   }
 
+  fn zero(&self, a: &mut Tensor) -> Tensor {
+    if let Some(ref queue) = self.queue {
+      if let Some(ref program) = self.program {
+        let a_ocl = a.get_ocl_buffer();
+        let ab = a_ocl.lock().unwrap();
 
+        let kernel = Kernel::create(&program, KERNEL_MATRIX_ZERO_NAME).unwrap();
+
+        let kernel_event = unsafe {
+          ExecuteKernel::new(&kernel)
+              .set_arg(&*ab)
+              .set_global_work_size(a.cols * a.rows)
+              .enqueue_nd_range(&queue).unwrap()
+        };
+
+        let error = kernel_event.wait();
+        if let Err(error) = error {
+          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
+          std::process::exit(0);
+        }
+      }
+    }
+
+    a.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL zero matrix = {:?}", a));
+    a.clone()
+  }
 }
 
 #[derive(Debug)]
@@ -650,6 +682,7 @@ impl OCL for Tensor {
         std::process::exit(0);
       }
     }
+    
   }
 
   fn sync_cpu_ocl(&self) {

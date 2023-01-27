@@ -102,7 +102,7 @@ impl ConvLayerOCL{
                 .set_arg(&*input_buffer)
                 .set_arg(&*filter_buffer)
                 .set_arg(&*result_buffer)
-                .set_arg(&bias)
+                .set_arg(&(*bias as cl_double))
                 .set_arg(&(input.cols() as cl_int))
                 .set_arg(&(input.rows() as cl_int))
                 .set_arg(&(filter.cols() as cl_int))
@@ -168,8 +168,8 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     for (i,z) in result_final.iter_mut().zip(z1_final.iter_mut()) {
       let final_result = i.iter_mut()
-                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                .unwrap_or(Tensor::zeros(result_height, result_width));
+                                .fold(Some(Tensor::new(result_height, result_width).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
+                                .unwrap_or(Tensor::new(result_height, result_width).zero().unwrap());
 
       output.push(Box::new(final_result));
 
@@ -177,8 +177,8 @@ impl ConvLayerExecutor for ConvLayerOCL {
       let z1_cols = z[0].cols();
 
       let final_z1 = z.iter_mut()
-                                .fold(Some(Tensor::zeros(z1_rows, z1_cols)), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                .unwrap_or(Tensor::zeros(z1_rows, z1_cols));
+                                .fold(Some(Tensor::new(z1_rows, z1_cols).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
+                                .unwrap_or(Tensor::new(z1_rows, z1_cols).zero().unwrap());
 
       z1.push(Box::new(final_z1))
     }

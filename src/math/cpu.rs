@@ -214,5 +214,14 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
+  fn zero(&self, a: &mut Tensor) -> Tensor {
+    // Create a new tensor to store the result
+    for i in 0..a.rows {
+      for j in 0..a.cols {
+        a.set(i, j, 0.0);
+      }
+    }
 
+    a.clone()
+  }
 }

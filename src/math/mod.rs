@@ -32,6 +32,8 @@ pub trait MatrixMathExecutor: Any + Send + Sync {
   fn broadcast(&self, a: &Tensor, rows: usize, cols: usize) -> Tensor;
 
   fn pad(&self, a: &Tensor, pad_row: usize, pad_col: usize) -> Tensor;
+
+  fn zero(&self, a: &mut Tensor) -> Tensor;
 }
 
 pub enum MatrixMathExecutorEnum {
@@ -343,6 +345,13 @@ impl Tensor {
   pub fn pad(&self, pad_row: usize, pad_col: usize) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
       return Ok(executor.pad(&self, pad_row, pad_col));
+    }
+    Err(format!("No executor found"))
+  }
+
+  pub fn zero(&mut self) -> Result<Tensor, String> {
+    if let Some(executor) = Neuron::matrix().getExecutor() {
+      return Ok(executor.zero(self));
     }
     Err(format!("No executor found"))
   }
