@@ -151,6 +151,7 @@ impl MatrixMathOCL {
     let len = a.len() / blocks;
     let input_size = (a[0].rows * a.len(), a[0].cols);
     let output_size = (a[0].rows * blocks, a[0].cols);
+    let single_output_size = (a[0].rows, a[0].cols);
 
     let mut result = Tensor::new(output_size.0, output_size.1).zero().unwrap();
 
@@ -176,8 +177,8 @@ impl MatrixMathOCL {
               .set_arg(&*rb)
               .set_arg(&(blocks as cl_int))
               .set_arg(&(len as cl_int))
-              .set_arg(&(result.cols as cl_int))
-              .set_arg(&(result.rows as cl_int))
+              .set_arg(&(single_output_size.1 as cl_int))
+              .set_arg(&(single_output_size.0 as cl_int))
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(queue).unwrap()
         };
