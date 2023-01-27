@@ -136,6 +136,45 @@ impl MatrixMathOCL {
   pub fn get_ocl_queue(&self) -> Option<&CommandQueue> {
     self.queue.as_ref()
   }
+
+  pub fn add_ocl_bulk(&self, a: &mut Vec<Tensor>) -> Tensor {
+    // Create a new tensor to store the result
+    let mut result = Tensor::new(a[0].rows, a[0].cols).zero().unwrap();
+
+    let r_ocl = result.get_ocl_buffer();
+    let rb = r_ocl.lock().unwrap();
+
+    if let Some(ref queue) = self.queue {
+      if let Some(ref program) = self.program {
+        let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
+
+        let mut data = Vec::new();
+        for a in a.iter_mut() {
+          data.append(a.data.as_mut());
+        }
+        let input = Tensor::from_data(a[0].rows * a.len(), a[0].cols, data);
+
+        let i_ocl = input.get_ocl_buffer();
+        let ib = i_ocl.lock().unwrap();
+
+        let event = unsafe {
+          ExecuteKernel::new(&kernel)
+              .set_arg(&*ib)
+              .set_arg(&*rb)
+              .set_arg(&(a.len() as cl_int))
+              .set_arg(&(result.cols as cl_int))
+              .set_arg(&(result.rows as cl_int))
+              .set_global_work_size(result.cols * result.rows)
+              .enqueue_nd_range(queue).unwrap()
+        };  
+        let mut events = Vec::new();
+        events.push(event.get());
+        result.sync_ocl_cpu_wait(&events);
+      }
+    }
+    Neuron::logger().debug(|| format!("OpenCL add bulk matrix = {:?}", result));
+    result
+  }
 }
 
 impl MatrixMathExecutor for MatrixMathOCL {  
@@ -656,7 +695,6 @@ impl TensorOCL {
 }
 
 pub trait OCL {
-  fn add_ocl_bulk(a: &mut Vec<Tensor>) -> Tensor;
   fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_float>>>;
   fn sync_ocl_cpu(&mut self);
   fn sync_ocl_cpu_wait(&mut self, events: &Vec<cl_event>);
@@ -700,45 +738,6 @@ impl OCL for Tensor {
         std::process::exit(0);
       }
     }
-  }
-
-  fn add_ocl_bulk(a: &mut Vec<Tensor>) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::new(a[0].rows, a[0].cols).zero().unwrap();
-
-    let r_ocl = result.get_ocl_buffer();
-    let rb = r_ocl.lock().unwrap();
-
-    let executor = Neuron::matrix();
-    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      let kernel = Kernel::create(matrix_ocl.program.as_ref().unwrap(), KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
-
-      let mut data = Vec::new();
-      for a in a.iter_mut() {
-        data.append(a.data.as_mut());
-      }
-      let input = Tensor::from_data(a[0].rows * a.len(), a[0].cols, data);
-
-      let i_ocl = input.get_ocl_buffer();
-      let ib = i_ocl.lock().unwrap();
-
-      let event = unsafe {
-        ExecuteKernel::new(&kernel)
-            .set_arg(&*ib)
-            .set_arg(&*rb)
-            .set_arg(&(a.len() as cl_int))
-            .set_arg(&(result.cols as cl_int))
-            .set_arg(&(result.rows as cl_int))
-            .set_global_work_size(result.cols * result.rows)
-            .enqueue_nd_range(matrix_ocl.queue.as_ref().unwrap()).unwrap()
-      };  
-      let mut events = Vec::new();
-      events.push(event.get());
-      result.sync_ocl_cpu_wait(&events);
-    };
-
-    Neuron::logger().debug(|| format!("OpenCL add bulk matrix = {:?}", result));
-    result
   }
 
   fn sync_cpu_ocl(&self) {
