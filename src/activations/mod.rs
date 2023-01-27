@@ -100,7 +100,7 @@ impl SoftMax {
 impl Activation for SoftMax {
   fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
 
-    let mut output = Tensor::zeros(value.rows(), value.cols());
+    let mut output = Tensor::new(value.rows(), value.cols()).zero().unwrap();
 
     Neuron::logger().debug( || format!("SoftMax Activation Input = {:?}", value));
 

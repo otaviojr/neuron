@@ -16,7 +16,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
       assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::new(a.rows, a.cols);
 
       // Perform element-wise addition
       for i in 0..a.data.len() {
@@ -31,7 +31,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
       assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::new(a.rows, a.cols);
 
       // Perform element-wise subtraction
       for i in 0..a.data.len() {
@@ -49,7 +49,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
     assert!(a.cols == b.rows);
 
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, b.cols);
+    let mut result = Tensor::new(a.rows, b.cols);
 
     // Perform matrix multiplication
     for i in 0..a.rows {
@@ -83,7 +83,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
       assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::new(a.rows, a.cols);
 
       // Perform element-wise division
       for i in 0..a.data.len() {
@@ -111,7 +111,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
 
   fn transpose(&self, a: &Tensor) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.cols, a.rows);
+    let mut result = Tensor::new(a.cols, a.rows);
 
     // Transpose the matrix
     for i in 0..a.rows {
@@ -125,7 +125,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     for i in 0..a.rows {
       for j in 0..a.cols {
@@ -139,7 +139,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
 
   fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     for i in 0..a.rows {
       for j in 0..a.cols {
@@ -153,7 +153,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     for i in 0..a.rows {
       for j in 0..a.cols {
@@ -167,7 +167,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
 
   fn sum_row(&self, a:&Tensor) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, 1);
+    let mut result = Tensor::new(a.rows, 1);
 
     for i in 0..a.rows {
       let mut sum: f64 = 0.0;
@@ -182,7 +182,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
 
   fn broadcast(&self, a: &Tensor, rows: usize, cols: usize) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(rows, cols);
+    let mut result = Tensor::new(rows, cols);
 
     if a.rows == rows {
       for i in 0..a.rows {
@@ -203,7 +203,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
 
   fn pad(&self, a: &Tensor, pad_row: usize, pad_col: usize) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows() + pad_row*2, a.cols() + pad_col*2);
+    let mut result = Tensor::new(a.rows() + pad_row*2, a.cols() + pad_col*2);
 
     for i in 0..a.rows() {
       for j in 0..a.cols() {

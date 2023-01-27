@@ -116,31 +116,6 @@ impl Tensor {
     }
   }
 
-  pub fn zeros(rows: usize, cols: usize) -> Self {
-
-    let start = Instant::now();
-
-    let data = vec![0.0; rows * cols];
-
-    let mut tensor_ocl = None;
-
-    if cfg!(feature = "opencl") {
-      if let Some(t) = TensorOCL::init(&data) {
-        tensor_ocl = Some(Arc::new(Mutex::new(t)));
-      }
-    }
-
-    Neuron::logger().debug(|| format!("Zero tensor loaded after: {} seconds", start.elapsed().as_secs()));
-
-    Tensor {
-        rows,
-        cols,
-        data: vec![0.0; rows * cols],
-        #[cfg(feature = "opencl")]
-        tensor_ocl,
-    }
-  }
-
   // Initialize this tensor with random values
   pub fn random(rows: usize, cols: usize, low: f64, high: f64) -> Self {
 

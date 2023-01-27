@@ -278,7 +278,7 @@ impl Propagation for FlattenLayer {
     Neuron::logger().debug(|| format!("FlattenLayer Input Size (Backward) = {}x{}x{}",input[0].rows(), input[0].cols(), input.len()));
 
     for n_channel in 0..self.n_channels {
-      let mut tmp = Tensor::zeros(self.input_rows, self.input_cols);
+      let mut tmp = Tensor::new(self.input_rows, self.input_cols);
       for i in 0..self.input_rows {
         for j in 0..self.input_cols {
           tmp.set(i,j, input[0].data()[(n_channel * (self.input_cols*self.input_rows)) + (i * self.input_cols + j)])

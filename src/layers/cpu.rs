@@ -130,7 +130,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
       let mut result_channels = Vec::new();
       let mut z1_channels = Vec::new();
       for (inp,fc) in input.iter().zip(f.iter()) {
-        let mut result = Tensor::zeros(result_height, result_width);
+        let mut result = Tensor::new(result_height, result_width);
         for i in (0..inp.rows() - filter_size.0).step_by(config.stride) {
           for j in (0..inp.cols() - filter_size.1).step_by(config.stride) {
             let mut sum = *b;
@@ -154,14 +154,14 @@ impl ConvLayerExecutor for ConvLayerCPU {
     let mut z1 = Vec::new();
     for (i,z) in result_final.iter().zip(z1_final.iter()) {
       let final_result = i.iter()
-                                .fold(Some(Tensor::zeros(result_height, result_width)), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                .unwrap_or(Tensor::zeros(result_height, result_width));
+                                .fold(Some(Tensor::new(result_height, result_width).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
+                                .unwrap_or(Tensor::new(result_height, result_width).zero().unwrap());
 
       output.push(Box::new(final_result));
 
       let final_z1 = z.iter()
-                                .fold(Some(Tensor::zeros(z[0].rows(), z[0].cols())), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                .unwrap_or(Tensor::zeros(z[0].rows(), z[0].cols()));
+                                .fold(Some(Tensor::new(z[0].rows(), z[0].cols()).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
+                                .unwrap_or(Tensor::new(z[0].rows(), z[0].cols()).zero().unwrap());
 
       z1.push(Box::new(final_z1))
     }
@@ -199,7 +199,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
       for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
         let dz = inp.mul_wise(&config.activation.backward(&z1).unwrap()).unwrap();
-        let mut dw = Tensor::zeros(fc.rows(), fc.cols());
+        let mut dw = Tensor::new(fc.rows(), fc.cols());
 
         for i in (0..fi.rows()-filter_size.0).step_by(config.stride) {
           for j in (0 .. fi.cols()-filter_size.1).step_by(config.stride) {
@@ -272,7 +272,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
 
     let mut result_final = Vec::new();
     for inp in input.iter() {
-      let mut result = Tensor::zeros(result_height, result_width);
+      let mut result = Tensor::new(result_height, result_width);
       for i in (0 .. inp.rows() - filter_size.0).step_by(config.stride) {
         for j in (0 .. inp.cols() - filter_size.1).step_by(config.stride) {
           let mut max = std::f64::NEG_INFINITY;
@@ -307,7 +307,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
     Neuron::logger().debug(|| format!("PoolingLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
 
     for (inp,fi) in input.iter().zip(forward_input.iter()) {
-      let mut result =  Tensor::zeros(fi.rows(), fi.cols());
+      let mut result =  Tensor::new(fi.rows(), fi.cols());
       for i in (0 .. fi.rows()-filter_size.0).step_by(config.stride) {
         for j in (0 .. fi.cols()-filter_size.1).step_by(config.stride) {
           let mut max = 0.0;
