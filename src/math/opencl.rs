@@ -17,7 +17,7 @@ __kernel void add_bulk(__global float *a, __global float *b, int blocks, int len
 
   int result_index = gid + (pos * width * height); 
   
-  float sum = 0.0
+  float sum = 0.0;
   for(int i = 0; i < len; i++){
     int source_index = gid + (i * width * height) + (pos * len * width * height);
     sum += a[source_index];
