@@ -155,7 +155,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
         Neuron::logger().profiling(|| format!("ConvLayer Forward Time (After Activation) = {}ms", timer.elapsed().as_millis()));
 
         result_channels.push(z1.clone());
-        z1_channels.push(Box::new(result));
+        z1_channels.push(result);
       }
       result_final.push(result_channels); 
       z1_final.push(z1_channels); 
@@ -166,20 +166,24 @@ impl ConvLayerExecutor for ConvLayerOCL {
     let mut output = Vec::new();
     let mut z1 = Vec::new();
 
-    let mut new_tensor = Tensor::new(result_height, result_width).zero().unwrap();
-    let mut new_tensor1 = Tensor::new(z1_final[0][0].rows(), z1_final[0][0].cols()).zero().unwrap();
+    //let new_tensor = Tensor::new(result_height, result_width).zero().unwrap();
+    //let new_tensor1 = Tensor::new(z1_final[0][0].rows(), z1_final[0][0].cols()).zero().unwrap();
 
     for (i,z) in result_final.iter_mut().zip(z1_final.iter_mut()) {
-      let final_result = i.iter_mut()
+
+      let final_result = Tensor::add_ocl_bulk(i);
+      let final_z1 = Tensor::add_ocl_bulk(z);
+
+      /*let final_result = i.iter_mut()
                                 .fold(Some(new_tensor.clone()), |a,b| Some(a.unwrap().add(b).unwrap()))
                                 .unwrap();
 
-      output.push(Box::new(final_result));
 
       let final_z1 = z.iter_mut()
                                 .fold(Some(new_tensor1.clone()), |a,b| Some(a.unwrap().add(b).unwrap()))
                                 .unwrap();
-
+      */
+      output.push(Box::new(final_result));
       z1.push(Box::new(final_z1))
     }
 

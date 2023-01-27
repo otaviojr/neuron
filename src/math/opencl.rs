@@ -14,6 +14,15 @@ __kernel void add(__global float *a, __global float *b, __global float *c, int w
   c[gid] = a[gid] + b[gid];
 }
 
+__kernel void add_bulk(__global float *a, __global float *b, int width) {
+  int gid = get_global_id(0);
+
+  int row = gid / width;
+  int col = gid % width;
+
+  b[gid] += a[gid];
+}
+
 __kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
   int row = gid / width;
@@ -80,6 +89,7 @@ __kernel void zero(__global float *a) {
 "#;
 
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
+const KERNEL_MATRIX_ADD_BULK_NAME: &str = "add_bulk";
 const KERNEL_MATRIX_ADD_VALUE_NAME: &str = "add_value";
 const KERNEL_MATRIX_SUB_NAME: &str = "sub";
 const KERNEL_MATRIX_DIV_NAME: &str = "div";
@@ -656,6 +666,7 @@ impl TensorOCL {
 }
 
 pub trait OCL {
+  fn add_ocl_bulk(a: &Vec<Tensor>) -> Tensor;
   fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_float>>>;
   fn sync_ocl_cpu(&mut self);
   fn sync_cpu_ocl(&self);
@@ -682,7 +693,51 @@ impl OCL for Tensor {
         std::process::exit(0);
       }
     }
-    
+  }
+
+  fn add_ocl_bulk(a: &Vec<Tensor>) -> Tensor {
+    // Check that the tensors are the same size
+    let mut events = Vec::new();
+
+    // Create a new tensor to store the result
+    let mut result = Tensor::new(a[0].rows, a[0].cols);
+
+    let r_ocl = result.get_ocl_buffer();
+    let rb = r_ocl.lock().unwrap();
+
+    for a in a.iter() {
+
+      assert!(a.rows == result.rows && a.cols == result.cols);
+  
+      let executor = Neuron::matrix();
+      if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+        let a_ocl = a.get_ocl_buffer();
+        let ab = a_ocl.lock().unwrap();
+
+        let kernel = Kernel::create(matrix_ocl.program.as_ref().unwrap(), KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
+
+        events.push(unsafe {
+          ExecuteKernel::new(&kernel)
+              .set_arg(&*ab)
+              .set_arg(&*rb)
+              .set_arg(&(result.cols as cl_int))
+              .set_global_work_size(result.cols * result.rows)
+              .enqueue_nd_range(matrix_ocl.queue.as_ref().unwrap()).unwrap()
+        });  
+      }
+    }
+
+    for event in events.iter() {
+      let error = event.wait();
+      if let Err(error) = error {
+        println!("OpenCL Error: {:?}", error);
+        std::process::exit(0);
+      }
+    }
+
+    result.sync_ocl_cpu();
+    Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
+    result
   }
 
   fn sync_cpu_ocl(&self) {
