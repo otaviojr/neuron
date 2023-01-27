@@ -4,7 +4,6 @@ use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
 const CONV_PROGRAM_SOURCE: &str = r#"
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 __kernel void conv(__global float *input, __global float *filter, __global float *result, float bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
@@ -29,7 +28,6 @@ __kernel void conv(__global float *input, __global float *filter, __global float
 "#;
 
 const POOLING_PROGRAM_SOURCE: &str = r#"
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 __kernel void pooling(__global float *input, __global float *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
   int gid = get_global_id(0);
 
