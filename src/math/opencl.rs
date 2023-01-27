@@ -15,8 +15,15 @@ __kernel void add_bulk(__global float *a, __global float *b, int blocks, int len
 
   int pos = gid / blocks;
 
-  for(int i = 0; i < len; i++)
-    b[gid + pos * width * height ] += a[gid + (i * width * height) + (pos * len * width * height)];
+  int result_index = gid + (pos * width * height); 
+  
+  float sum = 0.0
+  for(int i = 0; i < len; i++){
+    int source_index = gid + (i * width * height) + (pos * len * width * height);
+    sum += a[source_index];
+  }
+
+  b[result_index] = sum;
 }
 
 __kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
