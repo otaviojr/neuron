@@ -21,12 +21,12 @@ pub trait MatrixMathExecutor: Any + Send + Sync {
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn mul_wise(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor;
-  fn dot(&self, a: &Tensor, b: &Tensor) -> f64;
+  fn dot(&self, a: &Tensor, b: &Tensor) -> f32;
   fn transpose(&self, a: &Tensor) -> Tensor;
 
-  fn add_value(&self, a: &Tensor, b: f64) -> Tensor;
-  fn div_value(&self, a: &Tensor, b: f64) -> Tensor;
-  fn mul_value(&self, a: &Tensor, b: f64) -> Tensor;
+  fn add_value(&self, a: &Tensor, b: f32) -> Tensor;
+  fn div_value(&self, a: &Tensor, b: f32) -> Tensor;
+  fn mul_value(&self, a: &Tensor, b: f32) -> Tensor;
 
   fn sum_row(&self, a:&Tensor) -> Tensor;
   fn broadcast(&self, a: &Tensor, rows: usize, cols: usize) -> Tensor;
@@ -60,7 +60,7 @@ impl MatrixMathExecutorEnum {
 pub struct Tensor {
   rows: usize,
   cols: usize,
-  data: Vec<f64>,
+  data: Vec<f32>,
 
   #[cfg(feature = "opencl")]
   tensor_ocl: Option<Arc<Mutex<TensorOCL>>>,
@@ -117,7 +117,7 @@ impl Tensor {
   }
 
   // Initialize this tensor with random values
-  pub fn random(rows: usize, cols: usize, low: f64, high: f64) -> Self {
+  pub fn random(rows: usize, cols: usize, low: f32, high: f32) -> Self {
 
     let start = Instant::now();
 
@@ -151,16 +151,16 @@ impl Tensor {
 
     let mut data = vec![0.0; rows * cols];
 
-    let he_scale = (2.0 / fan_in as f64).sqrt();
+    let he_scale = (2.0 / fan_in as f32).sqrt();
     let mut rng = Xoshiro256Plus::from_entropy();
 
     let mut f1 = 0.0;
     let mut f2 = 0.0;
-    let pi: f64 = std::f64::consts::PI;
+    let pi: f32 = std::f32::consts::PI;
     
     data.iter_mut().for_each(|x| { 
-      f1 = rng.next_u64() as f64 / u64::MAX as f64;
-      f2 = rng.next_u64() as f64 / u64::MAX as f64;
+      f1 = rng.next_u64() as f32 / u64::MAX as f32;
+      f2 = rng.next_u64() as f32 / u64::MAX as f32;
       *x =  ((-2.0 * f1.ln()).sqrt() * (2.0 * pi * f2).cos()) * he_scale;
     });
 
@@ -184,7 +184,7 @@ impl Tensor {
   }
 
 
-  pub fn from_data(rows: usize, cols: usize, data: Vec<f64>) -> Self{
+  pub fn from_data(rows: usize, cols: usize, data: Vec<f32>) -> Self{
     assert!(data.len() == rows*cols);
 
     let mut tensor_ocl = None;
@@ -213,20 +213,20 @@ impl Tensor {
   }
 
   //Get a value from the tensor
-  pub fn get(&self, row: usize, col: usize) -> f64 {
+  pub fn get(&self, row: usize, col: usize) -> f32 {
     self.data[row * self.cols + col]
   }
 
   //Set a tensor value
-  pub fn set(&mut self, row: usize, col: usize, value: f64) {
+  pub fn set(&mut self, row: usize, col: usize, value: f32) {
     self.data[row * self.cols + col] = value;
   }
 
-  pub fn data(&self) -> &Vec<f64> {
+  pub fn data(&self) -> &Vec<f32> {
     self.data.as_ref()
   }
 
-  pub fn mut_data(&mut self) -> &mut Vec<f64> {
+  pub fn mut_data(&mut self) -> &mut Vec<f32> {
     self.data.as_mut()
   }
 
@@ -239,21 +239,21 @@ impl Tensor {
   }
 
   // Add a number to all rows and columns in the tensor
-  pub fn add_value(&self, value: f64) -> Result<Tensor, String> {
+  pub fn add_value(&self, value: f32) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
       return Ok(executor.add_value(&self, value));
     }
     Err(format!("No executor found"))
   }
 
-  pub fn div_value(&self, value: f64) -> Result<Tensor, String> {
+  pub fn div_value(&self, value: f32) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
       return Ok(executor.div_value(&self, value));
     }
     Err(format!("No executor found"))
   }
 
-  pub fn mul_value(&self, value: f64) -> Result<Tensor, String> {
+  pub fn mul_value(&self, value: f32) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
       return Ok(executor.mul_value(&self, value));
     }
@@ -261,7 +261,7 @@ impl Tensor {
   }
 
   //Dot Product between two tensors
-  pub fn dot(&self, other: &Tensor) -> Result<f64, String> {
+  pub fn dot(&self, other: &Tensor) -> Result<f32, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
       return Ok(executor.dot(&self, other));
     }

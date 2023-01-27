@@ -3,7 +3,7 @@ use crate::math::Tensor;
 pub struct Functions;
 
 impl Functions{
-  pub fn binary_cross_entropy_loss(predictions: &Tensor, targets: &Tensor) -> f64 {
+  pub fn binary_cross_entropy_loss(predictions: &Tensor, targets: &Tensor) -> f32 {
     let mut loss = 0.0;
 
     for (prediction, target) in predictions.data().iter().zip(targets.data().iter()) {
@@ -14,7 +14,7 @@ impl Functions{
         }
     }
 
-    -loss / targets.cols() as f64
+    -loss / targets.cols() as f32
   }
   
   pub fn binary_cross_entropy_loss_derivative(predictions: &Tensor, targets: &Tensor) -> Tensor {  

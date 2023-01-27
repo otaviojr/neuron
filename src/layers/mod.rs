@@ -12,7 +12,7 @@ use crate::activations::Activation;
 
 pub struct DenseLayerConfig {
   pub activation: Arc<dyn Activation>,
-  pub learn_rate: f64,
+  pub learn_rate: f32,
 }
 
 pub struct DenseLayer {
@@ -103,14 +103,14 @@ impl Propagation for DenseLayer {
 #[derive(Clone)]
 pub struct ConvLayerConfig {
   pub activation: Arc<dyn Activation + Send + Sync>,
-  pub learn_rate: f64,
+  pub learn_rate: f32,
   pub padding: usize,
   pub stride: usize,
 }
 
 pub trait ConvLayerExecutor {
-  fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f64>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
-  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>>;
+  fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f32>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f32>, activate: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>>;
 }
 
 pub struct ConvLayer {
@@ -118,7 +118,7 @@ pub struct ConvLayer {
   config: ConvLayerConfig,
   filters: Vec<Vec<Tensor>>,
   filter_size: (usize,usize),
-  bias: Vec<f64>,
+  bias: Vec<f32>,
 
   last_input: Option<Vec<Box<Tensor>>>,
   last_z1: Option<Vec<Box<Tensor>>>

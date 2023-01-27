@@ -1,4 +1,4 @@
-use opencl3::{memory::{Buffer, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_double, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
+use opencl3::{memory::{Buffer, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_float, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}};
 use std::{ptr, time::Instant, sync::{Arc, Mutex}};
 use crate::Neuron;
 
@@ -7,48 +7,48 @@ use super::{MatrixMathExecutor, Tensor, MatrixMathExecutorEnum};
 const PROGRAM_SOURCE: &str = r#"
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 
-__kernel void add(__global double *a, __global double *b, __global double *c, int width) {
+__kernel void add(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
   int row = gid / width;
   int col = gid % width;
   c[gid] = a[gid] + b[gid];
 }
 
-__kernel void sub(__global double *a, __global double *b, __global double *c, int width) {
+__kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
   int row = gid / width;
   int col = gid % width;
   c[gid] = a[gid] - b[gid];
 }
 
-__kernel void div(__global double *a, __global double *b, __global double *c, int width) {
+__kernel void div(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
   int row = gid / width;
   int col = gid % width;
   c[gid] = a[gid] / b[gid];
 }
 
-__kernel void mul_wise(__global double *a, __global double *b, __global double *c, int width) {
+__kernel void mul_wise(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
   int row = gid / width;
   int col = gid % width;
   c[gid] = a[gid] * b[gid];
 }
 
-__kernel void mul(__global double *a, __global double *b, __global double *c, int width_a, int width_b, int width_c) {
+__kernel void mul(__global float *a, __global float *b, __global float *c, int width_a, int width_b, int width_c) {
   int gid = get_global_id(0);
 
   int row = gid / width_c;
   int col = gid % width_c;
 
-  double sum = 0.0;
+  float sum = 0.0;
   for (int i = 0; i < width_a; i++) {
       sum += a[row * width_a + i] * b[i * width_b + col];
   }
   c[gid] = sum;
 }
 
-__kernel void transpose(__global double *a, __global double *b, int width, int height) {
+__kernel void transpose(__global float *a, __global float *b, int width, int height) {
   int gid = get_global_id(0);
 
   int row = gid / width;
@@ -57,22 +57,22 @@ __kernel void transpose(__global double *a, __global double *b, int width, int h
   b[col * height + row] = a[gid];
 }
 
-__kernel void add_value(__global double *a, __global double *b, double value) {
+__kernel void add_value(__global float *a, __global float *b, float value) {
   int gid = get_global_id(0);
   b[gid] = a[gid] + value;
 }
 
-__kernel void mul_value(__global double *a, __global double *b, double value) {
+__kernel void mul_value(__global float *a, __global float *b, float value) {
   int gid = get_global_id(0);
   b[gid] = a[gid] * value;
 }
 
-__kernel void div_value(__global double *a, __global double *b, double value) {
+__kernel void div_value(__global float *a, __global float *b, float value) {
   int gid = get_global_id(0);
   b[gid] = a[gid] / value;
 }
 
-__kernel void zero(__global double *a) {
+__kernel void zero(__global float *a) {
   int gid = get_global_id(0);
   a[gid] = 0;
 }
@@ -360,7 +360,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       result
   }
 
-  fn dot(&self, a: &Tensor, b: &Tensor) -> f64 {
+  fn dot(&self, a: &Tensor, b: &Tensor) -> f32 {
     let mut result = 0.0;
 
     // Check that the tensors are compatible for the dot product
@@ -413,7 +413,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     result
   }
 
-  fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
+  fn add_value(&self, a: &Tensor, value: f32) -> Tensor {
     let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
@@ -430,7 +430,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&(value as cl_double))
+              .set_arg(&(value as cl_float))
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
@@ -447,7 +447,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     result
   }
 
-  fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
+  fn div_value(&self, a: &Tensor, value: f32) -> Tensor {
     let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
@@ -464,7 +464,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&(value as cl_double))
+              .set_arg(&(value as cl_float))
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
@@ -482,7 +482,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     result
   }
 
-  fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
+  fn mul_value(&self, a: &Tensor, value: f32) -> Tensor {
     let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
@@ -499,7 +499,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&(value as cl_double))
+              .set_arg(&(value as cl_float))
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
@@ -522,7 +522,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     let mut result = Tensor::new(a.rows, 1);
 
     for i in 0..a.rows {
-      let mut sum: f64 = 0.0;
+      let mut sum: f32 = 0.0;
       for j in 0..a.cols {
         sum += a.get(i, j);
       }
@@ -602,7 +602,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
 #[derive(Debug)]
 pub struct TensorOCL {
-  buffer: Arc<Mutex<Buffer<cl_double>>>,
+  buffer: Arc<Mutex<Buffer<cl_float>>>,
 }
 
 impl TensorOCL {
@@ -614,7 +614,7 @@ impl TensorOCL {
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
 
       let ocl_buffer = unsafe {
-        Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, size, ptr::null_mut()).unwrap()
+        Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, size, ptr::null_mut()).unwrap()
       };
   
       Neuron::logger().profiling(|| format!("OpenCL Tensor (new) = {}ms", timer.elapsed().as_millis()));
@@ -626,7 +626,7 @@ impl TensorOCL {
     None 
   }
 
-  pub fn init(buffer: &Vec<f64>) -> Option<TensorOCL> {
+  pub fn init(buffer: &Vec<f32>) -> Option<TensorOCL> {
 
     let timer = Instant::now();
 
@@ -634,7 +634,7 @@ impl TensorOCL {
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
 
       let mut ocl_buffer = unsafe {
-        Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, buffer.len(), ptr::null_mut()).unwrap()
+        Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, buffer.len(), ptr::null_mut()).unwrap()
       };
   
       let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut ocl_buffer, CL_NON_BLOCKING, 0, buffer, &[]).unwrap() };
@@ -656,13 +656,13 @@ impl TensorOCL {
 }
 
 pub trait OCL {
-  fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_double>>>;
+  fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_float>>>;
   fn sync_ocl_cpu(&mut self);
   fn sync_cpu_ocl(&self);
 }
 
 impl OCL for Tensor {
-  fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_double>>> {
+  fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_float>>> {
       let r = self.tensor_ocl.as_ref().unwrap().clone();
       let r1 = r.lock().unwrap();
       r1.buffer.clone()

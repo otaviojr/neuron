@@ -205,11 +205,11 @@ impl Neuron {
         let mut data = Vec::new();
         for _ in 0..size {
           let mut value = Vec::new();
-          for i in 0..8 {
+          for i in 0..4 {
             value.push(buffer[index+i]);
           }
-          data.push(f64::from_le_bytes(value.try_into().unwrap()));
-          index += 8;
+          data.push(f32::from_le_bytes(value.try_into().unwrap()));
+          index += 4;
         }
 
         Neuron::logger().debug(|| format!("Loading weights: {}x{}x{}-{}", rows, cols, c, data.len()));
@@ -247,11 +247,11 @@ impl Neuron {
         let mut data = Vec::new();
         for _ in 0..size {
           let mut value = Vec::new();
-          for i in 0..8 {
+          for i in 0..4 {
             value.push(buffer[index+i]);
           }
-          data.push(f64::from_le_bytes(value.try_into().unwrap()));
-          index += 8;
+          data.push(f32::from_le_bytes(value.try_into().unwrap()));
+          index += 4;
         }
 
         Neuron::logger().debug(|| format!("Loading bias: {}x{}x{}-{}", rows, cols, c, data.len()));

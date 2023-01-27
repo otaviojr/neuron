@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{math::Tensor, Neuron, Propagation};
+use crate::{math::Tensor, Neuron};
 
 use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
@@ -78,12 +78,12 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       Neuron::logger().debug(|| format!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols()));
 
-      let dw = dz.mul(&forward_input.transpose().unwrap()).unwrap().div_value(forward_input.cols() as f64).unwrap();
+      let dw = dz.mul(&forward_input.transpose().unwrap()).unwrap().div_value(forward_input.cols() as f32).unwrap();
 
       Neuron::logger().debug(|| format!("dw size = {}x{}", dw.rows(), dw.cols()));
 
       let mut db = Tensor::from_data(dz.rows(), dz.cols(), dz.data().to_owned());
-      db = db.sum_row().unwrap().div_value(forward_input.cols() as f64).unwrap();
+      db = db.sum_row().unwrap().div_value(forward_input.cols() as f32).unwrap();
 
       Neuron::logger().debug(|| format!("db size = {}x{}", db.rows(), db.cols()));
 
@@ -114,12 +114,12 @@ impl ConvLayerCPU {
 }
 
 impl ConvLayerExecutor for ConvLayerCPU {
-  fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f64>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+  fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f32>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
 
     let timer = Instant::now();
 
-    let result_height = (((input[0].rows() as f64 + 2.0* config.padding as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
-    let result_width = (((input[0].cols() as f64 + 2.0* config.padding as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    let result_height = (((input[0].rows() as f32 + 2.0* config.padding as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f32 + 2.0* config.padding as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize;
     let mut result_final = Vec::new();
     let mut z1_final = Vec::new();
 
@@ -131,6 +131,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
       let mut z1_channels = Vec::new();
       for (inp,fc) in input.iter().zip(f.iter()) {
         let mut result = Tensor::new(result_height, result_width);
+
         for i in (0..inp.rows() - filter_size.0).step_by(config.stride) {
           for j in (0..inp.cols() - filter_size.1).step_by(config.stride) {
             let mut sum = *b;
@@ -142,6 +143,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
             result.set(i/config.stride, j/config.stride, sum);
           }
         }
+        
         let z1 = config.activation.forward(&result).unwrap();
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(result));
@@ -179,7 +181,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
     Some((last_input, last_z1, output))
   }
 
-  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, _: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f32>, _: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
  
     let timer = Instant::now();
  
@@ -263,8 +265,8 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
     
     let timer = Instant::now();
 
-    let result_height = (((input[0].rows() as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
-    let result_width = (((input[0].cols() as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    let result_height = (((input[0].rows() as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize;
     
     Neuron::logger().debug(|| format!("PoolingLayer Input (Forward) = {:?}", input));
     Neuron::logger().debug(|| format!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
@@ -275,7 +277,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
       let mut result = Tensor::new(result_height, result_width);
       for i in (0 .. inp.rows() - filter_size.0).step_by(config.stride) {
         for j in (0 .. inp.cols() - filter_size.1).step_by(config.stride) {
-          let mut max = std::f64::NEG_INFINITY;
+          let mut max = std::f32::NEG_INFINITY;
           for k in 0 .. filter_size.0 {
             for l in 0 .. filter_size.1 {
               let value = inp.get(i+k,j+l);

@@ -69,7 +69,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
     // Check that the tensors are compatible for multiplication
     assert!(a.rows == b.rows && a.cols == b.cols);
 
-    let data: Vec<f64> = a.data()
+    let data: Vec<f32> = a.data()
     .iter()
     .zip(b.data().iter())
     .map(|(v1, v2)| v1 * v2).collect();
@@ -93,7 +93,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
       result
   }
 
-  fn dot(&self, a: &Tensor, b: &Tensor) -> f64 {
+  fn dot(&self, a: &Tensor, b: &Tensor) -> f32 {
     let mut result = 0.0;
 
     // Check that the tensors are compatible for the dot product
@@ -123,7 +123,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
-  fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
+  fn add_value(&self, a: &Tensor, value: f32) -> Tensor {
     // Create a new tensor to store the result
     let mut result = Tensor::new(a.rows, a.cols);
 
@@ -137,7 +137,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
-  fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
+  fn div_value(&self, a: &Tensor, value: f32) -> Tensor {
     // Create a new tensor to store the result
     let mut result = Tensor::new(a.rows, a.cols);
 
@@ -151,7 +151,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
-  fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
+  fn mul_value(&self, a: &Tensor, value: f32) -> Tensor {
     // Create a new tensor to store the result
     let mut result = Tensor::new(a.rows, a.cols);
 
@@ -170,7 +170,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
     let mut result = Tensor::new(a.rows, 1);
 
     for i in 0..a.rows {
-      let mut sum: f64 = 0.0;
+      let mut sum: f32 = 0.0;
       for j in 0..a.cols {
         sum += a.get(i, j);
       }

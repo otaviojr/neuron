@@ -17,14 +17,14 @@ impl ReLU {
 impl Activation for ReLU {
   fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
     //println!("ReLU Entry: {}", value);
-    let data:Vec<f64> = value.data().iter().map(|value| value.max(0.0) ).collect();
+    let data:Vec<f32> = value.data().iter().map(|value| value.max(0.0) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     //println!("ReLU Result: {}", ret);
     Ok(ret)
   }
 
   fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
-    let data:Vec<f64> = value.data().iter().map(|value| {if *value > 0.0 { 1.0 } else { 0.0 }} ).collect();
+    let data:Vec<f32> = value.data().iter().map(|value| {if *value > 0.0 { 1.0 } else { 0.0 }} ).collect();
     Ok(Tensor::from_data(value.rows(), value.cols(), data))
   }
 }
@@ -38,7 +38,7 @@ impl Sigmoid {
     Sigmoid {  }
   }
 
-  fn sigmoid(value:f64) -> f64 {
+  fn sigmoid(value:f32) -> f32 {
     let ret = 1.0 / (1.0 + (-value).exp()); 
     if ret.is_nan() {0.0} else {ret}
   }
@@ -47,14 +47,14 @@ impl Sigmoid {
 impl Activation for Sigmoid {
   fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
     //println!("Sigmoid Entry: {}", value);
-    let data:Vec<f64> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) ).collect();
+    let data:Vec<f32> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     //println!("Sigmoid result: {}", ret);
     Ok(ret)
   }
 
   fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
-    let data:Vec<f64> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) * (1.0 - Sigmoid::sigmoid(*value)) ).collect();
+    let data:Vec<f32> = value.data().iter().map(|value| Sigmoid::sigmoid(*value) * (1.0 - Sigmoid::sigmoid(*value)) ).collect();
     Ok(Tensor::from_data(value.rows(), value.cols(), data))
   }
 }
@@ -68,7 +68,7 @@ impl Tanh {
     Tanh {  }
   }
 
-  fn tanh(value:f64) -> f64 {
+  fn tanh(value:f32) -> f32 {
     let ret = (value.exp() - (-value).exp()) / ( value.exp() + (-value).exp()); 
     if ret.is_nan() {0.0} else {ret}
   }
@@ -76,13 +76,13 @@ impl Tanh {
 
 impl Activation for Tanh {
   fn forward(&self, value: &Tensor) -> Result<Tensor, String> {
-    let data:Vec<f64> = value.data().iter().map(|value| Tanh::tanh(*value) ).collect();
+    let data:Vec<f32> = value.data().iter().map(|value| Tanh::tanh(*value) ).collect();
     let ret = Tensor::from_data(value.rows(), value.cols(), data);
     Ok(ret)
   }
 
   fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
-    let data:Vec<f64> = value.data().iter().map(|value| 1.0 - Tanh::tanh(*value).powi(2) ).collect();
+    let data:Vec<f32> = value.data().iter().map(|value| 1.0 - Tanh::tanh(*value).powi(2) ).collect();
     Ok(Tensor::from_data(value.rows(), value.cols(), data))
   }
 }

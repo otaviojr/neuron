@@ -1,11 +1,11 @@
 use std::{time::Instant};
-use opencl3::{program::Program, types::{cl_double, cl_int}, kernel::{Kernel, ExecuteKernel}};
+use opencl3::{program::Program, types::{cl_float, cl_int}, kernel::{Kernel, ExecuteKernel}};
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
 const CONV_PROGRAM_SOURCE: &str = r#"
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
-__kernel void conv(__global double *input, __global double *filter, __global double *result, double bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+__kernel void conv(__global float *input, __global float *filter, __global float *result, float bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
   int gid_y = gid / result_width;
@@ -14,7 +14,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
   int i = gid_y * stride;
   int j = gid_x * stride;
 
-  double sum = bias;
+  float sum = bias;
   for(int k = -padding; k < filter_height + padding; k++) {
     for(int l = -padding; l < filter_width + padding; l++) {
       int filter_index = (k + padding) * (filter_width + 2 * padding) + (l + padding);
@@ -30,7 +30,7 @@ __kernel void conv(__global double *input, __global double *filter, __global dou
 
 const POOLING_PROGRAM_SOURCE: &str = r#"
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
-__kernel void pooling(__global double *input, __global double *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
+__kernel void pooling(__global float *input, __global float *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
   int gid = get_global_id(0);
 
   int gid_y = gid / result_width;
@@ -39,11 +39,11 @@ __kernel void pooling(__global double *input, __global double *result, int input
   int i = gid_y * stride;
   int j = gid_x * stride;
 
-  double max = -DBL_MAX;
+  float max = -DBL_MAX;
   for(int k = 0; k < filter_height; k++) {
     for(int l = 0; l < filter_width; l++) {
       int input_index = (i + k) * input_width + (j + l);
-      double value = input[input_index];
+      float value = input[input_index];
       if(value > max) {
         max = value;
       }
@@ -81,7 +81,7 @@ impl ConvLayerOCL {
 }
 
 impl ConvLayerOCL{
-  fn do_conv(&self, input: &Box<Tensor>, filter: &Tensor, bias: &f64, result: &mut Tensor, config: &ConvLayerConfig) {
+  fn do_conv(&self, input: &Box<Tensor>, filter: &Tensor, bias: &f32, result: &mut Tensor, config: &ConvLayerConfig) {
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
@@ -102,7 +102,7 @@ impl ConvLayerOCL{
                 .set_arg(&*input_buffer)
                 .set_arg(&*filter_buffer)
                 .set_arg(&*result_buffer)
-                .set_arg(&(*bias as cl_double))
+                .set_arg(&(*bias as cl_float))
                 .set_arg(&(input.cols() as cl_int))
                 .set_arg(&(input.rows() as cl_int))
                 .set_arg(&(filter.cols() as cl_int))
@@ -129,12 +129,12 @@ impl ConvLayerOCL{
 }
 
 impl ConvLayerExecutor for ConvLayerOCL {
-  fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f64>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+  fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f32>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
 
     let timer = Instant::now();
 
-    let result_height = (((input[0].rows() as f64 + 2.0* config.padding as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
-    let result_width = (((input[0].cols() as f64 + 2.0* config.padding as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    let result_height = (((input[0].rows() as f32 + 2.0* config.padding as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f32 + 2.0* config.padding as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize;
     let mut result_final = Vec::new();
     let mut z1_final = Vec::new();
 
@@ -196,7 +196,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
     Some((last_input, last_z1, output))
   }
 
-  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f64>, activate: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
+  fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f32>, activate: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
     self.cpu.backward(input, forward_input, last_z1, filters, filter_size, bias, activate, config)
   }
 }
@@ -270,8 +270,8 @@ impl PoolingLayerExecutor for PoolingLayerOCL {
   fn forward(&self, input: &Vec<Box<Tensor>>, filter_size: (usize, usize), config: &PoolingLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)>{
     let timer = Instant::now();
 
-    let result_height = (((input[0].rows() as f64 - filter_size.0 as f64)/config.stride as f64) + 1.0).floor() as usize;
-    let result_width = (((input[0].cols() as f64 - filter_size.1 as f64)/config.stride as f64) + 1.0).floor() as usize;
+    let result_height = (((input[0].rows() as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize;
+    let result_width = (((input[0].cols() as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize;
     
     Neuron::logger().debug(|| format!("PoolingLayer Input (Forward) = {:?}", input));
     Neuron::logger().debug(|| format!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
