@@ -146,7 +146,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
       let mut z1_channels = Vec::new();
       
       for (inp,fc) in input.iter().zip(f.iter()) {
-        let mut result = Tensor::zeros(result_height, result_width);
+        let mut result = Tensor::new(result_height, result_width);
 
         self.do_conv(inp, fc, b, &mut result, config);
 
@@ -279,7 +279,7 @@ impl PoolingLayerExecutor for PoolingLayerOCL {
 
     let mut result_final = Vec::new();
     for inp in input.iter() {
-      let mut result = Tensor::zeros(result_height, result_width);
+      let mut result = Tensor::new(result_height, result_width);
 
       self.do_pooling(inp, filter_size, &mut result, config);
 

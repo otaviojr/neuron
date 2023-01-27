@@ -138,7 +138,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::new(a.rows, a.cols);
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
@@ -180,7 +180,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     assert!(a.rows == b.rows && a.cols == b.cols);
 
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -224,7 +224,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     let timer = Instant::now();
 
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, b.cols);
+    let mut result = Tensor::new(a.rows, b.cols);
 
     Neuron::logger().profiling(|| format!("Matrix Mul (results created) = {}ms", timer.elapsed().as_millis()));
 
@@ -276,7 +276,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     assert!(a.rows == b.rows && a.cols == b.cols);
 
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -318,7 +318,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
       assert!(a.rows == b.rows && a.cols == b.cols);
 
       // Create a new tensor to store the result
-      let mut result = Tensor::zeros(a.rows, a.cols);
+      let mut result = Tensor::new(a.rows, a.cols);
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
@@ -372,7 +372,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
   fn transpose(&self, a: &Tensor) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.cols, a.rows);
+    let mut result = Tensor::new(a.cols, a.rows);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -408,7 +408,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
   }
 
   fn add_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -442,7 +442,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
   }
 
   fn div_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -477,7 +477,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
   }
 
   fn mul_value(&self, a: &Tensor, value: f64) -> Tensor {
-    let mut result = Tensor::zeros(a.rows, a.cols);
+    let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -513,7 +513,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
   fn sum_row(&self, a:&Tensor) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows, 1);
+    let mut result = Tensor::new(a.rows, 1);
 
     for i in 0..a.rows {
       let mut sum: f64 = 0.0;
@@ -529,7 +529,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
   fn broadcast(&self, a: &Tensor, rows: usize, cols: usize) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(rows, cols);
+    let mut result = Tensor::new(rows, cols);
 
     if a.rows == rows {
       for i in 0..a.rows {
@@ -550,7 +550,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
   fn pad(&self, a: &Tensor, pad_row: usize, pad_col: usize) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::zeros(a.rows() + pad_row*2, a.cols() + pad_col*2);
+    let mut result = Tensor::new(a.rows() + pad_row*2, a.cols() + pad_col*2);
 
     //println!("pad input = {}", a);
 
@@ -574,6 +574,26 @@ pub struct TensorOCL {
 }
 
 impl TensorOCL {
+  pub fn new(size: usize) -> Option<TensorOCL> {
+
+    let timer = Instant::now();
+
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+
+      let ocl_buffer = unsafe {
+        Buffer::<cl_double>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, size, ptr::null_mut()).unwrap()
+      };
+  
+      Neuron::logger().profiling(|| format!("OpenCL Tensor (new) = {}ms", timer.elapsed().as_millis()));
+
+      return Some(TensorOCL {
+        buffer: Arc::new(Mutex::new(ocl_buffer)),
+      });
+    }
+    None 
+  }
+
   pub fn init(buffer: &Vec<f64>) -> Option<TensorOCL> {
 
     let timer = Instant::now();
