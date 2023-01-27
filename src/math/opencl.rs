@@ -9,38 +9,26 @@ const PROGRAM_SOURCE: &str = r#"
 
 __kernel void add(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
-  int row = gid / width;
-  int col = gid % width;
   c[gid] = a[gid] + b[gid];
 }
 
 __kernel void add_bulk(__global float *a, __global float *b, int width) {
   int gid = get_global_id(0);
-
-  int row = gid / width;
-  int col = gid % width;
-
   b[gid] += a[gid];
 }
 
 __kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
-  int row = gid / width;
-  int col = gid % width;
   c[gid] = a[gid] - b[gid];
 }
 
 __kernel void div(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
-  int row = gid / width;
-  int col = gid % width;
   c[gid] = a[gid] / b[gid];
 }
 
 __kernel void mul_wise(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
-  int row = gid / width;
-  int col = gid % width;
   c[gid] = a[gid] * b[gid];
 }
 
@@ -722,12 +710,12 @@ impl OCL for Tensor {
     let r_ocl = result.get_ocl_buffer();
     let rb = r_ocl.lock().unwrap();
 
-    for a in a.iter() {
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      for a in a.iter() {
 
-      assert!(a.rows == result.rows && a.cols == result.cols);
+        assert!(a.rows == result.rows && a.cols == result.cols);
   
-      let executor = Neuron::matrix();
-      if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
         let a_ocl = a.get_ocl_buffer();
         let ab = a_ocl.lock().unwrap();
 
@@ -742,8 +730,7 @@ impl OCL for Tensor {
               .enqueue_nd_range(matrix_ocl.queue.as_ref().unwrap()).unwrap()
         }.get());  
       };
-    }
-
+    };
     result.sync_ocl_cpu_wait(events);
     Neuron::logger().debug(|| format!("OpenCL add bulk matrix = {:?}", result));
     result
