@@ -745,7 +745,7 @@ impl OCL for Tensor {
     }
 
     result.sync_ocl_cpu_wait(events);
-    Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
+    Neuron::logger().debug(|| format!("OpenCL add bulk matrix = {:?}", result));
     result
   }
 
