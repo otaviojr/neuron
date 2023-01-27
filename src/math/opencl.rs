@@ -141,9 +141,6 @@ impl MatrixMathOCL {
     // Create a new tensor to store the result
     let mut result = Tensor::new(a[0].rows, a[0].cols).zero().unwrap();
 
-    let r_ocl = result.get_ocl_buffer();
-    let rb = r_ocl.lock().unwrap();
-
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
 
@@ -155,7 +152,9 @@ impl MatrixMathOCL {
 
         let i_ocl = input.get_ocl_buffer();
         let ib = i_ocl.lock().unwrap();
-
+        let r_ocl = result.get_ocl_buffer();
+        let rb = r_ocl.lock().unwrap();
+    
         let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
 
         let kernel_event = unsafe {
