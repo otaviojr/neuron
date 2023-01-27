@@ -149,14 +149,19 @@ impl ConvLayerExecutor for ConvLayerOCL {
         let mut result = Tensor::zeros(result_height, result_width);
 
         self.do_conv(inp, fc, b, &mut result, config);
-        
+
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Activation) = {}ms", timer.elapsed().as_millis()));
         let z1 = config.activation.forward(&mut result).unwrap();
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (After Activation) = {}ms", timer.elapsed().as_millis()));
+
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(result));
       }
       result_final.push(result_channels); 
       z1_final.push(z1_channels); 
     }
+
+    Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ms", timer.elapsed().as_millis()));
 
     let mut output = Vec::new();
     let mut z1 = Vec::new();
