@@ -166,27 +166,21 @@ impl ConvLayerExecutor for ConvLayerOCL {
     let mut output = Vec::new();
     let mut z1 = Vec::new();
 
-    //let new_tensor = Tensor::new(result_height, result_width).zero().unwrap();
-    //let new_tensor1 = Tensor::new(z1_final[0][0].rows(), z1_final[0][0].cols()).zero().unwrap();
-
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      for (i,z) in result_final.iter_mut().zip(z1_final.iter_mut()) {
+      let ret = matrix_ocl.add_ocl_bulk(result_final.len(),result_final.iter_mut().flatten().collect::<Vec<_>>());
+      
+      let chucks = ret.data().chunks(result_final[0][0].rows() * result_final[0][0].cols());
+      for chuck in chucks {
+        let new_tensor = Tensor::from_data(result_final[0][0].rows(), result_final[0][0].cols(), chuck.to_vec());
+        output.push(Box::new(new_tensor));
+      }
 
-        let final_result = matrix_ocl.add_ocl_bulk(i);
-        let final_z1 = matrix_ocl.add_ocl_bulk(z);
-
-        /*let final_result = i.iter_mut()
-                                  .fold(Some(new_tensor.clone()), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                  .unwrap();
-
-
-        let final_z1 = z.iter_mut()
-                                  .fold(Some(new_tensor1.clone()), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                  .unwrap();
-        */
-        output.push(Box::new(final_result));
-        z1.push(Box::new(final_z1))
+      let ret = matrix_ocl.add_ocl_bulk(z1_final.len(), z1_final.iter_mut().flatten().collect::<Vec<_>>());
+      let chucks = ret.data().chunks(z1_final[0][0].rows() * z1_final[0][0].cols());
+      for chuck in chucks {
+        let new_tensor = Tensor::from_data(result_final[0][0].rows(), result_final[0][0].cols(), chuck.to_vec());
+        z1.push(Box::new(new_tensor));
       }
     }
 

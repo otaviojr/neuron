@@ -5,18 +5,17 @@ use crate::Neuron;
 use super::{MatrixMathExecutor, Tensor, MatrixMathExecutorEnum};
 
 const PROGRAM_SOURCE: &str = r#"
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-
 __kernel void add(__global float *a, __global float *b, __global float *c, int width) {
   int gid = get_global_id(0);
   c[gid] = a[gid] + b[gid];
 }
 
-__kernel void add_bulk(__global float *a, __global float *b, int len, int width, int height) {
+__kernel void add_bulk(__global float *a, __global float *b, int blocks, int len, int width, int height) {
   int gid = get_global_id(0);
 
-  for(int i = 0; i < len; i++)
-    b[gid] += a[gid + i * width * height];
+  forint i = 0; i < blocks; i++)
+    for(int j = 0; i < len; i++)
+      b[gid + i * width * height ] += a[gid + i * j * width * height];
 }
 
 __kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
@@ -137,18 +136,23 @@ impl MatrixMathOCL {
     self.queue.as_ref()
   }
 
-  pub fn add_ocl_bulk(&self, a: &mut Vec<Tensor>) -> Tensor {
+  pub fn add_ocl_bulk(&self, blocks: usize, a: Vec<&mut Tensor>) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::new(a[0].rows, a[0].cols).zero().unwrap();
+
+    let len = a.len();
+    let input_size = (a[0].rows * a.len() * blocks, a[0].cols);
+    let output_size = (a[0].rows * blocks, a[0].cols);
+
+    let mut result = Tensor::new(output_size.0, output_size.1).zero().unwrap();
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
 
         let mut data = Vec::new();
-        for a in a.iter_mut() {
-          data.append(a.data.as_mut());
+        for a in a {
+          data.append(a.mut_data());
         }
-        let input = Tensor::from_data(a[0].rows * a.len(), a[0].cols, data);
+        let input = Tensor::from_data(input_size.0, input_size.1, data);
 
         let i_ocl = input.get_ocl_buffer();
         let ib = i_ocl.lock().unwrap();
@@ -161,7 +165,8 @@ impl MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ib)
               .set_arg(&*rb)
-              .set_arg(&(a.len() as cl_int))
+              .set_arg(&(blocks as cl_int))
+              .set_arg(&(len as cl_int))
               .set_arg(&(result.cols as cl_int))
               .set_arg(&(result.rows as cl_int))
               .set_global_work_size(result.cols * result.rows)
