@@ -16,7 +16,7 @@ __kernel void add_bulk(__global float *a, __global float *b, int len, int width,
   int gid = get_global_id(0);
 
   for(int i = 0; i < len; i++)
-    b[gid] += a[gid + i * height];
+    b[gid] += a[gid + i * width * height];
 }
 
 __kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
