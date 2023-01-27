@@ -170,7 +170,7 @@ impl MatrixMathOCL {
               .set_arg(&(len as cl_int))
               .set_arg(&(result.cols as cl_int))
               .set_arg(&(result.rows as cl_int))
-              .set_global_work_size(result.cols * result.rows * blocks)
+              .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(queue).unwrap()
         };
 
