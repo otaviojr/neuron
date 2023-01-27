@@ -140,7 +140,7 @@ impl MatrixMathOCL {
   pub fn add_ocl_bulk(&self, blocks: usize, a: Vec<&mut Tensor>) -> Tensor {
     // Create a new tensor to store the result
 
-    let len = a.len();
+    let len = a.len() / blocks;
     let input_size = (a[0].rows * a.len(), a[0].cols);
     let output_size = (a[0].rows * blocks, a[0].cols);
 
