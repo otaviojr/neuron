@@ -140,7 +140,7 @@ impl MatrixMathOCL {
     // Create a new tensor to store the result
 
     let len = a.len();
-    let input_size = (a[0].rows * a.len() * blocks, a[0].cols);
+    let input_size = (a[0].rows * a.len(), a[0].cols);
     let output_size = (a[0].rows * blocks, a[0].cols);
 
     let mut result = Tensor::new(output_size.0, output_size.1).zero().unwrap();
