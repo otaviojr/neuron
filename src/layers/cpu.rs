@@ -155,13 +155,13 @@ impl ConvLayerExecutor for ConvLayerCPU {
     for (i,z) in result_final.iter().zip(z1_final.iter()) {
       let final_result = i.iter()
                                 .fold(Some(Tensor::new(result_height, result_width).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                .unwrap_or(Tensor::new(result_height, result_width).zero().unwrap());
+                                .unwrap();
 
       output.push(Box::new(final_result));
 
       let final_z1 = z.iter()
                                 .fold(Some(Tensor::new(z[0].rows(), z[0].cols()).zero().unwrap()), |a,b| Some(a.unwrap().add(b).unwrap()))
-                                .unwrap_or(Tensor::new(z[0].rows(), z[0].cols()).zero().unwrap());
+                                .unwrap();
 
       z1.push(Box::new(final_z1))
     }
