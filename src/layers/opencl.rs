@@ -31,29 +31,6 @@ const POOLING_PROGRAM_SOURCE: &str = r#"
 __kernel void pooling(__global float *input, __global float *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
   int gid = get_global_id(0);
 
-  int gid_y = gid / result_width;
-  int gid_x = gid % result_width;
-
-  int i = gid_y * stride;
-  int j = gid_x * stride;
-
-  float max = -DBL_MAX;
-  for(int k = 0; k < filter_height; k++) {
-    for(int l = 0; l < filter_width; l++) {
-      int input_index = (i + k) * input_width + (j + l);
-      float value = input[input_index];
-      if(value > max) {
-        max = value;
-      }
-    }
-  }
-
-  result[gid] = max;
-}
-
-__kernel void full_pooling(__global float *input, __global float *result, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride) {
-  int gid = get_global_id(0);
-
   int block_size = result_width * result_height;
 
   int block = gid / block_size;
@@ -82,7 +59,6 @@ __kernel void full_pooling(__global float *input, __global float *result, int in
 
 const KERNEL_CONV_NAME: &str = "conv";
 const KERNEL_POOLING_NAME: &str = "pooling";
-const KERNEL_FULL_POOLING_NAME: &str = "full_pooling";
 
 pub struct ConvLayerOCL {
   program: Option<Program>,
@@ -251,7 +227,7 @@ impl PoolingLayerOCL {
     }
   }
 
-  fn do_full_pooling(&self, input: &Vec<Box<Tensor>>, filter_size:(usize, usize), config: &PoolingLayerConfig) -> Result<Vec<Box<Tensor>>, String> {
+  fn do_pooling(&self, input: &Vec<Box<Tensor>>, filter_size:(usize, usize), config: &PoolingLayerConfig) -> Result<Vec<Box<Tensor>>, String> {
     let result_size = ((((input[0].rows() as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize, 
                                        (((input[0].cols() as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize);
 
@@ -279,7 +255,7 @@ impl PoolingLayerOCL {
             let input_buffer = input_ocl.lock().unwrap();
             let result_buffer = result_ocl.lock().unwrap();
   
-            kernel = Kernel::create(&program, KERNEL_FULL_POOLING_NAME).unwrap();
+            kernel = Kernel::create(&program, KERNEL_POOLING_NAME).unwrap();
   
             kernel_event = unsafe {
               ExecuteKernel::new(&kernel)
@@ -312,48 +288,6 @@ impl PoolingLayerOCL {
     Neuron::logger().debug(|| format!("OpenCL pooling result = {:?}", result));
     Ok(output)
   }
-
-  fn do_pooling(&self, input: &Box<Tensor>, filter_size:(usize, usize), result: &mut Tensor, config: &PoolingLayerConfig) {
-
-    let executor = Neuron::matrix();
-    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
-        if let Some(ref program) = self.program {
-          let input_ocl = input.get_ocl_buffer();
-          let result_ocl = result.get_ocl_buffer();
-
-          let input_buffer = input_ocl.lock().unwrap();
-          let result_buffer = result_ocl.lock().unwrap();
-
-          let kernel = Kernel::create(&program, KERNEL_POOLING_NAME).unwrap();
-
-          let kernel_event = unsafe {
-            ExecuteKernel::new(&kernel)
-                .set_arg(&*input_buffer)
-                .set_arg(&*result_buffer)
-                .set_arg(&(input.cols() as cl_int))
-                .set_arg(&(input.rows() as cl_int))
-                .set_arg(&(filter_size.1 as cl_int))
-                .set_arg(&(filter_size.0 as cl_int))
-                .set_arg(&(result.cols() as cl_int))
-                .set_arg(&(result.rows() as cl_int))
-                .set_arg(&(config.stride as cl_int))
-                .set_global_work_size(result.rows()*result.cols())
-                .enqueue_nd_range(&queue).unwrap()
-          };
-
-          let error = kernel_event.wait();
-          if let Err(error) = error {
-            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-            std::process::exit(0);
-          }
-        }
-      }
-    }
-    result.sync_ocl_cpu();
-    Neuron::logger().debug(|| format!("OpenCL pooling result = {:?}", result));
-  }
-
 }
 
 impl PoolingLayerExecutor for PoolingLayerOCL {
@@ -367,18 +301,7 @@ impl PoolingLayerExecutor for PoolingLayerOCL {
     Neuron::logger().debug(|| format!("PoolingLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
     Neuron::logger().debug(|| format!("PoolingLayer Output size (Forward) = {}x{}x{}", result_height, result_width, input.len()));
 
-    let result = self.do_full_pooling(input, filter_size, config).unwrap();
-
-    /*let result_final = Vec::new();
-    for inp in input.iter() {
-      let mut result = Tensor::new(result_height, result_width);
-
-      self.do_pooling(inp, filter_size, &mut result, config);
-
-      result_final.push(Box::new(result));
-    }
-
-    Some((input.clone(), result_final))*/
+    let result = self.do_pooling(input, filter_size, config).unwrap();
 
     Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result));
     Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
