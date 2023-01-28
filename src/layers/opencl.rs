@@ -257,12 +257,11 @@ impl PoolingLayerOCL {
 
     let input_size = (input[0].rows() * input.len(), input[0].cols());
 
-
     let mut result = Tensor::new(result_size.0 * input.len(), result_size.1);
 
     let mut data = Vec::new();
-    for i in input {
-      data.append(i.mut_data());
+    for i in input.iter() {
+      data.extend(i.data());
     }
     let input_tensor = Tensor::from_data(input_size.0, input_size.1, data);
 
@@ -270,7 +269,7 @@ impl PoolingLayerOCL {
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
         if let Some(ref program) = self.program {
-          let events:Vec<cl_event> = Vec::default();
+          let mut events:Vec<cl_event> = Vec::default();
           let kernel;
           let kernel_event;
           {
@@ -297,14 +296,14 @@ impl PoolingLayerOCL {
                   .enqueue_nd_range(&queue).unwrap()
             };
             events.push(kernel_event.get());
-          }
+          };
           result.sync_ocl_cpu_wait(events);
         }
       }
     }
 
-    let output = Vec::new();
-    let chucks = ret.data().chunks(result_size.0 * result_size.1);
+    let mut output = Vec::new();
+    let chucks = result.data().chunks(result_size.0 * result_size.1);
     for chuck in chucks {
       let new_tensor = Tensor::from_data(result_size.0, result_size.1, chuck.to_vec());
       output.push(Box::new(new_tensor));
