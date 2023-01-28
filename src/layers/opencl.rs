@@ -59,8 +59,8 @@ __kernel void full_pooling(__global float *input, __global float *result, int in
   int block = gid / block_size;
   int pos = gid % block_size;
 
-  int gid_y = (pos / result_width) + (block * block_size);
-  int gid_x = (pos % result_width) + (block * block_size);
+  int gid_y = (pos / result_width);
+  int gid_x = (pos % result_width);
 
   int i = gid_y * stride;
   int j = gid_x * stride;
@@ -68,7 +68,7 @@ __kernel void full_pooling(__global float *input, __global float *result, int in
   float max = -DBL_MAX;
   for(int k = 0; k < filter_height; k++) {
     for(int l = 0; l < filter_width; l++) {
-      int input_index = (i + k) * input_width + (j + l);
+      int input_index = (i + k) * input_width + (j + l) + block * input_width * input_height;
       float value = input[input_index];
       if(value > max) {
         max = value;
@@ -369,7 +369,6 @@ impl PoolingLayerExecutor for PoolingLayerOCL {
 
     let result = self.do_full_pooling(input, filter_size, config).unwrap();
 
-
     /*let result_final = Vec::new();
     for inp in input.iter() {
       let mut result = Tensor::new(result_height, result_width);
@@ -379,10 +378,10 @@ impl PoolingLayerExecutor for PoolingLayerOCL {
       result_final.push(Box::new(result));
     }
 
-    Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result_final));
-    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
-
     Some((input.clone(), result_final))*/
+
+    Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result));
+    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
     Some((input.clone(), result))
   }
 
