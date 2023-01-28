@@ -452,9 +452,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
           ExecuteKernel::new(&kernel)
               .set_arg(&*ab)
               .set_arg(&*rb)
-              .set_arg(&(result.cols as cl_int))
-              .set_arg(&(result.rows as cl_int))
-              .set_global_work_size(result.cols * result.rows)
+              .set_arg(&(a.cols as cl_int))
+              .set_arg(&(a.rows as cl_int))
+              .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
 
