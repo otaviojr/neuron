@@ -1,4 +1,4 @@
-use opencl3::{memory::{Buffer, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_float, CL_BLOCKING, CL_NON_BLOCKING, cl_ulong, cl_event, cl_int}, event::Event};
+use opencl3::{memory::{Buffer, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_float, CL_NON_BLOCKING, cl_event, cl_int}};
 use std::{ptr, time::Instant, sync::{Arc, Mutex}};
 use crate::Neuron;
 
@@ -83,7 +83,6 @@ __kernel void zero(__global float *a) {
   int gid = get_global_id(0);
   a[gid] = 0;
 }
-
 "#;
 
 const KERNEL_MATRIX_ADD_NAME: &str = "add";
@@ -153,7 +152,7 @@ impl MatrixMathOCL {
     let output_size = (a[0].rows * blocks, a[0].cols);
     let single_output_size = (a[0].rows, a[0].cols);
 
-    let mut result = Tensor::new(output_size.0, output_size.1).zero().unwrap();
+    let mut result = Tensor::new(output_size.0, output_size.1);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
