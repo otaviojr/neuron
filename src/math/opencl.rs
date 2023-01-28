@@ -181,16 +181,11 @@ impl MatrixMathOCL {
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(queue).unwrap()
         };
-
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
       }
     }
-
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL add bulk matrix = {:?}", result));
     result
   }
@@ -226,15 +221,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };
 
-          let error = kernel_event.wait();
-          if let Err(error) = error {
-            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-            std::process::exit(0);
-          }
+          let mut events = Vec::new();
+          events.push(kernel_event.get());
+          result.sync_ocl_cpu_wait(&events);
         }
       }
 
-      result.sync_ocl_cpu();
       Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
       result
   }
@@ -268,15 +260,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
       }
     }
 
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL sub matrix = {:?}", result));
     result
   }
@@ -319,18 +308,14 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
-
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
 
         Neuron::logger().profiling(|| format!("Matrix Mul (opencl result readed) = {}ms", timer.elapsed().as_millis()));
       }
     }
 
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL multiply matrix = {:?}", result));
     result
   }
@@ -363,16 +348,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_global_work_size(result.cols * result.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
-
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
       }
     }
 
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL multiply wise matrix = {:?}", result));
     result
   }
@@ -406,14 +387,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };
 
-          let error = kernel_event.wait();
-          if let Err(error) = error {
-            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-            std::process::exit(0);
-          }
+          let mut events = Vec::new();
+          events.push(kernel_event.get());
+          result.sync_ocl_cpu_wait(&events);
         }
       }
-      result.sync_ocl_cpu();
       Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
       result
   }
@@ -458,15 +436,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
       }
     }
 
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", result));
     result
   }
@@ -493,14 +468,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .enqueue_nd_range(&queue).unwrap()
         };
 
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
       }
     }
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL add value matrix = {:?}", result));
     result
   }
@@ -526,16 +498,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
-
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
       }
     }
-
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL div value matrix = {:?}", result));
     result
   }
@@ -561,16 +528,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
-
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        result.sync_ocl_cpu_wait(&events);
       }
     }
 
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL mul value matrix = {:?}", result));
     result
   }
@@ -643,16 +606,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
               .set_global_work_size(a.cols * a.rows)
               .enqueue_nd_range(&queue).unwrap()
         };
-
-        let error = kernel_event.wait();
-        if let Err(error) = error {
-          Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-          std::process::exit(0);
-        }
+        let mut events = Vec::new();
+        events.push(kernel_event.get());
+        a.sync_ocl_cpu_wait(&events);
       }
     }
 
-    a.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL zero matrix = {:?}", a));
     a.clone()
   }
