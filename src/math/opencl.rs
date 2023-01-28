@@ -156,33 +156,34 @@ impl MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-
-        let mut data = Vec::new();
-        for a in a {
-          data.append(a.mut_data());
-        }
-        let input = Tensor::from_data(input_size.0, input_size.1, data);
-
-        let i_ocl = input.get_ocl_buffer();
-        let ib = i_ocl.lock().unwrap();
-        let r_ocl = result.get_ocl_buffer();
-        let rb = r_ocl.lock().unwrap();
-    
-        let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ib)
-              .set_arg(&*rb)
-              .set_arg(&(blocks as cl_int))
-              .set_arg(&(len as cl_int))
-              .set_arg(&(single_output_size.1 as cl_int))
-              .set_arg(&(single_output_size.0 as cl_int))
-              .set_global_work_size(result.cols * result.rows)
-              .enqueue_nd_range(queue).unwrap()
-        };
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let mut data = Vec::new();
+          for a in a {
+            data.append(a.mut_data());
+          }
+          let input = Tensor::from_data(input_size.0, input_size.1, data);
+  
+          let i_ocl = input.get_ocl_buffer();
+          let ib = i_ocl.lock().unwrap();
+          let r_ocl = result.get_ocl_buffer();
+          let rb = r_ocl.lock().unwrap();
+      
+          let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ib)
+                .set_arg(&*rb)
+                .set_arg(&(blocks as cl_int))
+                .set_arg(&(len as cl_int))
+                .set_arg(&(single_output_size.1 as cl_int))
+                .set_arg(&(single_output_size.0 as cl_int))
+                .set_global_work_size(result.cols * result.rows)
+                .enqueue_nd_range(queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -201,28 +202,29 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let a_ocl = a.get_ocl_buffer();
-          let b_ocl = b.get_ocl_buffer();
-          let r_ocl = result.get_ocl_buffer();
-
-          let ab = a_ocl.lock().unwrap();
-          let bb = b_ocl.lock().unwrap();
-          let rb = r_ocl.lock().unwrap();
-
-          let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
-
-          let kernel_event = unsafe {
-            ExecuteKernel::new(&kernel)
-                .set_arg(&*ab)
-                .set_arg(&*bb)
-                .set_arg(&*rb)
-                .set_arg(&(result.cols as cl_int))
-                .set_global_work_size(result.cols * result.rows)
-                .enqueue_nd_range(&queue).unwrap()
-          };
-
           let mut events = Vec::new();
-          events.push(kernel_event.get());
+          {
+            let a_ocl = a.get_ocl_buffer();
+            let b_ocl = b.get_ocl_buffer();
+            let r_ocl = result.get_ocl_buffer();
+  
+            let ab = a_ocl.lock().unwrap();
+            let bb = b_ocl.lock().unwrap();
+            let rb = r_ocl.lock().unwrap();
+  
+            let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
+  
+            let kernel_event = unsafe {
+              ExecuteKernel::new(&kernel)
+                  .set_arg(&*ab)
+                  .set_arg(&*bb)
+                  .set_arg(&*rb)
+                  .set_arg(&(result.cols as cl_int))
+                  .set_global_work_size(result.cols * result.rows)
+                  .enqueue_nd_range(&queue).unwrap()
+            };  
+            events.push(kernel_event.get());
+          }
           result.sync_ocl_cpu_wait(&events);
         }
       }
@@ -240,28 +242,29 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let b_ocl = b.get_ocl_buffer();
-        let r_ocl = result.get_ocl_buffer();
-
-        let ab = a_ocl.lock().unwrap();
-        let bb = b_ocl.lock().unwrap();
-        let rb = r_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_arg(&*bb)
-              .set_arg(&*rb)
-              .set_arg(&(result.cols as cl_int))
-              .set_global_work_size(result.cols * result.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
-
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let b_ocl = b.get_ocl_buffer();
+          let r_ocl = result.get_ocl_buffer();
+  
+          let ab = a_ocl.lock().unwrap();
+          let bb = b_ocl.lock().unwrap();
+          let rb = r_ocl.lock().unwrap();
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_arg(&*bb)
+                .set_arg(&*rb)
+                .set_arg(&(result.cols as cl_int))
+                .set_global_work_size(result.cols * result.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -283,33 +286,35 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let b_ocl = b.get_ocl_buffer();
-        let r_ocl = result.get_ocl_buffer();
-
-        let ab = a_ocl.lock().unwrap();
-        let bb = b_ocl.lock().unwrap();
-        let rb = r_ocl.lock().unwrap();
-
-        Neuron::logger().profiling(|| format!("Matrix Mul (opencl memory) = {}ms", timer.elapsed().as_millis()));
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_NAME).unwrap();
-
-        Neuron::logger().profiling(|| format!("Matrix Mul (opencl kernel created) = {}ms", timer.elapsed().as_millis()));
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_arg(&*bb)
-              .set_arg(&*rb)
-              .set_arg(&(a.cols as cl_int))
-              .set_arg(&(b.cols as cl_int))
-              .set_arg(&(result.cols as cl_int))
-              .set_global_work_size(result.cols * result.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let b_ocl = b.get_ocl_buffer();
+          let r_ocl = result.get_ocl_buffer();
+  
+          let ab = a_ocl.lock().unwrap();
+          let bb = b_ocl.lock().unwrap();
+          let rb = r_ocl.lock().unwrap();
+  
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl memory) = {}ms", timer.elapsed().as_millis()));
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_NAME).unwrap();
+  
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl kernel created) = {}ms", timer.elapsed().as_millis()));
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_arg(&*bb)
+                .set_arg(&*rb)
+                .set_arg(&(a.cols as cl_int))
+                .set_arg(&(b.cols as cl_int))
+                .set_arg(&(result.cols as cl_int))
+                .set_global_work_size(result.cols * result.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
 
         Neuron::logger().profiling(|| format!("Matrix Mul (opencl result readed) = {}ms", timer.elapsed().as_millis()));
@@ -329,27 +334,29 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let b_ocl = b.get_ocl_buffer();
-        let r_ocl = result.get_ocl_buffer();
-
-        let ab = a_ocl.lock().unwrap();
-        let bb = b_ocl.lock().unwrap();
-        let rb = r_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_WISE_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_arg(&*bb)
-              .set_arg(&*rb)
-              .set_arg(&(result.cols as cl_int))
-              .set_global_work_size(result.cols * result.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let b_ocl = b.get_ocl_buffer();
+          let r_ocl = result.get_ocl_buffer();
+  
+          let ab = a_ocl.lock().unwrap();
+          let bb = b_ocl.lock().unwrap();
+          let rb = r_ocl.lock().unwrap();
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_WISE_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_arg(&*bb)
+                .set_arg(&*rb)
+                .set_arg(&(result.cols as cl_int))
+                .set_global_work_size(result.cols * result.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -367,28 +374,29 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let a_ocl = a.get_ocl_buffer();
-          let b_ocl = b.get_ocl_buffer();
-          let r_ocl = result.get_ocl_buffer();
-
-          let ab = a_ocl.lock().unwrap();
-          let bb = b_ocl.lock().unwrap();
-            let rb = r_ocl.lock().unwrap();
-
-          let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_NAME).unwrap();
-
-          let kernel_event = unsafe {
-            ExecuteKernel::new(&kernel)
-                .set_arg(&*ab)
-                .set_arg(&*bb)
-                .set_arg(&*rb)
-                .set_arg(&(result.cols as cl_int))
-                .set_global_work_size(result.cols * result.rows)
-                .enqueue_nd_range(&queue).unwrap()
-          };
-
           let mut events = Vec::new();
-          events.push(kernel_event.get());
+          {
+            let a_ocl = a.get_ocl_buffer();
+            let b_ocl = b.get_ocl_buffer();
+            let r_ocl = result.get_ocl_buffer();
+  
+            let ab = a_ocl.lock().unwrap();
+            let bb = b_ocl.lock().unwrap();
+            let rb = r_ocl.lock().unwrap();
+  
+            let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_NAME).unwrap();
+  
+            let kernel_event = unsafe {
+              ExecuteKernel::new(&kernel)
+                  .set_arg(&*ab)
+                  .set_arg(&*bb)
+                  .set_arg(&*rb)
+                  .set_arg(&(result.cols as cl_int))
+                  .set_global_work_size(result.cols * result.rows)
+                  .enqueue_nd_range(&queue).unwrap()
+            };  
+            events.push(kernel_event.get());
+          }
           result.sync_ocl_cpu_wait(&events);
         }
       }
@@ -418,26 +426,27 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let r_ocl = result.get_ocl_buffer();
-
-        let ab = a_ocl.lock().unwrap();
-        let rb = r_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_TRANSPOSE_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_arg(&*rb)
-              .set_arg(&(a.cols as cl_int))
-              .set_arg(&(a.rows as cl_int))
-              .set_global_work_size(a.cols * a.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
-
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let r_ocl = result.get_ocl_buffer();
+  
+          let ab = a_ocl.lock().unwrap();
+          let rb = r_ocl.lock().unwrap();
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_TRANSPOSE_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_arg(&*rb)
+                .set_arg(&(a.cols as cl_int))
+                .set_arg(&(a.rows as cl_int))
+                .set_global_work_size(a.cols * a.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -451,25 +460,26 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let r_ocl = result.get_ocl_buffer();
-
-        let ab = a_ocl.lock().unwrap();
-        let rb = r_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_VALUE_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_arg(&*rb)
-              .set_arg(&(value as cl_float))
-              .set_global_work_size(a.cols * a.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
-
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let r_ocl = result.get_ocl_buffer();
+  
+          let ab = a_ocl.lock().unwrap();
+          let rb = r_ocl.lock().unwrap();
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_VALUE_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_arg(&*rb)
+                .set_arg(&(value as cl_float))
+                .set_global_work_size(a.cols * a.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -482,24 +492,26 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let c_ocl = result.get_ocl_buffer();
-
-        let ab = a_ocl.lock().unwrap();
-        let rb = c_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_VALUE_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_arg(&*rb)
-              .set_arg(&(value as cl_float))
-              .set_global_work_size(a.cols * a.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let c_ocl = result.get_ocl_buffer();
+  
+          let ab = a_ocl.lock().unwrap();
+          let rb = c_ocl.lock().unwrap();
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_VALUE_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_arg(&*rb)
+                .set_arg(&(value as cl_float))
+                .set_global_work_size(a.cols * a.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -512,24 +524,26 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let r_ocl = result.get_ocl_buffer();
-
-        let ab = a_ocl.lock().unwrap();
-        let rb = r_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_VALUE_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_arg(&*rb)
-              .set_arg(&(value as cl_float))
-              .set_global_work_size(a.cols * a.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let r_ocl = result.get_ocl_buffer();
+  
+          let ab = a_ocl.lock().unwrap();
+          let rb = r_ocl.lock().unwrap();
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_VALUE_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_arg(&*rb)
+                .set_arg(&(value as cl_float))
+                .set_global_work_size(a.cols * a.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -595,19 +609,21 @@ impl MatrixMathExecutor for MatrixMathOCL {
   fn zero(&self, a: &mut Tensor) -> Tensor {
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let a_ocl = a.get_ocl_buffer();
-        let ab = a_ocl.lock().unwrap();
-
-        let kernel = Kernel::create(&program, KERNEL_MATRIX_ZERO_NAME).unwrap();
-
-        let kernel_event = unsafe {
-          ExecuteKernel::new(&kernel)
-              .set_arg(&*ab)
-              .set_global_work_size(a.cols * a.rows)
-              .enqueue_nd_range(&queue).unwrap()
-        };
         let mut events = Vec::new();
-        events.push(kernel_event.get());
+        {
+          let a_ocl = a.get_ocl_buffer();
+          let ab = a_ocl.lock().unwrap();
+  
+          let kernel = Kernel::create(&program, KERNEL_MATRIX_ZERO_NAME).unwrap();
+  
+          let kernel_event = unsafe {
+            ExecuteKernel::new(&kernel)
+                .set_arg(&*ab)
+                .set_global_work_size(a.cols * a.rows)
+                .enqueue_nd_range(&queue).unwrap()
+          };  
+          events.push(kernel_event.get());
+        }
         a.sync_ocl_cpu_wait(&events);
       }
     }
