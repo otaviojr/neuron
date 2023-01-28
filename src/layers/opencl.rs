@@ -26,7 +26,7 @@ __kernel void conv(__global float *input, __global float *filter, __global float
   result[gid] = sum;
 }
 
-__kernel void conv_full(__global float *input, __global float *filter, __global float *result, float bias, int n_filters, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+/*__kernel void conv_full(__global float *input, __global float *filter, __global float *result, float bias, int n_filters, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
   int filter_block_size = filter_width * filter_height * n_channels;
@@ -56,7 +56,7 @@ __kernel void conv_full(__global float *input, __global float *filter, __global 
     }
   }
   result[gid] = sum;
-}
+}*/
 "#;
 
 const POOLING_PROGRAM_SOURCE: &str = r#"
