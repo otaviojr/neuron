@@ -177,7 +177,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
       let ret = matrix_ocl.add_ocl_bulk(z1_final.len(), z1_final.iter_mut().flatten().collect::<Vec<_>>());
       let chucks = ret.data().chunks(z1_final[0][0].rows() * z1_final[0][0].cols());
       for chuck in chucks {
-        let new_tensor = Tensor::from_data(result_final[0][0].rows(), result_final[0][0].cols(), chuck.to_vec());
+        let new_tensor = Tensor::from_data(z1_final[0][0].rows(), z1_final[0][0].cols(), chuck.to_vec());
         z1.push(Box::new(new_tensor));
       }
     }
