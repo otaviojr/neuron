@@ -184,7 +184,7 @@ impl MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
       }
     }
     Neuron::logger().debug(|| format!("OpenCL add bulk matrix = {:?}", result));
@@ -225,7 +225,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
             };  
             events.push(kernel_event.get());
           };
-          result.sync_ocl_cpu_wait(&events);
+          result.sync_ocl_cpu_wait(events);
         }
       }
 
@@ -265,7 +265,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
       }
     }
 
@@ -315,7 +315,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
 
         Neuron::logger().profiling(|| format!("Matrix Mul (opencl result readed) = {}ms", timer.elapsed().as_millis()));
       }
@@ -357,7 +357,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
       }
     }
 
@@ -397,7 +397,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
             };  
             events.push(kernel_event.get());
           };
-          result.sync_ocl_cpu_wait(&events);
+          result.sync_ocl_cpu_wait(events);
         }
       }
       Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
@@ -447,7 +447,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
       }
     }
 
@@ -480,7 +480,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
       }
     }
     Neuron::logger().debug(|| format!("OpenCL add value matrix = {:?}", result));
@@ -512,7 +512,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
       }
     }
     Neuron::logger().debug(|| format!("OpenCL div value matrix = {:?}", result));
@@ -544,7 +544,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(&events);
+        result.sync_ocl_cpu_wait(events);
       }
     }
 
@@ -624,7 +624,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        a.sync_ocl_cpu_wait(&events);
+        a.sync_ocl_cpu_wait(events);
       }
     }
 
@@ -691,7 +691,7 @@ impl TensorOCL {
 pub trait OCL {
   fn get_ocl_buffer(&self) -> Arc<Mutex<Buffer<cl_float>>>;
   fn sync_ocl_cpu(&mut self);
-  fn sync_ocl_cpu_wait(&mut self, events: &Vec<cl_event>);
+  fn sync_ocl_cpu_wait(&mut self, events: Vec<cl_event>);
   fn sync_cpu_ocl(&self);
 }
 
@@ -718,13 +718,13 @@ impl OCL for Tensor {
     }
   }
 
-  fn sync_ocl_cpu_wait(&mut self, events: &Vec<cl_event>) {
+  fn sync_ocl_cpu_wait(&mut self, events: Vec<cl_event>) {
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       let buffer_ocl = self.get_ocl_buffer();
       let buffer = buffer_ocl.lock().unwrap();
         
-      let ret = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_read_buffer(&buffer, CL_NON_BLOCKING, 0, &mut self.mut_data(), events).unwrap() };
+      let ret = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_read_buffer(&buffer, CL_NON_BLOCKING, 0, &mut self.mut_data(), &events).unwrap() };
       let error = ret.wait();
   
       if let Err(error) = error {
