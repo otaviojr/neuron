@@ -59,8 +59,8 @@ __kernel void full_pooling(__global float *input, __global float *result, int in
   int block = gid / block_size;
   int pos = gid % block_size;
 
-  int gid_y = pos / result_width + block * block_size;
-  int gid_x = pos % result_width + block * block_size;
+  int gid_y = (pos / result_width) + (block * block_size);
+  int gid_x = (pos % result_width) + (block * block_size);
 
   int i = gid_y * stride;
   int j = gid_x * stride;
