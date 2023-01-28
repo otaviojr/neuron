@@ -25,6 +25,38 @@ __kernel void conv(__global float *input, __global float *filter, __global float
   }
   result[gid] = sum;
 }
+
+__kernel void conv_full(__global float *input, __global float *filter, __global float *result, float bias, int n_filters, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+  int gid = get_global_id(0);
+
+  int filter_block_size = filter_width * filter_height * n_channels;
+
+  int filter = gid / filter_block_size;
+  int filter_pos = gid % filter_block_size;
+
+  int channel_size = filter_width*filter_height;
+
+  int channel = filter_pos / channel_size;
+  int channel_pos = filter_pos % channel_size;
+
+  int gid_y = channel_pos / result_width;
+  int gid_x = channel_pos % result_width;
+
+  int i = gid_y * stride;
+  int j = gid_x * stride;
+
+  float sum = bias;
+  for(int k = -padding; k < filter_height + padding; k++) {
+    for(int l = -padding; l < filter_width + padding; l++) {
+      int filter_index = (k + padding) * (filter_width + 2 * padding) + (l + padding) + ;
+      int input_index = (i + k) * input_width + (j + l);
+      if (i + k >= 0 && j + l >= 0 && i + k < input_height && j + l < input_width) {
+        sum += input[input_index] * filter[filter_index];
+      }
+    }
+  }
+  result[gid] = sum;
+}
 "#;
 
 const POOLING_PROGRAM_SOURCE: &str = r#"
@@ -36,8 +68,8 @@ __kernel void pooling(__global float *input, __global float *result, int input_w
   int block = gid / block_size;
   int pos = gid % block_size;
 
-  int gid_y = (pos / result_width);
-  int gid_x = (pos % result_width);
+  int gid_y = (block*pos) / result_width;
+  int gid_x = (block*pos) % result_width;
 
   int i = gid_y * stride;
   int j = gid_x * stride;
@@ -84,6 +116,74 @@ impl ConvLayerOCL {
 }
 
 impl ConvLayerOCL{
+  fn do_full_conv(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &f32, config: &ConvLayerConfig) -> Result<Vec<Box<Tensor>>, String> {
+    let result_size = ((((input[0].rows() as f32 + 2.0* config.padding as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize,
+                                      (((input[0].cols() as f32 + 2.0* config.padding as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize);
+
+    let input_size = (input[0].rows() * input.len(), input[0].cols());
+    
+    let mut result = Tensor::new(result_size.0 * filters.len() * filters[0].len(), result_size.1);
+
+    let mut data = Vec::new();
+    for i in input.iter() {
+      data.extend(i.data());
+    }
+    let input_tensor = Tensor::from_data(input_size.0, input_size.1, data);
+
+    let data: Vec<&f32> = filters.iter().flatten().map(|f| f.data()).flatten().collect::<Vec<&f32>>();
+    let mut n_data = Vec::new();
+    for i in data {
+      n_data.push(*i);
+    }
+    let filter_tensor = Tensor::from_data(filters.len() * filters[0].len(), filter_size.1, n_data);
+
+    let executor = Neuron::matrix();
+    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
+      if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
+        if let Some(ref program) = self.program {
+          let mut events:Vec<cl_event> = Vec::default();
+          let kernel;
+          let kernel_event;
+          {
+            let input_ocl = input_tensor.get_ocl_buffer();
+            let filter_ocl = filter_tensor.get_ocl_buffer();
+            let result_ocl = result.get_ocl_buffer();
+  
+            let input_buffer = input_ocl.lock().unwrap();
+            let filter_buffer = filter_ocl.lock().unwrap();
+            let result_buffer = result_ocl.lock().unwrap();
+  
+            kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
+  
+            kernel_event = unsafe {
+              ExecuteKernel::new(&kernel)
+                  .set_arg(&*input_buffer)
+                  .set_arg(&*filter_buffer)
+                  .set_arg(&*result_buffer)
+                  .set_arg(&(*bias as cl_float))
+                  .set_arg(&(filters.len() as cl_int))
+                  .set_arg(&(filters[0].len() as cl_int))
+                  .set_arg(&(input[0].cols() as cl_int))
+                  .set_arg(&(input[0].rows() as cl_int))
+                  .set_arg(&(filter_size.1 as cl_int))
+                  .set_arg(&(filter_size.0 as cl_int))
+                  .set_arg(&(result_size.1 as cl_int))
+                  .set_arg(&(result_size.0 as cl_int))
+                  .set_arg(&(config.stride as cl_int))
+                  .set_arg(&(config.padding as cl_int))
+                  .set_global_work_size(result.rows()*result.cols())
+                  .enqueue_nd_range(&queue).unwrap()
+            }; 
+            events.push(kernel_event.get()); 
+          };
+          result.sync_ocl_cpu_wait(events);
+        }
+      }
+    }
+    Neuron::logger().debug(|| format!("OpenCL convolution result = {:?}", result));
+    Err("Not implemented".to_string())
+  }
+
   fn do_conv(&self, input: &Box<Tensor>, filter: &Tensor, bias: &f32, result: &mut Tensor, config: &ConvLayerConfig) {
 
     let executor = Neuron::matrix();
@@ -138,6 +238,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     let result_height = (((input[0].rows() as f32 + 2.0* config.padding as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize;
     let result_width = (((input[0].cols() as f32 + 2.0* config.padding as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize;
+
     let mut result_final = Vec::new();
     let mut z1_final = Vec::new();
 
