@@ -162,7 +162,7 @@ impl MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events:Vec<cl_event> = Vec::default();
         {  
           let i_ocl = input.get_ocl_buffer();
           let ib = i_ocl.lock().unwrap();
@@ -181,7 +181,7 @@ impl MatrixMathOCL {
                 .set_arg(&(single_output_size.0 as cl_int))
                 .set_global_work_size(result.cols * result.rows)
                 .enqueue_nd_range(queue).unwrap()
-          };  
+          };
           events.push(kernel_event.get());
         };
         result.sync_ocl_cpu_wait(events);
@@ -202,7 +202,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut events = Vec::new();
+          let mut events:Vec<cl_event> = Vec::default();
           {
             let a_ocl = a.get_ocl_buffer();
             let b_ocl = b.get_ocl_buffer();
@@ -242,7 +242,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events:Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let b_ocl = b.get_ocl_buffer();
@@ -286,7 +286,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let b_ocl = b.get_ocl_buffer();
@@ -334,7 +334,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events:Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let b_ocl = b.get_ocl_buffer();
@@ -374,7 +374,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
-          let mut events = Vec::new();
+          let mut events:Vec<cl_event> = Vec::default();
           {
             let a_ocl = a.get_ocl_buffer();
             let b_ocl = b.get_ocl_buffer();
@@ -426,7 +426,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events:Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let r_ocl = result.get_ocl_buffer();
@@ -460,7 +460,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let r_ocl = result.get_ocl_buffer();
@@ -492,7 +492,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events:Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let c_ocl = result.get_ocl_buffer();
@@ -524,7 +524,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let r_ocl = result.get_ocl_buffer();
@@ -609,7 +609,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
   fn zero(&self, a: &mut Tensor) -> Tensor {
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::new();
+        let mut events:Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let ab = a_ocl.lock().unwrap();
