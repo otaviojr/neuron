@@ -1,5 +1,5 @@
 use std::{time::Instant};
-use opencl3::{program::Program, types::{cl_float, cl_int}, kernel::{Kernel, ExecuteKernel}};
+use opencl3::{program::Program, types::{cl_float, cl_int, cl_event}, kernel::{Kernel, ExecuteKernel}};
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
@@ -85,43 +85,43 @@ impl ConvLayerOCL{
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
         if let Some(ref program) = self.program {
-          let input_ocl = input.get_ocl_buffer();
-          let filter_ocl = filter.get_ocl_buffer();
-          let result_ocl = result.get_ocl_buffer();
-
-          let input_buffer = input_ocl.lock().unwrap();
-          let filter_buffer = filter_ocl.lock().unwrap();
-          let result_buffer = result_ocl.lock().unwrap();
-
-          let kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
-
-          let kernel_event = unsafe {
-            ExecuteKernel::new(&kernel)
-                .set_arg(&*input_buffer)
-                .set_arg(&*filter_buffer)
-                .set_arg(&*result_buffer)
-                .set_arg(&(*bias as cl_float))
-                .set_arg(&(input.cols() as cl_int))
-                .set_arg(&(input.rows() as cl_int))
-                .set_arg(&(filter.cols() as cl_int))
-                .set_arg(&(filter.rows() as cl_int))
-                .set_arg(&(result.cols() as cl_int))
-                .set_arg(&(result.rows() as cl_int))
-                .set_arg(&(config.stride as cl_int))
-                .set_arg(&(config.padding as cl_int))
-                .set_global_work_size(result.rows()*result.cols())
-                .enqueue_nd_range(&queue).unwrap()
+          let mut events:Vec<cl_event> = Vec::default();
+          let kernel;
+          let kernel_event;
+          {
+            let input_ocl = input.get_ocl_buffer();
+            let filter_ocl = filter.get_ocl_buffer();
+            let result_ocl = result.get_ocl_buffer();
+  
+            let input_buffer = input_ocl.lock().unwrap();
+            let filter_buffer = filter_ocl.lock().unwrap();
+            let result_buffer = result_ocl.lock().unwrap();
+  
+            kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
+  
+            kernel_event = unsafe {
+              ExecuteKernel::new(&kernel)
+                  .set_arg(&*input_buffer)
+                  .set_arg(&*filter_buffer)
+                  .set_arg(&*result_buffer)
+                  .set_arg(&(*bias as cl_float))
+                  .set_arg(&(input.cols() as cl_int))
+                  .set_arg(&(input.rows() as cl_int))
+                  .set_arg(&(filter.cols() as cl_int))
+                  .set_arg(&(filter.rows() as cl_int))
+                  .set_arg(&(result.cols() as cl_int))
+                  .set_arg(&(result.rows() as cl_int))
+                  .set_arg(&(config.stride as cl_int))
+                  .set_arg(&(config.padding as cl_int))
+                  .set_global_work_size(result.rows()*result.cols())
+                  .enqueue_nd_range(&queue).unwrap()
+            }; 
+            events.push(kernel_event.get()); 
           };
-
-          let error = kernel_event.wait();
-          if let Err(error) = error {
-            Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-            std::process::exit(0);
-          }
+          result.sync_ocl_cpu_wait(events);
         }
       }
     }
-    result.sync_ocl_cpu();
     Neuron::logger().debug(|| format!("OpenCL convolution result = {:?}", result));
   }
 }
