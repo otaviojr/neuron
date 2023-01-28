@@ -154,16 +154,16 @@ impl MatrixMathOCL {
 
     let mut result = Tensor::new(output_size.0, output_size.1);
 
+    let mut data = Vec::new();
+    for a in a {
+      data.append(a.mut_data());
+    }
+    let input = Tensor::from_data(input_size.0, input_size.1, data);
+
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
         let mut events = Vec::new();
-        {
-          let mut data = Vec::new();
-          for a in a {
-            data.append(a.mut_data());
-          }
-          let input = Tensor::from_data(input_size.0, input_size.1, data);
-  
+        {  
           let i_ocl = input.get_ocl_buffer();
           let ib = i_ocl.lock().unwrap();
           let r_ocl = result.get_ocl_buffer();
