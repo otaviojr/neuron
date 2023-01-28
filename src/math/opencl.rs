@@ -163,15 +163,17 @@ impl MatrixMathOCL {
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
         let mut events:Vec<cl_event> = Vec::default();
+        let kernel;
+        let kernel_event;
         {  
           let i_ocl = input.get_ocl_buffer();
           let ib = i_ocl.lock().unwrap();
           let r_ocl = result.get_ocl_buffer();
           let rb = r_ocl.lock().unwrap();
       
-          let kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
+          kernel = Kernel::create(program, KERNEL_MATRIX_ADD_BULK_NAME).unwrap();
   
-          let kernel_event = unsafe {
+          kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
                 .set_arg(&*ib)
                 .set_arg(&*rb)
@@ -286,7 +288,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::default();
+        let mut events:Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let b_ocl = b.get_ocl_buffer();
@@ -460,7 +462,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::default();
+        let mut events:Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let r_ocl = result.get_ocl_buffer();
@@ -524,7 +526,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
-        let mut events = Vec::default();
+        let mut events: Vec<cl_event> = Vec::default();
         {
           let a_ocl = a.get_ocl_buffer();
           let r_ocl = result.get_ocl_buffer();
