@@ -183,7 +183,7 @@ impl MatrixMathOCL {
                 .enqueue_nd_range(queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -224,7 +224,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                   .enqueue_nd_range(&queue).unwrap()
             };  
             events.push(kernel_event.get());
-          }
+          };
           result.sync_ocl_cpu_wait(&events);
         }
       }
@@ -264,7 +264,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -314,7 +314,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
 
         Neuron::logger().profiling(|| format!("Matrix Mul (opencl result readed) = {}ms", timer.elapsed().as_millis()));
@@ -356,7 +356,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -396,7 +396,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                   .enqueue_nd_range(&queue).unwrap()
             };  
             events.push(kernel_event.get());
-          }
+          };
           result.sync_ocl_cpu_wait(&events);
         }
       }
@@ -446,7 +446,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -479,7 +479,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -511,7 +511,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -543,7 +543,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         result.sync_ocl_cpu_wait(&events);
       }
     }
@@ -623,7 +623,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
-        }
+        };
         a.sync_ocl_cpu_wait(&events);
       }
     }
