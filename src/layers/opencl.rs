@@ -1,5 +1,5 @@
 use std::{time::Instant, result, ptr};
-use opencl3::{program::Program, types::{cl_float, cl_int, cl_event, CL_NON_BLOCKING}, kernel::{Kernel, ExecuteKernel}, memory::{CL_MEM_READ_ONLY, Buffer}};
+use opencl3::{program::Program, types::{cl_float, cl_int, cl_event, CL_NON_BLOCKING}, kernel::{Kernel, ExecuteKernel}, memory::{CL_MEM_READ_ONLY, Buffer, CL_MEM_READ_WRITE}};
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
@@ -158,15 +158,10 @@ impl ConvLayerOCL{
             let result_buffer = result_ocl.lock().unwrap();
   
             let mut bias_buffer = unsafe {
-              Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_ONLY, bias.len(), ptr::null_mut()).unwrap()
+              Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, bias.len(), ptr::null_mut()).unwrap()
             };
         
             let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut bias_buffer, CL_NON_BLOCKING, 0, bias.as_ref(), &[]).unwrap() };
-            let error = write_event.wait();
-            if let Err(error) = error {
-              Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
-              std::process::exit(0);
-            }    
       
             kernel = Kernel::create(&program, KERNEL_FULL_CONV_NAME).unwrap();
   
@@ -186,6 +181,7 @@ impl ConvLayerOCL{
                   .set_arg(&(config.stride as cl_int))
                   .set_arg(&(config.padding as cl_int))
                   .set_global_work_size(result.rows()*result.cols())
+                  .set_wait_event(&write_event)
                   .enqueue_nd_range(&queue).unwrap()
             }; 
             events.push(kernel_event.get()); 
