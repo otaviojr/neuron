@@ -200,7 +200,7 @@ impl ConvLayerOCL{
         let z1 = result.clone();
         let result = config.activation.forward(&result).unwrap();
 
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ms", timer.elapsed().as_millis()));
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Normalization) = {}ms", timer.elapsed().as_millis()));
 
         let mut result_tensors = Vec::new();
         let chucks = result.data().chunks(result_size.0 * result_size.1);
@@ -215,6 +215,8 @@ impl ConvLayerOCL{
           let new_tensor = Tensor::from_data(result_size.0, result_size.1, chuck.to_vec());
           z1_tensors.push(Box::new(new_tensor));
         }
+
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ms", timer.elapsed().as_millis()));
 
         let mut output_results = Vec::new();
         let mut output_z1 = Vec::new();
