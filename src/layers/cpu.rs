@@ -26,7 +26,7 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       let z1_1 = weights.mul(&input).unwrap();
 
-      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (weights mul) = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (weights mul) = {}ns", timer.elapsed().as_nanos()));
 
       Neuron::logger().debug(|| format!("z1_1 = {}x{}", z1_1.rows(), z1_1.cols()));
       Neuron::logger().debug(|| format!("z1_1 = {:?}", z1_1));
@@ -38,21 +38,21 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       let z1 = z1_1.add(&b_bias).unwrap();  
 
-      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (add bias) = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (add bias) = {}ns", timer.elapsed().as_nanos()));
 
       let last_z1 = z1.clone();
       let last_input = vec![input.clone()];
 
-      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (clone) = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (clone) = {}ns", timer.elapsed().as_nanos()));
 
       let ret = vec![Box::new(config.activation.forward(&z1).unwrap())];
   
-      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (activation) = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time (activation) = {}ns", timer.elapsed().as_nanos()));
 
       Neuron::logger().debug(|| format!("DenseLayer Output Before Activation(Forward) = {:?}", z1));
       Neuron::logger().debug(|| format!("DenseLayer Output (Forward) = {:?}", ret));
   
-      Neuron::logger().profiling(|| format!("DenseLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("DenseLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
       Some((last_input, last_z1, ret))
     }
 
@@ -99,7 +99,7 @@ impl DenseLayerExecutor for DenseLayerCPU {
       *weights = weights.sub(&dw.mul_value(config.learn_rate).unwrap()).unwrap();
       *bias = bias.sub(&db.mul_value(config.learn_rate).unwrap()).unwrap();
 
-      Neuron::logger().profiling(|| format!("DenseLayer Backward Time = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("DenseLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
   
       return ret;
     }
@@ -181,7 +181,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
     Neuron::logger().debug(|| format!("ConvLayer Output Size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
     Neuron::logger().debug(|| format!("ConvLayer Output (Forward) = {:?}", output));
 
-    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
 
     Some((last_input, last_z1, output))
   }
@@ -244,7 +244,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
     Neuron::logger().debug(|| format!("CNN Output (Backward) = {:?}", final_output));
     Neuron::logger().debug(|| format!("CNN Output size (Backward) = {}x{}x{}", final_output[0].rows(), final_output[0].cols(), final_output.len()));
 
-    Neuron::logger().profiling(|| format!("ConvLayer Backward Time = {}ms", timer.elapsed().as_millis()));
+    Neuron::logger().profiling(|| format!("ConvLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
 
     Some(final_output)  
   }
@@ -305,7 +305,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
     let last_input = input.clone();
 
     Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result_final));
-    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
 
     Some((last_input,result_final))
   }
@@ -344,7 +344,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
     Neuron::logger().debug(|| format!("PoolingLayer Output (Backward) = {:?}", result_final));
     Neuron::logger().debug(|| format!("PoolingLayer Output size (Backward) = {}x{}x{}", result_final[0].rows(), result_final[0].cols(), result_final.len()));
 
-    Neuron::logger().profiling(|| format!("PoolingLayer Backward Time = {}ms", timer.elapsed().as_millis()));
+    Neuron::logger().profiling(|| format!("PoolingLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
     
     Some(result_final)
   }

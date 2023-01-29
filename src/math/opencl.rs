@@ -312,7 +312,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     // Create a new tensor to store the result
     let mut result = Tensor::new(a.rows, b.cols);
 
-    Neuron::logger().profiling(|| format!("Matrix Mul (results created) = {}ms", timer.elapsed().as_millis()));
+    Neuron::logger().profiling(|| format!("Matrix Mul (results created) = {}ns", timer.elapsed().as_nanos()));
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -328,11 +328,11 @@ impl MatrixMathExecutor for MatrixMathOCL {
           let bb = b_ocl.lock().unwrap();
           let rb = r_ocl.lock().unwrap();
   
-          Neuron::logger().profiling(|| format!("Matrix Mul (opencl memory) = {}ms", timer.elapsed().as_millis()));
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl memory) = {}ns", timer.elapsed().as_nanos()));
   
           kernel = Kernel::create(&program, KERNEL_MATRIX_MUL_NAME).unwrap();
   
-          Neuron::logger().profiling(|| format!("Matrix Mul (opencl kernel created) = {}ms", timer.elapsed().as_millis()));
+          Neuron::logger().profiling(|| format!("Matrix Mul (opencl kernel created) = {}ns", timer.elapsed().as_nanos()));
   
           kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
@@ -349,7 +349,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
         };
         result.sync_ocl_cpu_wait(events);
 
-        Neuron::logger().profiling(|| format!("Matrix Mul (opencl result readed) = {}ms", timer.elapsed().as_millis()));
+        Neuron::logger().profiling(|| format!("Matrix Mul (opencl result readed) = {}ns", timer.elapsed().as_nanos()));
       }
     }
 
@@ -696,7 +696,7 @@ impl TensorOCL {
         Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, size, ptr::null_mut()).unwrap()
       };
   
-      Neuron::logger().profiling(|| format!("OpenCL Tensor (new) = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("OpenCL Tensor (new) = {}ns", timer.elapsed().as_nanos()));
 
       return Some(TensorOCL {
         buffer: Arc::new(Mutex::new(ocl_buffer)),
@@ -724,7 +724,7 @@ impl TensorOCL {
         std::process::exit(0);
       }    
   
-      Neuron::logger().profiling(|| format!("OpenCL Tensor (init) = {}ms", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("OpenCL Tensor (init) = {}ns", timer.elapsed().as_nanos()));
 
       return Some(TensorOCL {
         buffer: Arc::new(Mutex::new(ocl_buffer)),

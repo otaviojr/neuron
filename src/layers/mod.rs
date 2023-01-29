@@ -271,7 +271,7 @@ impl Propagation for FlattenLayer {
     Neuron::logger().debug(|| format!("FlattenLayer Output Size (Forward) = {}x{}",t.rows(), t.cols()));
     Neuron::logger().debug(|| format!("FlattenLayer Output (Forward) = {:?}",t));
 
-    Neuron::logger().profiling(|| format!("FlattenLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+    Neuron::logger().profiling(|| format!("FlattenLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
 
     Some(vec![Box::new(t)])
   }
@@ -297,7 +297,7 @@ impl Propagation for FlattenLayer {
     Neuron::logger().debug(|| format!("FlattenLayer Output Size (Backward) = {}x{}x{}",output[0].rows(), output[0].cols(),output.len()));
     Neuron::logger().debug(|| format!("FlattenLayer Output (Backward) = {:?}",output));
 
-    Neuron::logger().profiling(|| format!("FlattenLayer Backward Time = {}ms", timer.elapsed().as_millis()));
+    Neuron::logger().profiling(|| format!("FlattenLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
 
     Some(output)
   }
