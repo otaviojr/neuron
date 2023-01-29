@@ -123,6 +123,9 @@ impl ConvLayerOCL {
 
 impl ConvLayerOCL{
   fn do_full_conv(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f32>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+    
+    let timer = Instant::now();
+    
     let result_size = ((((input[0].rows() as f32 + 2.0* config.padding as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize,
                                       (((input[0].cols() as f32 + 2.0* config.padding as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize);
 
@@ -192,8 +195,12 @@ impl ConvLayerOCL{
           result.sync_ocl_cpu_wait(events);
         }
 
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Activation) = {}ms", timer.elapsed().as_millis()));
+
         let z1 = result.clone();
         let result = config.activation.forward(&result).unwrap();
+
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ms", timer.elapsed().as_millis()));
 
         let mut result_tensors = Vec::new();
         let chucks = result.data().chunks(result_size.0 * result_size.1);
@@ -228,6 +235,8 @@ impl ConvLayerOCL{
 
         Neuron::logger().debug(|| format!("OpenCL convolution result = {:?}", output_results));
 
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+
         return Some((output_z1, output_results));
       }
     }
@@ -239,8 +248,6 @@ impl ConvLayerOCL{
 impl ConvLayerExecutor for ConvLayerOCL {
   fn forward(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f32>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
 
-    let timer = Instant::now();
-
     Neuron::logger().debug(|| format!("CNN Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len()));
     Neuron::logger().debug(|| format!("CNN Filter (Forward) = {:?}", filters));
 
@@ -248,8 +255,6 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", result[0].rows(), result[0].cols(), result.len()));
     Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", result));
-
-    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ms", timer.elapsed().as_millis()));
 
     Some((input.clone(), z1, result))
 
