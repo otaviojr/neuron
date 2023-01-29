@@ -106,7 +106,7 @@ impl ConvLayerOCL {
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "CL_STD_3_0") {
+      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "") {
         program = Some(p);
       }
     }
