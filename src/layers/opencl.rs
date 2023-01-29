@@ -76,10 +76,10 @@ __kernel void pooling(__global float *input, __global float *result, int input_w
   int i = gid_y * stride;
   int j = gid_x * stride;
 
-  float max = -DBL_MAX;
+  float max = -FLT_MAX;
   for(int k = 0; k < filter_height; k++) {
     for(int l = 0; l < filter_width; l++) {
-      int input_index = (i + k) * input_width + (j + l) + block * input_width * input_height;
+      int input_index = ((i + k) * input_width + (j + l)) + (block * input_width * input_height);
       float value = input[input_index];
       if(value > max) {
         max = value;
