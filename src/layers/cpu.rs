@@ -132,18 +132,23 @@ impl ConvLayerExecutor for ConvLayerCPU {
       for (inp,fc) in input.iter().zip(f.iter()) {
         let mut result = Tensor::new(result_height, result_width);
 
-        for i in (0..inp.rows() - filter_size.0).step_by(config.stride) {
-          for j in (0..inp.cols() - filter_size.1).step_by(config.stride) {
+        for result_y in 0..result_height {
+          for result_x in 0..result_width {
+
+            let i = (result_y * config.stride) as isize;
+            let j = (result_x * config.stride) as isize;
+
             let mut sum = *b;
-            for k in 0 .. filter_size.0 {
-              for l in 0 .. filter_size.1 {
-                sum += inp.get(i+k,j+l) * fc.get(k,l);
+            for k in -(config.padding as isize)..(filter_size.0+config.padding) as isize {
+              for l in -(config.padding as isize)..(filter_size.1+config.padding) as isize {
+                if i+k >= 0 && i+k < inp.rows() as isize && j+l >= 0 && j+l < inp.cols() as isize{
+                  sum += inp.get((i+k) as usize,(j+l) as usize) * fc.get(k as usize+config.padding,l as usize+config.padding);
+                }
               }
             }
-            result.set(i/config.stride, j/config.stride, sum);
+            result.set(result_y, result_x, sum);
           }
         }
-        
         let z1 = config.activation.forward(&result).unwrap();
         result_channels.push(z1.clone());
         z1_channels.push(Box::new(result));
