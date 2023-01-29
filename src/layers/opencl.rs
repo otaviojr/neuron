@@ -195,12 +195,12 @@ impl ConvLayerOCL{
           result.sync_ocl_cpu_wait(events);
         }
 
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Activation) = {}ms", timer.elapsed().as_millis()));
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Activation) = {}ns", timer.elapsed().as_nanos()));
 
         let z1 = result.clone();
         let result = config.activation.forward(&result).unwrap();
 
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Normalization) = {}ms", timer.elapsed().as_millis()));
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Normalization) = {}ns", timer.elapsed().as_nanos()));
 
         let mut result_tensors = Vec::new();
         let chucks = result.data().chunks(result_size.0 * result_size.1);
@@ -216,7 +216,7 @@ impl ConvLayerOCL{
           z1_tensors.push(Box::new(new_tensor));
         }
 
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ms", timer.elapsed().as_millis()));
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ns", timer.elapsed().as_nanos()));
 
         let mut output_results = Vec::new();
         let mut output_z1 = Vec::new();
@@ -237,7 +237,7 @@ impl ConvLayerOCL{
 
         Neuron::logger().debug(|| format!("OpenCL convolution result = {:?}", output_results));
 
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
 
         return Some((output_z1, output_results));
       }
