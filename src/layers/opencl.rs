@@ -1,5 +1,5 @@
 use std::{time::Instant, result, ptr};
-use opencl3::{program::Program, types::{cl_float, cl_int, cl_event, CL_NON_BLOCKING}, kernel::{Kernel, ExecuteKernel}, memory::{CL_MEM_READ_ONLY, Buffer, CL_MEM_READ_WRITE}};
+use opencl3::{program::{Program, CL_STD_3_0}, types::{cl_float, cl_int, cl_event, CL_NON_BLOCKING}, kernel::{Kernel, ExecuteKernel}, memory::{CL_MEM_READ_ONLY, Buffer, CL_MEM_READ_WRITE}};
 use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
@@ -106,7 +106,7 @@ impl ConvLayerOCL {
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "") {
+      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, CL_STD_3_0) {
         program = Some(p);
       }
     }
