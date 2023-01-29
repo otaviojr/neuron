@@ -29,15 +29,17 @@ __kernel void conv(__global float *input, __global float *filter, __global float
 __kernel void conv_full(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_filters, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
+  int result_filter_block_size = result_width * result_height * n_channels;
+  int result_channel_size = result_width * result_height;
+
   int filter_block_size = filter_width * filter_height * n_channels;
+  int filter_channel_size = filter_width * filter_height;
 
-  int n_filter = gid / filter_block_size;
-  int filter_pos = gid % filter_block_size;
+  int n_filter = gid / result_filter_block_size;
+  int filter_pos = gid % result_filter_block_size;
 
-  int channel_size = filter_width*filter_height;
-
-  int n_channel = filter_pos / channel_size;
-  int channel_pos = filter_pos % channel_size;
+  int n_channel = filter_pos / result_channel_size;
+  int channel_pos = filter_pos % result_channel_size;
 
   int gid_y = channel_pos / result_width;
   int gid_x = channel_pos % result_width;
@@ -48,7 +50,7 @@ __kernel void conv_full(__global float *input, __global float *filter, __global 
   float sum = bias[n_filter];
   for(int k = -padding; k < filter_height + padding; k++) {
     for(int l = -padding; l < filter_width + padding; l++) {
-      int filter_index = ((k + padding) * (filter_width + 2 * padding) + (l + padding)) + (n_filter * filter_block_size) + (n_channel * channel_size);
+      int filter_index = ((k + padding) * (filter_width + 2 * padding) + (l + padding)) + (n_filter * filter_block_size) + (n_channel * filter_channel_size);
       int input_index = ((i + k) * input_width + (j + l)) + (n_channel * input_width * input_height);
       if (i + k >= 0 && j + l >= 0 && i + k < input_height && j + l < input_width) {
         sum += input[input_index] * filter[filter_index];
