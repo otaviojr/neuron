@@ -193,8 +193,11 @@ impl Loader for ConvLayer {
 
 impl Propagation for ConvLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
-    if self.filters.len() != input.len(){
-      print!("filters and input channels must be the same");
+    if self.filters.len() == 0 {
+      println!("filters must be initialized");
+      std::process::exit(0);
+    } else if self.filters[0].len() != input.len(){
+      println!("filters and input channels must be the same");
       std::process::exit(0);
     }
     if let Some((forward_input, z1, ret)) = Neuron::executors().conv.forward(input, self.filters.clone(), self.filter_size, self.bias.clone(), &self.config){
