@@ -48,8 +48,8 @@ __kernel void conv_full(__global float *input, __global float *filter, __global 
   float sum = bias[filter];
   for(int k = -padding; k < filter_height + padding; k++) {
     for(int l = -padding; l < filter_width + padding; l++) {
-      int filter_index = (k + padding) * (filter_width + 2 * padding) + (l + padding) + (filter * filter_block_size) + (channel * channel_size);
-      int input_index = (i + k) * input_width + (j + l) + (channel * input_width * input_height);
+      int filter_index = ((k + padding) * (filter_width + 2 * padding) + (l + padding)) + (filter * filter_block_size) + (channel * channel_size);
+      int input_index = ((i + k) * input_width + (j + l)) + (channel * input_width * input_height);
       if (i + k >= 0 && j + l >= 0 && i + k < input_height && j + l < input_width) {
         sum += input[input_index] * filter[filter_index];
       }
@@ -90,6 +90,7 @@ __kernel void pooling(__global float *input, __global float *result, int input_w
 "#;
 
 const KERNEL_CONV_NAME: &str = "conv";
+const KERNEL_FULL_CONV_NAME: &str = "conv_full";
 const KERNEL_POOLING_NAME: &str = "pooling";
 
 pub struct ConvLayerOCL {
@@ -164,7 +165,7 @@ impl ConvLayerOCL{
               std::process::exit(0);
             }    
       
-            kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
+            kernel = Kernel::create(&program, KERNEL_FULL_CONV_NAME).unwrap();
   
             kernel_event = unsafe {
               ExecuteKernel::new(&kernel)
