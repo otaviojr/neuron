@@ -141,7 +141,7 @@ impl ConvLayerOCL{
     for i in data {
       n_data.push(*i);
     }
-    let filter_tensor = Tensor::from_data(filters.len() * filters[0].len(), filter_size.1, n_data);
+    let filter_tensor = Tensor::from_data(filters.len() * filters[0].len() * filters[0][0].rows(), filter_size.1, n_data);
 
     Neuron::logger().debug(|| format!("OpenCL conv execute"));
 
