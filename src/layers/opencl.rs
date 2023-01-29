@@ -125,11 +125,16 @@ impl ConvLayerOCL{
     
     let mut result = Tensor::new(result_size.0 * filters.len() * filters[0].len(), result_size.1);
 
+    Neuron::logger().debug(|| format!("OpenCL conv full input"));
+
+
     let mut data = Vec::new();
     for i in input.iter() {
       data.extend(i.data());
     }
     let input_tensor = Tensor::from_data(input_size.0, input_size.1, data);
+
+    Neuron::logger().debug(|| format!("OpenCL conv full filter"));
 
     let data: Vec<&f32> = filters.iter().flatten().map(|f| f.data()).flatten().collect::<Vec<&f32>>();
     let mut n_data = Vec::new();
@@ -190,6 +195,8 @@ impl ConvLayerOCL{
           };
           result.sync_ocl_cpu_wait(events);
         }
+
+        Neuron::logger().debug(|| format!("OpenCL conv full activation"));
 
         let z1 = result.clone();
         let result = config.activation.forward(&result).unwrap();
