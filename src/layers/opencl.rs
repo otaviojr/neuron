@@ -91,7 +91,6 @@ __kernel void pooling(__global float *input, __global float *result, int input_w
 }
 "#;
 
-const KERNEL_CONV_NAME: &str = "conv";
 const KERNEL_FULL_CONV_NAME: &str = "conv_full";
 const KERNEL_POOLING_NAME: &str = "pooling";
 
@@ -162,7 +161,7 @@ impl ConvLayerOCL{
             let result_buffer = result_ocl.lock().unwrap();
   
             let mut bias_buffer = unsafe {
-              Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_WRITE, bias.len(), ptr::null_mut()).unwrap()
+              Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_ONLY, bias.len(), ptr::null_mut()).unwrap()
             };
         
             let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut bias_buffer, CL_NON_BLOCKING, 0, &bias, &[]).unwrap() };
@@ -188,7 +187,7 @@ impl ConvLayerOCL{
                   .set_wait_event(&write_event)
                   .enqueue_nd_range(&queue).unwrap()
             }; 
-            events.push(kernel_event.get()); 
+            events.push(kernel_event.get());
           };
           result.sync_ocl_cpu_wait(events);
         }
@@ -234,52 +233,6 @@ impl ConvLayerOCL{
     }
 
     None
-  }
-
-  fn do_conv(&self, input: &Box<Tensor>, filter: &Tensor, bias: &f32, result: &mut Tensor, config: &ConvLayerConfig) {
-
-    let executor = Neuron::matrix();
-    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
-        if let Some(ref program) = self.program {
-          let mut events:Vec<cl_event> = Vec::default();
-          let kernel;
-          let kernel_event;
-          {
-            let input_ocl = input.get_ocl_buffer();
-            let filter_ocl = filter.get_ocl_buffer();
-            let result_ocl = result.get_ocl_buffer();
-  
-            let input_buffer = input_ocl.lock().unwrap();
-            let filter_buffer = filter_ocl.lock().unwrap();
-            let result_buffer = result_ocl.lock().unwrap();
-  
-            kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
-  
-            kernel_event = unsafe {
-              ExecuteKernel::new(&kernel)
-                  .set_arg(&*input_buffer)
-                  .set_arg(&*filter_buffer)
-                  .set_arg(&*result_buffer)
-                  .set_arg(&(*bias as cl_float))
-                  .set_arg(&(input.cols() as cl_int))
-                  .set_arg(&(input.rows() as cl_int))
-                  .set_arg(&(filter.cols() as cl_int))
-                  .set_arg(&(filter.rows() as cl_int))
-                  .set_arg(&(result.cols() as cl_int))
-                  .set_arg(&(result.rows() as cl_int))
-                  .set_arg(&(config.stride as cl_int))
-                  .set_arg(&(config.padding as cl_int))
-                  .set_global_work_size(result.rows()*result.cols())
-                  .enqueue_nd_range(&queue).unwrap()
-            }; 
-            events.push(kernel_event.get()); 
-          };
-          result.sync_ocl_cpu_wait(events);
-        }
-      }
-    }
-    Neuron::logger().debug(|| format!("OpenCL convolution result = {:?}", result));
   }
 }
 
