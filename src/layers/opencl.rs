@@ -220,14 +220,14 @@ impl ConvLayerOCL{
         let mut output_results = Vec::new();
         let mut output_z1 = Vec::new();
 
-        let ret = matrix_ocl.add_ocl_bulk(result_tensors.len(),result_tensors);
+        let ret = matrix_ocl.add_ocl_bulk(filters.len(),result_tensors);
         let chucks = ret.data().chunks(result_size.0 * result_size.1);
         for chuck in chucks {
           let new_tensor = Tensor::from_data(result_size.0, result_size.1, chuck.to_vec());
           output_results.push(Box::new(new_tensor));
         }
 
-        let ret = matrix_ocl.add_ocl_bulk(z1_tensors.len(), z1_tensors);
+        let ret = matrix_ocl.add_ocl_bulk(filters.len(), z1_tensors);
         let chucks = ret.data().chunks(result_size.0 * result_size.1);
         for chuck in chucks {
           let new_tensor = Tensor::from_data(result_size.0, result_size.1, chuck.to_vec());
