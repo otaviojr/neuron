@@ -118,7 +118,7 @@ impl MatrixMathOCL {
 
       if let Ok(c) = Context::from_device(&d) {
         if let Ok(q) = CommandQueue::create_default(&c, 0) {
-          if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, CL_STD_3_0) {
+          if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
             device= Some(d);
             context = Some(c);
             queue = Some(q);
