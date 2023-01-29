@@ -1,4 +1,4 @@
-use opencl3::{memory::{Buffer, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::Program, types::{cl_float, CL_NON_BLOCKING, cl_event, cl_int}};
+use opencl3::{memory::{Buffer, CL_MEM_READ_WRITE}, context::Context, kernel::{Kernel, ExecuteKernel}, device::{Device, get_all_devices, CL_DEVICE_TYPE_GPU}, command_queue::{CommandQueue, CL_QUEUE_PROFILING_ENABLE}, program::{Program, CL_STD_3_0}, types::{cl_float, CL_NON_BLOCKING, cl_event, cl_int}};
 use std::{ptr, time::Instant, sync::{Arc, Mutex}};
 use crate::Neuron;
 
@@ -117,8 +117,8 @@ impl MatrixMathOCL {
       Neuron::logger().info(|| format!("OpenCL device (MatrixMathOCL): {}", d.name().unwrap()));
 
       if let Ok(c) = Context::from_device(&d) {
-        if let Ok(q) = CommandQueue::create_default(&c, CL_QUEUE_PROFILING_ENABLE) {
-          if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
+        if let Ok(q) = CommandQueue::create_default_with_properties(&c, 0, 0) {
+          if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, CL_STD_3_0) {
             device= Some(d);
             context = Some(c);
             queue = Some(q);
