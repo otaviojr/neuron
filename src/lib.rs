@@ -56,7 +56,7 @@ pub trait Loader: Any {
 }
 
 pub struct Neuron {
-  pipelines: Vec<Mutex<Box<dyn Propagation>>>
+  pipelines: Vec<Mutex<Box<dyn Propagation + Send + Sync>>>
 }
 
 impl Neuron {
@@ -118,7 +118,7 @@ impl Neuron {
     r
   }
 
-  pub fn add_pipeline(&mut self, layer: Mutex<Box<dyn Propagation>>) -> &mut Self {
+  pub fn add_pipeline(&mut self, layer: Mutex<Box<dyn Propagation + Send + Sync>>) -> &mut Self {
     self.pipelines.push(layer);
     self
   }

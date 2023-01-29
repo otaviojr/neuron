@@ -105,7 +105,7 @@ impl Tensor {
       }
     }
 
-    Neuron::logger().debug(|| format!("Zero tensor loaded after: {} seconds", start.elapsed().as_secs()));
+    Neuron::logger().profiling(|| format!("Zero tensor loaded after: {}ns", start.elapsed().as_nanos()));
 
     Tensor {
         rows,
