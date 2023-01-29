@@ -144,7 +144,7 @@ impl MatrixMathOCL {
     self.queue.as_ref()
   }
 
-  pub fn add_ocl_bulk(&self, blocks: usize, a: Vec<&mut Tensor>) -> Tensor {
+  pub fn add_ocl_bulk(&self, blocks: usize, a: Vec<Box<Tensor>>) -> Tensor {
     // Create a new tensor to store the result
 
     let len = a.len() / blocks;
@@ -156,7 +156,7 @@ impl MatrixMathOCL {
 
     let mut data = Vec::new();
     for a in a {
-      data.append(a.mut_data());
+      data.extend(a.data());
     }
     let input = Tensor::from_data(input_size.0, input_size.1, data);
 
