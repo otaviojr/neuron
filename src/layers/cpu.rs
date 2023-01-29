@@ -130,7 +130,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
       let mut result_channels = Vec::new();
       let mut z1_channels = Vec::new();
       for (inp,fc) in input.iter().zip(f.iter()) {
-        let mut result = Tensor::new(result_height, result_width);
+        let mut z1 = Tensor::new(result_height, result_width);
 
         for result_y in 0..result_height {
           for result_x in 0..result_width {
@@ -146,12 +146,12 @@ impl ConvLayerExecutor for ConvLayerCPU {
                 }
               }
             }
-            result.set(result_y, result_x, sum);
+            z1.set(result_y, result_x, sum);
           }
         }
-        let z1 = config.activation.forward(&result).unwrap();
-        result_channels.push(z1.clone());
-        z1_channels.push(Box::new(result));
+        let result = config.activation.forward(&z1).unwrap();
+        result_channels.push(result);
+        z1_channels.push(Box::new(z1));
       }
       result_final.push(result_channels); 
       z1_final.push(z1_channels); 
@@ -280,8 +280,13 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
     let mut result_final = Vec::new();
     for inp in input.iter() {
       let mut result = Tensor::new(result_height, result_width);
-      for i in (0 .. inp.rows() - filter_size.0).step_by(config.stride) {
-        for j in (0 .. inp.cols() - filter_size.1).step_by(config.stride) {
+
+      for result_y in 0 .. result_height {
+        for result_x in 0 .. result_width {
+
+          let i = result_y * config.stride;
+          let j = result_x * config.stride;
+
           let mut max = std::f32::NEG_INFINITY;
           for k in 0 .. filter_size.0 {
             for l in 0 .. filter_size.1 {
@@ -291,7 +296,7 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
               }
             }
           }
-          result.set(i/config.stride, j/config.stride, max);
+          result.set(result_y, result_x, max);
         }
       }
       result_final.push(Box::new(result));
