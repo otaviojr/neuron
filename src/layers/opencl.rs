@@ -143,6 +143,8 @@ impl ConvLayerOCL{
     }
     let filter_tensor = Tensor::from_data(filters.len() * filters[0].len(), filter_size.1, n_data);
 
+    Neuron::logger().debug(|| format!("OpenCL conv execute"));
+
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
       if let Some(ref queue) = matrix_ocl.get_ocl_queue() {
