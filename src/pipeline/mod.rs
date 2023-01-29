@@ -20,6 +20,9 @@ impl SequentialPieline {
   }
 }
 
+unsafe impl Send for SequentialPieline {}
+unsafe impl Sync for SequentialPieline {}
+
 impl Loader for SequentialPieline {
   fn get_name(&self) -> String {
     "SequentialPieline".to_owned()
