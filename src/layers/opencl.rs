@@ -161,7 +161,7 @@ impl ConvLayerOCL{
               Buffer::<cl_float>::create(matrix_ocl.get_ocl_context().unwrap(), CL_MEM_READ_ONLY, bias.len(), ptr::null_mut()).unwrap()
             };
         
-            let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut bias_buffer, CL_NON_BLOCKING, 0, &bias, &[]).unwrap() };
+            let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut bias_buffer, CL_NON_BLOCKING, 0, bias.as_ref(), &[]).unwrap() };
             let error = write_event.wait();
             if let Err(error) = error {
               Neuron::logger().error(|| format!("OpenCL Error: {:?}", error));
