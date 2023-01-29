@@ -26,14 +26,14 @@ __kernel void conv(__global float *input, __global float *filter, __global float
   result[gid] = sum;
 }
 
-__kernel void conv_full(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_filters, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+__kernel void conv_full(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
-  int result_filter_block_size = result_width * result_height * n_channels;
   int result_channel_size = result_width * result_height;
+  int result_filter_block_size = result_channel_size * n_channels;
 
-  int filter_block_size = filter_width * filter_height * n_channels;
   int filter_channel_size = filter_width * filter_height;
+  int filter_block_size = filter_channel_size * n_channels;
 
   int n_filter = gid / result_filter_block_size;
   int filter_pos = gid % result_filter_block_size;
@@ -50,9 +50,9 @@ __kernel void conv_full(__global float *input, __global float *filter, __global 
   float sum = bias[n_filter];
   for(int k = -padding; k < filter_height + padding; k++) {
     for(int l = -padding; l < filter_width + padding; l++) {
-      int filter_index = ((k + padding) * (filter_width + 2 * padding) + (l + padding)) + (n_filter * filter_block_size) + (n_channel * filter_channel_size);
-      int input_index = ((i + k) * input_width + (j + l)) + (n_channel * input_width * input_height);
       if (i + k >= 0 && j + l >= 0 && i + k < input_height && j + l < input_width) {
+        int filter_index = ((k + padding) * (filter_width + 2 * padding) + (l + padding)) + (n_filter * filter_block_size) + (n_channel * filter_channel_size);
+        int input_index = ((i + k) * input_width + (j + l)) + (n_channel * input_width * input_height);
         sum += input[input_index] * filter[filter_index];
       }
     }
@@ -182,8 +182,7 @@ impl ConvLayerOCL{
                   .set_arg(&*filter_buffer)
                   .set_arg(&bias_buffer)
                   .set_arg(&*result_buffer)
-                  .set_arg(&(filters.len() as cl_int))
-                  .set_arg(&(filters[0].len() as cl_int))
+                  .set_arg(&(input.len() as cl_int))
                   .set_arg(&(input[0].cols() as cl_int))
                   .set_arg(&(input[0].rows() as cl_int))
                   .set_arg(&(filter_size.1 as cl_int))
