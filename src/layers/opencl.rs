@@ -106,8 +106,12 @@ impl ConvLayerOCL {
 
     let executor = Neuron::matrix();
     if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      if let Ok(p) = Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "") {
-        program = Some(p);
+      match Program::create_and_build_from_source(&matrix_ocl.get_ocl_context().unwrap(), CONV_PROGRAM_SOURCE, "") {
+        Ok(p) => program = Some(p),
+        Err(error) => {
+          println!("OpenCL Error: {:?}", error);
+          std::process::exit(0);
+        }
       }
     }
     

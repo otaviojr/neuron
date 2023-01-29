@@ -111,20 +111,44 @@ impl MatrixMathOCL {
     let mut queue = None;
     let mut program = None;
 
-    if let Ok(device_id) = get_all_devices(CL_DEVICE_TYPE_GPU){
-      let d = Device::new(device_id.first().unwrap().clone());
+    match get_all_devices(CL_DEVICE_TYPE_GPU) {
+      Ok(device_id) => {
+        let d = Device::new(device_id.first().unwrap().clone());
 
-      Neuron::logger().info(|| format!("OpenCL device (MatrixMathOCL): {}", d.name().unwrap()));
+        Neuron::logger().info(|| format!("OpenCL device (MatrixMathOCL): {}", d.name().unwrap()));
 
-      if let Ok(c) = Context::from_device(&d) {
-        if let Ok(q) = CommandQueue::create_default_with_properties(&c, 0, 0) {
-          if let Ok(p) = Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
-            device= Some(d);
-            context = Some(c);
-            queue = Some(q);
-            program = Some(p);
+        match Context::from_device(&d) {
+          Ok(c) => {
+            match CommandQueue::create_default_with_properties(&c, 0, 0) {
+              Ok(q) => {
+                match Program::create_and_build_from_source(&c, PROGRAM_SOURCE, "") {
+                  Ok(p) => {
+                    device= Some(d);
+                    context = Some(c);
+                    queue = Some(q);
+                    program = Some(p);
+                  },
+                  Err(e) => {
+                    println!("OpenCL Error: {:?}", e);
+                    std::process::exit(0);                
+                  }
+                }
+              },
+              Err(e) => {
+                println!("OpenCL Error: {:?}", e);
+                std::process::exit(0);                
+              }
+            }
+          },
+          Err(e) => {
+            println!("OpenCL Error: {:?}", e);
+            std::process::exit(0);                
           }
         }
+      },
+      Err(e) => {
+        println!("OpenCL Error: {:?}", e);
+        std::process::exit(0);                
       }
     }
 
