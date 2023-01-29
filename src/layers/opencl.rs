@@ -294,7 +294,16 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
     let timer = Instant::now();
 
+    Neuron::logger().debug(|| format!("CNN Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len()));
+    Neuron::logger().debug(|| format!("CNN Filter (Forward) = {:?}", filters));
+
     let (z1, result) = self.do_full_conv(input, filters, filter_size, bias, config).unwrap();
+
+    Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", result[0].rows(), result[0].cols(), result.len()));
+    Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", result));
+
+    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ms", timer.elapsed().as_millis()));
+
     Some((input.clone(), z1, result))
 
     /*let result_height = (((input[0].rows() as f32 + 2.0* config.padding as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize;
@@ -352,8 +361,6 @@ impl ConvLayerExecutor for ConvLayerOCL {
     let last_input = input.clone();
     let last_z1 = z1.clone();
 
-    Neuron::logger().debug(|| format!("CNN Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len()));
-    Neuron::logger().debug(|| format!("CNN Filter (Forward) = {:?}", filters));
     Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
     Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", output));
 
