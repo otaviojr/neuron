@@ -5,13 +5,12 @@ pub mod cost;
 pub mod pipeline;
 pub mod util;
 
-use std::{sync::{Mutex, MutexGuard}, any::Any, io::{Write, Read}, fs::File};
+use std::{sync::{Mutex}, any::Any, io::{Write, Read}, fs::File};
 
-use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU, PoolingLayerCPU}, ConvLayerExecutor, PoolingLayerExecutor};
+use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU, PoolingLayerCPU, BatchNormalizationLayerCPU}, ConvLayerExecutor, PoolingLayerExecutor, BatchNormalizationLayerExecutor};
 use math::{Tensor, cpu::MatrixMathCPU};
 use once_cell::sync::Lazy;
 use util::Logger;
-use lazy_static::lazy_static;
 
 #[cfg(feature = "opencl")]
 use math::{opencl::MatrixMathOCL};
@@ -23,19 +22,21 @@ use crate::math::MatrixMathExecutorEnum;
 pub struct Executors {
   dense: Box<dyn DenseLayerExecutor + Send + Sync>,
   conv: Box<dyn ConvLayerExecutor + Send + Sync>,
-  pooling: Box<dyn PoolingLayerExecutor + Send + Sync>
+  pooling: Box<dyn PoolingLayerExecutor + Send + Sync>,
+  batchNorm: Box<dyn BatchNormalizationLayerExecutor + Send + Sync>
 }
 
 static mut MATRIX_EXECUTOR: Lazy<Box<MatrixMathExecutorEnum>> = Lazy::new(|| Box::new(MatrixMathExecutorEnum::CPU(MatrixMathCPU::init())));
 static mut EXECUTORS: Lazy<Box<Executors>> = Lazy::new(|| Box::new(Executors {
   dense: Box::new(DenseLayerCPU::init()),
   conv: Box::new(ConvLayerCPU::init()),
-  pooling: Box::new(PoolingLayerCPU::init())
+  pooling: Box::new(PoolingLayerCPU::init()),
+  batchNorm: Box::new(BatchNormalizationLayerCPU::init())
 }));
 
 static mut LOGGER: Lazy<Box<Logger>> = Lazy::new(||Box::new(Logger::new(util::LogLevel::Error)));
 
-pub trait Propagation: Any {
+pub trait Propagation: Send + Sync {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>>;
   fn backward(&mut self, input: &Vec<Box<Tensor>>, first: bool) -> Option<Vec<Box<Tensor>>>;
   fn as_loader(&self) -> Option<&dyn Loader>;
@@ -99,7 +100,8 @@ impl Neuron {
       let _ = std::mem::replace(&mut  *EXECUTORS.as_mut(), Executors {
         dense: Box::new(DenseLayerCPU::init()),
         conv: Box::new(ConvLayerOCL::init()),
-        pooling: Box::new(PoolingLayerOCL::init())
+        pooling: Box::new(PoolingLayerOCL::init()),
+        batchNorm: Box::new(BatchNormalizationLayerCPU::init())
       }); 
     }
   }

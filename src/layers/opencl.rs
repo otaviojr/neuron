@@ -279,9 +279,9 @@ impl ConvLayerExecutor for ConvLayerOCL {
 
         self.do_conv(inp, fc, b, &mut result, config);
 
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Activation) = {}ns", timer.elapsed().as_nanos()));
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Activation) = {}ns", timer.elapsed().as_millis()));
         let z1 = config.activation.forward(&mut result).unwrap();
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (After Activation) = {}ns", timer.elapsed().as_nanos()));
+        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (After Activation) = {}ns", timer.elapsed().as_millis()));
 
         result_channels.push(z1.clone());
         z1_channels.push(result);
@@ -290,7 +290,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
       z1_final.push(z1_channels); 
     }
 
-    Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ns", timer.elapsed().as_nanos()));
+    Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ns", timer.elapsed().as_millis()));
 
     let mut output = Vec::new();
     let mut z1 = Vec::new();
@@ -318,7 +318,7 @@ impl ConvLayerExecutor for ConvLayerOCL {
     Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
     Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", output));
 
-    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
+    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ns", timer.elapsed().as_millis()));
 
     Some((last_input, last_z1, output))*/
   }
@@ -425,7 +425,7 @@ impl PoolingLayerExecutor for PoolingLayerOCL {
     let result = self.do_pooling(input, filter_size, config).unwrap();
 
     Neuron::logger().debug(|| format!("PoolingLayer Output (Forward) = {:?}", result));
-    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
+    Neuron::logger().profiling(|| format!("PoolingLayer Forward Time = {}ns", timer.elapsed().as_millis()));
     Some((input.clone(), result))
   }
 

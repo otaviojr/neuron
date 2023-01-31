@@ -100,6 +100,9 @@ impl Propagation for DenseLayer {
   }
 }
 
+unsafe impl Send for DenseLayer {}
+unsafe impl Sync for DenseLayer {}
+
 #[derive(Clone)]
 pub struct ConvLayerConfig {
   pub activation: Arc<dyn Activation + Send + Sync>,
@@ -229,6 +232,9 @@ impl Propagation for ConvLayer {
 
 }
 
+unsafe impl Send for ConvLayer {}
+unsafe impl Sync for ConvLayer {}
+
 pub struct FlattenLayer {
   input_cols: usize,
   input_rows: usize,
@@ -271,7 +277,7 @@ impl Propagation for FlattenLayer {
     Neuron::logger().debug(|| format!("FlattenLayer Output Size (Forward) = {}x{}",t.rows(), t.cols()));
     Neuron::logger().debug(|| format!("FlattenLayer Output (Forward) = {:?}",t));
 
-    Neuron::logger().profiling(|| format!("FlattenLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
+    Neuron::logger().profiling(|| format!("FlattenLayer Forward Time = {}ns", timer.elapsed().as_millis()));
 
     Some(vec![Box::new(t)])
   }
@@ -297,7 +303,7 @@ impl Propagation for FlattenLayer {
     Neuron::logger().debug(|| format!("FlattenLayer Output Size (Backward) = {}x{}x{}",output[0].rows(), output[0].cols(),output.len()));
     Neuron::logger().debug(|| format!("FlattenLayer Output (Backward) = {:?}",output));
 
-    Neuron::logger().profiling(|| format!("FlattenLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
+    Neuron::logger().profiling(|| format!("FlattenLayer Backward Time = {}ns", timer.elapsed().as_millis()));
 
     Some(output)
   }
@@ -311,6 +317,9 @@ impl Propagation for FlattenLayer {
   }
 
 }
+
+unsafe impl Send for FlattenLayer {}
+unsafe impl Sync for FlattenLayer {}
 
 pub struct PoolingLayerConfig {
   pub stride: usize
@@ -364,3 +373,95 @@ impl Propagation for PoolingLayer {
 
 
 }
+
+unsafe impl Send for PoolingLayer {}
+unsafe impl Sync for PoolingLayer {}
+
+pub struct BatchNormalizationLayerConfig {
+  pub learn_rate: f32,
+  pub epsilon: f32,
+}
+
+pub struct BatchNormalizationLayer {
+  name: String,
+  config: BatchNormalizationLayerConfig,
+  beta: Vec<Box<Tensor>>,
+  gamma: Vec<Box<Tensor>>,
+  input_x_hat: Option<Vec<Box<Tensor>>>,
+}
+
+pub trait BatchNormalizationLayerExecutor {
+  fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
+  fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>>;
+}
+
+impl BatchNormalizationLayer {
+  pub fn new(name: String, nodes: usize, input_size: (usize,usize), config: BatchNormalizationLayerConfig) -> Self {
+    let mut gamma = Vec::new();
+    let mut beta = Vec::new();
+    for _ in 0 .. nodes {
+      gamma.push(Box::new(Tensor::randomHE(input_size.0,1, input_size.0)));
+      beta.push(Box::new(Tensor::randomHE(input_size.0,1, input_size.0)));
+    }
+    BatchNormalizationLayer {
+      name,
+      gamma,
+      beta,
+      config: config,
+      input_x_hat: None,
+    }
+  }
+}
+
+impl Loader for BatchNormalizationLayer {
+  fn get_name(&self) -> String {
+    self.name.clone()
+  }
+
+  fn get_weights(&self) -> Vec<Weigths> {
+    vec![Weigths {
+      name: self.name.clone(),
+      weights: self.gamma.clone(),
+      bias: self.beta.clone()
+    }]
+  }
+
+  fn set_weights(&mut self, weights: Vec<Weigths>) {
+    for w in weights {
+      if w.name == self.name {
+        self.gamma = w.weights.clone();
+        self.beta = w.bias.clone();
+      }
+    }
+  }
+}
+
+impl Propagation for BatchNormalizationLayer {
+  fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
+
+    if let Some((ret,x_hat)) = Neuron::executors().batchNorm.forward(input, &self.beta, &self.gamma, &self.config) {
+      self.input_x_hat = Some(x_hat);
+      return Some(ret);
+    }
+    None
+  }
+
+  fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
+    if let Some(input_x_hat) = self.input_x_hat.take() {
+      return Neuron::executors().batchNorm.backward(input, &mut self.beta, &mut self.gamma, &input_x_hat, &self.config);
+    }    
+    None
+  }
+  
+  
+  fn as_loader(&self) -> Option<&dyn Loader> {
+    Some(self)
+  }
+
+  fn as_mut_loader(&mut self) -> Option<&mut dyn Loader> {
+    Some(self)  
+  }
+}
+
+unsafe impl Send for BatchNormalizationLayer {}
+unsafe impl Sync for BatchNormalizationLayer {}
