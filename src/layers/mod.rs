@@ -387,12 +387,13 @@ pub struct BatchNormalizationLayer {
   config: BatchNormalizationLayerConfig,
   beta: Vec<Box<Tensor>>,
   gamma: Vec<Box<Tensor>>,
-  input_x_hat: Option<Vec<Box<Tensor>>>,
+  last_x_hat: Option<Vec<Box<Tensor>>>,
+  last_var: Option<Vec<Box<Tensor>>>,
 }
 
 pub trait BatchNormalizationLayerExecutor {
-  fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
-  fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>>;
+  fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
+  fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, var: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>>;
 }
 
 impl BatchNormalizationLayer {
@@ -408,7 +409,8 @@ impl BatchNormalizationLayer {
       gamma,
       beta,
       config: config,
-      input_x_hat: None,
+      last_x_hat: None,
+      last_var: None,
     }
   }
 }
@@ -439,16 +441,19 @@ impl Loader for BatchNormalizationLayer {
 impl Propagation for BatchNormalizationLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
 
-    if let Some((ret,x_hat)) = Neuron::executors().batchNorm.forward(input, &self.beta, &self.gamma, &self.config) {
-      self.input_x_hat = Some(x_hat);
+    if let Some((ret,x_hat, var)) = Neuron::executors().batchNorm.forward(input, &self.beta, &self.gamma, &self.config) {
+      self.last_x_hat = Some(x_hat);
+      self.last_var = Some(var);
       return Some(ret);
     }
     None
   }
 
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
-    if let Some(input_x_hat) = self.input_x_hat.take() {
-      return Neuron::executors().batchNorm.backward(input, &mut self.beta, &mut self.gamma, &input_x_hat, &self.config);
+    if let Some(last_x_hat) = self.last_x_hat.take() {
+      if let Some(last_var) = self.last_var.take() {
+        return Neuron::executors().batchNorm.backward(input, &mut self.beta, &mut self.gamma, &last_x_hat, &last_var,  &self.config);
+      }
     }    
     None
   }
