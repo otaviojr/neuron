@@ -376,27 +376,24 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
         sub_mean.push(sum / batch_size);
       }
       let mean_tensor = Tensor::from_data(inp.rows(), 1, sub_mean);
-      mean.push(mean_tensor);
 
       let mut sub_var = Vec::new();
       for i in 0 .. inp.rows() {
         let mut sum = 0.0;
         for j in 0 .. inp.cols() {
-          sum += ((inp.get(i,j) - mean[i].get(i,0)).powi(2)) / batch_size;
+          sum += ((inp.get(i,j) - mean_tensor.get(i,0)).powi(2)) / batch_size;
         }
         sub_var.push(sum);
       }
       let var_tensor = Tensor::from_data(inp.rows(), 1, sub_var);
-      var.push(var_tensor);
 
       let mut sub_x_hat = Vec::new();
       for i in 0 .. inp.rows() {
         for j in 0 .. inp.cols() {
-          sub_x_hat.push((inp.get(i,j) - mean[i].get(i,0)) / (var[i].get(i,0) - config.epsilon).sqrt());
+          sub_x_hat.push((inp.get(i,j) - mean_tensor.get(i,0)) / (var_tensor.get(i,0) - config.epsilon).sqrt());
         }
       }
       let x_hat_tensor = Tensor::from_data(inp.rows(), inp.cols(), sub_x_hat);
-      x_hat.push(Box::new(x_hat_tensor));
 
       let mut sub_result = Vec::new();
       for i in 0 .. inp.rows() {
@@ -404,6 +401,11 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
           sub_result.push(gamma[idx].get(i,0) * inp.get(i,j) + beta[idx].get(i,0));
         }
       }
+
+      mean.push(mean_tensor);
+      var.push(var_tensor);
+      x_hat.push(Box::new(x_hat_tensor));
+
       let result_tensor = Tensor::from_data(inp.rows(), inp.cols(), sub_result);
       result.push(Box::new(result_tensor));
 
