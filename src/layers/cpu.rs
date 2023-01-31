@@ -398,7 +398,7 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
       let mut sub_result = Vec::new();
       for i in 0 .. inp.rows() {
         for j in 0 .. inp.cols() {
-          sub_result.push(gamma[idx].get(i,0) * inp.get(i,j) + beta[idx].get(i,0));
+          sub_result.push(gamma[idx].get(i,0) * x_hat_tensor.get(i,j) + beta[idx].get(i,0));
         }
       }
 
@@ -418,16 +418,6 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
     let mut d_beta = Vec::new();
     let mut d_x_hat = Vec::new();
     for (idx,inp) in input.iter().enumerate() {
-      let mut sub_d_gama = Vec::new();
-      for i in 0 .. inp.rows() {
-        let mut sum = 0.0;
-        for j in 0 .. inp.cols() {
-          sum += inp.get(i,j) * gamma[idx].get(i,0);
-        }
-        sub_d_gama.push(sum / batch_size);
-      }
-      let d_gama_tensor = Tensor::from_data(inp.rows(), 1, sub_d_gama);
-
       let mut sub_d_beta = Vec::new();
       for i in 0 .. inp.rows() {
         let mut sum = 0.0;
@@ -438,10 +428,20 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
       }
       let d_beta_tensor = Tensor::from_data(inp.rows(), 1, sub_d_beta);
 
+      let mut sub_d_gama = Vec::new();
+      for i in 0 .. inp.rows() {
+        let mut sum = 0.0;
+        for j in 0 .. inp.cols() {
+          sum += inp.get(i,j) * gamma[idx].get(i,0);
+        }
+        sub_d_gama.push(sum / batch_size);
+      }
+      let d_gama_tensor = Tensor::from_data(inp.rows(), 1, sub_d_gama);
+
       let mut sub_d_x_hat = Vec::new();
       for i in 0 .. inp.rows() {
         for j in 0 .. inp.cols() {
-          sub_d_x_hat.push((inp.get(i,j) * d_gama_tensor.get(i,0) * input_x_hat[idx].get(i,j)) / batch_size);
+          sub_d_x_hat.push((inp.get(i,j) + d_gama_tensor.get(i,0) + input_x_hat[idx].get(i,j)) / batch_size);
         }
       }
       let d_x_hat_tensor = Tensor::from_data(inp.rows(), inp.cols(), sub_d_x_hat);
