@@ -360,6 +360,12 @@ impl BatchNormalizationLayerCPU {
 
 impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
   fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+
+    let timer = Instant::now();
+
+    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input (Forward) = {:?}", input));
+    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+
     let batch_size = input[0].cols() as f32;
 
     let mut mean = Vec::new();
@@ -381,7 +387,7 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
       for i in 0 .. inp.rows() {
         let mut sum = 0.0;
         for j in 0 .. inp.cols() {
-          sum += ((inp.get(i,j) - mean_tensor.get(i,0)).powi(2));
+          sum += (inp.get(i,j) - mean_tensor.get(i,0)).powi(2);
         }
         sub_var.push(sum/ batch_size);
       }
@@ -409,6 +415,10 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
       let result_tensor = Tensor::from_data(inp.rows(), inp.cols(), sub_result);
       result.push(Box::new(result_tensor));
     }
+
+    Neuron::logger().debug(|| format!("BatchNormalizationLayer Output (Forward) = {:?}", result));
+    Neuron::logger().profiling(|| format!("BatchNormalizationLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
+
     Some((result,x_hat, var))
   }
 
