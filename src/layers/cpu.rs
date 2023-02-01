@@ -413,6 +413,12 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
   }
 
   fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, var: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>> {
+
+    let timer = Instant::now();
+
+    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input (Backward) = {:?}", input));
+    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+
     let batch_size = input[0].cols() as f32;
     let mut d_gama = Vec::new();
     let mut d_beta = Vec::new();
@@ -469,6 +475,11 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
     beta.iter_mut().zip(d_beta.iter()).for_each(|(b,d_b)| {
       *b = Box::new(b.sub(&d_b.mul_value(config.learn_rate).unwrap()).unwrap());
     });
+
+    Neuron::logger().debug(|| format!("PoolingLayer Output (Backward) = {:?}", d_x_hat));
+    Neuron::logger().debug(|| format!("PoolingLayer Output size (Backward) = {}x{}x{}", d_x_hat[0].rows(), d_x_hat[0].cols(), d_x_hat.len()));
+
+    Neuron::logger().profiling(|| format!("PoolingLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
 
     Some(d_x_hat)
   }
