@@ -213,11 +213,13 @@ impl Tensor {
   }
 
   //Get a value from the tensor
+  #[inline(always)]
   pub fn get(&self, row: usize, col: usize) -> f32 {
     self.data[row * self.cols + col]
   }
 
   //Set a tensor value
+  #[inline(always)]
   pub fn set(&mut self, row: usize, col: usize, value: f32) {
     self.data[row * self.cols + col] = value;
   }
