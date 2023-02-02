@@ -26,19 +26,16 @@ impl MatrixMathExecutor for MatrixMathCPU {
       result
   }
 
-  fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor {
+  fn sub(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);
 
-      // Create a new tensor to store the result
-      let mut result = Tensor::new(a.rows, a.cols);
-
       // Perform element-wise subtraction
       for i in 0..a.data.len() {
-          result.data[i] = a.data[i] - b.data[i];
+          a.data[i] = a.data[i] - b.data[i];
       }
 
-      result
+      a.clone()
   }
 
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {

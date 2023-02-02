@@ -261,12 +261,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
       result
   }
 
-  fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor {
+  fn sub(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
     // Check that the tensors are the same size
     assert!(a.rows == b.rows && a.cols == b.cols);
-
-    // Create a new tensor to store the result
-    let mut result = Tensor::new(a.rows, a.cols);
 
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
@@ -276,11 +273,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
         {
           let a_ocl = a.get_ocl_buffer();
           let b_ocl = b.get_ocl_buffer();
-          let r_ocl = result.get_ocl_buffer();
   
           let ab = a_ocl.lock().unwrap();
           let bb = b_ocl.lock().unwrap();
-          let rb = r_ocl.lock().unwrap();
   
           kernel = Kernel::create(&program, KERNEL_MATRIX_SUB_NAME).unwrap();
   
@@ -288,19 +283,18 @@ impl MatrixMathExecutor for MatrixMathOCL {
             ExecuteKernel::new(&kernel)
                 .set_arg(&*ab)
                 .set_arg(&*bb)
-                .set_arg(&*rb)
-                .set_arg(&(result.cols as cl_int))
-                .set_global_work_size(result.cols * result.rows)
+                .set_arg(&(a.cols as cl_int))
+                .set_global_work_size(a.cols * a.rows)
                 .enqueue_nd_range(&queue).unwrap()
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(events);
+        a.sync_ocl_cpu_wait(events);
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL sub matrix = {:?}", result));
-    result
+    Neuron::logger().debug(|| format!("OpenCL sub matrix = {:?}", a));
+    a.clone()
   }
 
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor {

@@ -17,7 +17,7 @@ use self::{cpu::MatrixMathCPU, opencl::OCL};
 
 pub trait MatrixMathExecutor: Any + Send + Sync {
   fn add(&self, a: &Tensor, b: &Tensor) -> Tensor;
-  fn sub(&self, a: &Tensor, b: &Tensor) -> Tensor;
+  fn sub(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn mul_wise(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor;
@@ -270,9 +270,9 @@ impl Tensor {
     Err(format!("No executor found"))
   }
 
-  pub fn add(&self, other: &Tensor) -> Result<Tensor, String> {
+  pub fn add(&mut self, other: &Tensor) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
-      return Ok(executor.add(&self, other));
+      return Ok(executor.add(self, other));
     }
     Err(format!("No executor found"))
   }
@@ -298,9 +298,9 @@ impl Tensor {
     Err(format!("No executor found"))
   }
 
-  pub fn sub(&self, other: &Tensor) -> Result<Tensor, String> {
+  pub fn sub(&mut self, other: &Tensor) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
-      return Ok(executor.sub(&self, other));
+      return Ok(executor.sub(self, other));
     }
     Err(format!("No executor found"))
   }

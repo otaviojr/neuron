@@ -24,7 +24,7 @@ impl DenseLayerExecutor for DenseLayerCPU {
       Neuron::logger().debug(|| format!("Layer weights = {:?}", weights));
       Neuron::logger().debug(|| format!("DenseLayer Input (Forward) = {:?}", input));
 
-      let z1_1 = weights.mul(&input).unwrap();
+      let mut z1_1 = weights.mul(&input).unwrap();
 
       Neuron::logger().profiling(|| format!("DenseLayer Forward Time (weights mul) = {}ns", timer.elapsed().as_millis()));
 
