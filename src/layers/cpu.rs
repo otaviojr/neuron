@@ -200,9 +200,10 @@ impl ConvLayerExecutor for ConvLayerCPU {
 
     for (((f,inp), b),z1) in filters.iter_mut().zip(input.iter()).zip(bias.iter()).zip(last_z1.iter()) {
       let mut dw_channel = Vec::new();
-      let row_pad = (forward_input[0].rows() - inp.rows())/2;
-      let col_pad = (forward_input[0].cols() - inp.cols())/2;
-      let mut output = inp.pad(row_pad, col_pad).unwrap();
+      //let row_pad = (forward_input[0].rows() - inp.rows())/2;
+      //let col_pad = (forward_input[0].cols() - inp.cols())/2;
+      //let mut output = inp.pad(row_pad, col_pad).unwrap();
+      let mut output = Tensor::new(forward_input[0].rows(), forward_input[0].cols()).zero().unwrap();
       let mut db = 0.0;
       for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 

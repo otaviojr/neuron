@@ -4,7 +4,7 @@ use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
 const CONV_PROGRAM_SOURCE: &str = r#"
-__kernel void conv(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+__kernel void conv(__global float *input, __global float *forward_input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
   int result_channel_size = result_width * result_height;
@@ -38,7 +38,7 @@ __kernel void conv(__global float *input, __global float *filter, __global float
   result[gid] = sum;
 }
 
-__kernel void conv_back(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+__kernel void conv_back(__global float *input, __global float *forward_input, __global float *dz, __global float *dw, __global float *db, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
   int result_channel_size = result_width * result_height;
@@ -59,6 +59,16 @@ __kernel void conv_back(__global float *input, __global float *filter, __global 
   int i = gid_y * stride;
   int j = gid_x * stride;
 
+  for(int k = -padding; k < filter_height + padding; k++) {
+    for(int l = -padding; l < filter_width + padding; l++) {
+      int filter_index = ((k + padding) * (filter_width + 2 * padding) + (l + padding)) + (n_filter * filter_block_size) + (n_channel * filter_channel_size);
+      int input_index = ((i + k) * input_width + (j + l)) + (n_channel * input_width * input_height);
+      result[gid] += filter[filter_index] * dz[input_index];
+      dw[filter_index] = forward_input[input_index] * dz[input_index];
+    }
+  }
+
+  db[n_filter] += dz[gid];
 }
 "#;
 
@@ -263,6 +273,10 @@ impl ConvLayerExecutor for ConvLayerOCL {
   }
 
   fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f32>, activate: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
+
+    let result_size = (forward_input[0].rows() * filters.len() * filters[0].len(), forward_input[0].cols());
+    let mut result = Tensor::new(result_size.0, result_size.1);
+
     self.cpu.backward(input, forward_input, last_z1, filters, filter_size, bias, activate, config)
   }
 }
