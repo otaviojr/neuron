@@ -111,7 +111,7 @@ impl MatrixMathExecutor for MatrixMathCPU {
         }
     }
 
-    a.clone()
+    a.reshape(a.cols, a.rows).clone()
   }
 
   fn add_value(&self, a: &mut Tensor, value: f32) -> Tensor {

@@ -232,6 +232,12 @@ impl Tensor {
     self.data.as_mut()
   }
 
+  pub fn reshape(&mut self, rows: usize, cols: usize) -> Tensor {
+    self.rows = rows;
+    self.cols = cols;
+    self.clone()
+  }
+
   // Transpose the tensor
   pub fn transpose(&mut self) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {

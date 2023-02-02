@@ -462,7 +462,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     }
 
     Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", a));
-    a.clone()
+    a.reshape(a.cols, a.rows).clone()
   }
 
   fn add_value(&self, a: &mut Tensor, value: f32) -> Tensor {
