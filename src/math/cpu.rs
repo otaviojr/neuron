@@ -11,19 +11,16 @@ impl MatrixMathCPU {
 
 impl MatrixMathExecutor for MatrixMathCPU {
 
-  fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
+  fn add(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);
 
-      // Create a new tensor to store the result
-      let mut result = Tensor::new(a.rows, a.cols);
-
       // Perform element-wise addition
       for i in 0..a.data.len() {
-          result.data[i] = a.data[i] + b.data[i];
+          a.data[i] = a.data[i] + b.data[i];
       }
 
-      result
+      a.clone()
   }
 
   fn sub(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
@@ -74,19 +71,16 @@ impl MatrixMathExecutor for MatrixMathCPU {
     a.clone()
   }
 
-  fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
+  fn div(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);
 
-      // Create a new tensor to store the result
-      let mut result = Tensor::new(a.rows, a.cols);
-
       // Perform element-wise division
       for i in 0..a.data.len() {
-          result.data[i] = a.data[i] / b.data[i];
+          a.data[i] = a.data[i] / b.data[i];
       }
 
-      result
+      a.clone()
   }
 
   fn dot(&self, a: &Tensor, b: &Tensor) -> f32 {
@@ -105,18 +99,19 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
-  fn transpose(&self, a: &Tensor) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::new(a.cols, a.rows);
-
+  fn transpose(&self, a: &mut Tensor) -> Tensor {
     // Transpose the matrix
     for i in 0..a.rows {
         for j in 0..a.cols {
-            result.set(j, i, a.get(i, j));
+            if i < j {
+                let temp = a.get(i, j);
+                a.set(i, j, a.get(j, i));
+                a.set(j, i, temp);
+            }
         }
     }
 
-    result
+    a.clone()
   }
 
   fn add_value(&self, a: &mut Tensor, value: f32) -> Tensor {

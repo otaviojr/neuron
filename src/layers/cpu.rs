@@ -74,7 +74,8 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       Neuron::logger().debug(|| format!("dz size = {}x{}", dz.rows(), dz.cols()));
 
-      let forward_input = &forward_input[0];
+      let mut fi = forward_input[0].clone();
+      let mut forward_input = fi.as_mut();
 
       Neuron::logger().debug(|| format!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols()));
 

@@ -16,13 +16,13 @@ use opencl::{TensorOCL,MatrixMathOCL};
 use self::{cpu::MatrixMathCPU, opencl::OCL};
 
 pub trait MatrixMathExecutor: Any + Send + Sync {
-  fn add(&self, a: &Tensor, b: &Tensor) -> Tensor;
+  fn add(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
   fn sub(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
   fn mul(&self, a: &Tensor, b: &Tensor) -> Tensor;
   fn mul_wise(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
-  fn div(&self, a: &Tensor, b: &Tensor) -> Tensor;
+  fn div(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
   fn dot(&self, a: &Tensor, b: &Tensor) -> f32;
-  fn transpose(&self, a: &Tensor) -> Tensor;
+  fn transpose(&self, a: &mut Tensor) -> Tensor;
 
   fn add_value(&self, a: &mut Tensor, b: f32) -> Tensor;
   fn div_value(&self, a: &mut Tensor, b: f32) -> Tensor;
@@ -233,7 +233,7 @@ impl Tensor {
   }
 
   // Transpose the tensor
-  pub fn transpose(&self) -> Result<Tensor, String> {
+  pub fn transpose(&mut self) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
       return Ok(executor.transpose(self));
     }
@@ -284,9 +284,9 @@ impl Tensor {
     Err(format!("No executor found"))
   }
 
-  pub fn div(&self, other: &Tensor) -> Result<Tensor, String> {
+  pub fn div(&mut self, other: &Tensor) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
-      return Ok(executor.div(&self, other));
+      return Ok(executor.div(self, other));
     }
     Err(format!("No executor found"))
   }

@@ -55,13 +55,16 @@ __kernel void mul(__global float *a, __global float *b, __global float *c, int w
   c[gid] = sum;
 }
 
-__kernel void transpose(__global float *a, __global float *b, int width, int height) {
+__kernel void transpose(__global float *a, int width, int height) {
   int gid = get_global_id(0);
-
   int row = gid / width;
   int col = gid % width;
-  
-  b[col * height + row] = a[gid];
+
+  if (row < col) {
+    int temp = a[row * width + col];
+    a[row * width + col] = a[col * width + row];
+    a[col * width + row] = temp;
+  }
 }
 
 __kernel void add_value(__global float *a, float value) {
@@ -219,12 +222,9 @@ impl MatrixMathOCL {
 }
 
 impl MatrixMathExecutor for MatrixMathOCL {  
-  fn add(&self, a: &Tensor, b: &Tensor) -> Tensor {
+  fn add(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);
-
-      // Create a new tensor to store the result
-      let mut result = Tensor::new(a.rows, a.cols);
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
@@ -234,11 +234,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
           {
             let a_ocl = a.get_ocl_buffer();
             let b_ocl = b.get_ocl_buffer();
-            let r_ocl = result.get_ocl_buffer();
   
             let ab = a_ocl.lock().unwrap();
             let bb = b_ocl.lock().unwrap();
-            let rb = r_ocl.lock().unwrap();
   
             kernel = Kernel::create(&program, KERNEL_MATRIX_ADD_NAME).unwrap();
   
@@ -246,19 +244,18 @@ impl MatrixMathExecutor for MatrixMathOCL {
               ExecuteKernel::new(&kernel)
                   .set_arg(&*ab)
                   .set_arg(&*bb)
-                  .set_arg(&*rb)
-                  .set_arg(&(result.cols as cl_int))
-                  .set_global_work_size(result.cols * result.rows)
+                  .set_arg(&(a.cols as cl_int))
+                  .set_global_work_size(a.cols * a.rows)
                   .enqueue_nd_range(&queue).unwrap()
             };  
             events.push(kernel_event.get());
           };
-          result.sync_ocl_cpu_wait(events);
+          a.sync_ocl_cpu_wait(events);
         }
       }
 
-      Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", result));
-      result
+      Neuron::logger().debug(|| format!("OpenCL add matrix = {:?}", a));
+      a.clone()
   }
 
   fn sub(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
@@ -387,12 +384,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
     a.clone()
   }
 
-  fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
+  fn div(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
       // Check that the tensors are the same size
       assert!(a.rows == b.rows && a.cols == b.cols);
-
-      // Create a new tensor to store the result
-      let mut result = Tensor::new(a.rows, a.cols);
 
       if let Some(ref queue) = self.queue {
         if let Some(ref program) = self.program {
@@ -402,11 +396,9 @@ impl MatrixMathExecutor for MatrixMathOCL {
           {
             let a_ocl = a.get_ocl_buffer();
             let b_ocl = b.get_ocl_buffer();
-            let r_ocl = result.get_ocl_buffer();
   
             let ab = a_ocl.lock().unwrap();
             let bb = b_ocl.lock().unwrap();
-            let rb = r_ocl.lock().unwrap();
   
             kernel = Kernel::create(&program, KERNEL_MATRIX_DIV_NAME).unwrap();
   
@@ -414,18 +406,17 @@ impl MatrixMathExecutor for MatrixMathOCL {
               ExecuteKernel::new(&kernel)
                   .set_arg(&*ab)
                   .set_arg(&*bb)
-                  .set_arg(&*rb)
-                  .set_arg(&(result.cols as cl_int))
-                  .set_global_work_size(result.cols * result.rows)
+                  .set_arg(&(a.cols as cl_int))
+                  .set_global_work_size(a.cols * a.rows)
                   .enqueue_nd_range(&queue).unwrap()
             };  
             events.push(kernel_event.get());
           };
-          result.sync_ocl_cpu_wait(events);
+          a.sync_ocl_cpu_wait(events);
         }
       }
-      Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", result));
-      result
+      Neuron::logger().debug(|| format!("OpenCL div matrix = {:?}", a));
+      a.clone()
   }
 
   fn dot(&self, a: &Tensor, b: &Tensor) -> f32 {
@@ -444,10 +435,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     result
   }
 
-  fn transpose(&self, a: &Tensor) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::new(a.cols, a.rows);
-
+  fn transpose(&self, a: &mut Tensor) -> Tensor {
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {
         let mut events:Vec<cl_event> = Vec::default();
@@ -455,17 +443,13 @@ impl MatrixMathExecutor for MatrixMathOCL {
         let kernel_event;
         {
           let a_ocl = a.get_ocl_buffer();
-          let r_ocl = result.get_ocl_buffer();
-  
           let ab = a_ocl.lock().unwrap();
-          let rb = r_ocl.lock().unwrap();
   
           kernel = Kernel::create(&program, KERNEL_MATRIX_TRANSPOSE_NAME).unwrap();
   
           kernel_event = unsafe {
             ExecuteKernel::new(&kernel)
                 .set_arg(&*ab)
-                .set_arg(&*rb)
                 .set_arg(&(a.cols as cl_int))
                 .set_arg(&(a.rows as cl_int))
                 .set_global_work_size(a.cols * a.rows)
@@ -473,12 +457,12 @@ impl MatrixMathExecutor for MatrixMathOCL {
           };  
           events.push(kernel_event.get());
         };
-        result.sync_ocl_cpu_wait(events);
+        a.sync_ocl_cpu_wait(events);
       }
     }
 
-    Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", result));
-    result
+    Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", a));
+    a.clone()
   }
 
   fn add_value(&self, a: &mut Tensor, value: f32) -> Tensor {
