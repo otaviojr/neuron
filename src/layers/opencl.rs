@@ -39,6 +39,26 @@ __kernel void conv(__global float *input, __global float *filter, __global float
 }
 
 __kernel void conv_back(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+  int gid = get_global_id(0);
+
+  int result_channel_size = result_width * result_height;
+  int result_filter_block_size = result_channel_size * n_channels;
+
+  int filter_channel_size = filter_width * filter_height;
+  int filter_block_size = filter_channel_size * n_channels;
+
+  int n_filter = gid / result_filter_block_size;
+  int filter_pos = gid % result_filter_block_size;
+
+  int n_channel = filter_pos / result_channel_size;
+  int channel_pos = filter_pos % result_channel_size;
+
+  int gid_y = channel_pos / result_width;
+  int gid_x = channel_pos % result_width;
+
+  int i = gid_y * stride;
+  int j = gid_x * stride;
+
 }
 "#;
 
@@ -113,7 +133,6 @@ impl ConvLayerOCL{
     let input_size = (input[0].rows() * input.len(), input[0].cols());
     
     let mut result = Tensor::new(result_size.0 * filters.len() * filters[0].len(), result_size.1);
-
 
     let mut data = Vec::new();
     for i in input.iter() {
