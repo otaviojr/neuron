@@ -208,7 +208,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
       for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
         let dz = inp.clone().as_mut().mul_wise(&config.activation.backward(&z1).unwrap()).unwrap();
-        let mut dw = Tensor::new(fc.rows(), fc.cols()).zero();
+        let mut dw = Tensor::new(fc.rows(), fc.cols()).zero().unwrap();
 
         for i in (0..fi.rows()-filter_size.0).step_by(config.stride) {
           for j in (0 .. fi.cols()-filter_size.1).step_by(config.stride) {
