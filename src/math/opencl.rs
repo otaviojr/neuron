@@ -27,14 +27,14 @@ __kernel void add_bulk(__global float *a, __global float *b, int blocks, int len
   b[result_index] = sum;
 }
 
-__kernel void sub(__global float *a, __global float *b, __global float *c, int width) {
+__kernel void sub(__global float *a, __global float *b, int width) {
   int gid = get_global_id(0);
-  c[gid] = a[gid] - b[gid];
+  a[gid] = a[gid] - b[gid];
 }
 
-__kernel void div(__global float *a, __global float *b, __global float *c, int width) {
+__kernel void div(__global float *a, __global float *b, int width) {
   int gid = get_global_id(0);
-  c[gid] = a[gid] / b[gid];
+  a[gid] = a[gid] / b[gid];
 }
 
 __kernel void mul_wise(__global float *a, __global float *b, int width) {
@@ -467,7 +467,7 @@ impl MatrixMathExecutor for MatrixMathOCL {
     Neuron::logger().debug(|| format!("OpenCL transpose matrix = {:?}", result));
     result
   }
-  
+
   fn add_value(&self, a: &mut Tensor, value: f32) -> Tensor {
     if let Some(ref queue) = self.queue {
       if let Some(ref program) = self.program {

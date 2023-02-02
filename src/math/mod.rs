@@ -47,7 +47,7 @@ unsafe impl Send for MatrixMathExecutorEnum {}
 unsafe impl Sync for MatrixMathExecutorEnum {}
 
 impl MatrixMathExecutorEnum {
-  pub fn getExecutor(&self) -> Option<Box<&dyn MatrixMathExecutor>> {
+  pub fn get_executor(&self) -> Option<Box<&dyn MatrixMathExecutor>> {
     match self {
       MatrixMathExecutorEnum::OCL(matrix_ocl) => Some(Box::new(matrix_ocl)),
       MatrixMathExecutorEnum::CPU(matrix_cpu) => Some(Box::new(matrix_cpu)),
@@ -240,7 +240,7 @@ impl Tensor {
 
   // Transpose the tensor
   pub fn transpose(&self) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.transpose(self));
     }
     Err(format!("No executor found"))
@@ -248,21 +248,21 @@ impl Tensor {
 
   // Add a number to all rows and columns in the tensor
   pub fn add_value(&mut self, value: f32) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.add_value(self, value));
     }
     Err(format!("No executor found"))
   }
 
   pub fn div_value(&mut self, value: f32) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.div_value(self, value));
     }
     Err(format!("No executor found"))
   }
 
   pub fn mul_value(&mut self, value: f32) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.mul_value(self, value));
     }
     Err(format!("No executor found"))
@@ -270,70 +270,70 @@ impl Tensor {
 
   //Dot Product between two tensors
   pub fn dot(&self, other: &Tensor) -> Result<f32, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.dot(&self, other));
     }
     Err(format!("No executor found"))
   }
 
   pub fn add(&mut self, other: &Tensor) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.add(self, other));
     }
     Err(format!("No executor found"))
   }
 
   pub fn mul(&self, other: &Tensor) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.mul(&self, other));
     }
     Err(format!("No executor found"))
   }
 
   pub fn div(&mut self, other: &Tensor) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.div(self, other));
     }
     Err(format!("No executor found"))
   }
 
   pub fn mul_wise(&mut self, other: &Tensor) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.mul_wise(self, other));
     }
     Err(format!("No executor found"))
   }
 
   pub fn sub(&mut self, other: &Tensor) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.sub(self, other));
     }
     Err(format!("No executor found"))
   }
 
   pub fn sum_row(&self) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.sum_row(&self));
     }
     Err(format!("No executor found"))
   }
 
   pub fn broadcast(&self, rows: usize, cols: usize) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.broadcast(&self, rows, cols));
     }
     Err(format!("No executor found"))
   }
 
   pub fn pad(&self, pad_row: usize, pad_col: usize) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.pad(&self, pad_row, pad_col));
     }
     Err(format!("No executor found"))
   }
 
   pub fn zero(&mut self) -> Result<Tensor, String> {
-    if let Some(executor) = Neuron::matrix().getExecutor() {
+    if let Some(executor) = Neuron::matrix().get_executor() {
       return Ok(executor.zero(self));
     }
     Err(format!("No executor found"))
