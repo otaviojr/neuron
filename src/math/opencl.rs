@@ -678,7 +678,7 @@ impl TensorOCL {
         std::process::exit(0);
       }    
   
-      //Neuron::logger().profiling(|| format!("OpenCL Tensor (init) = {}ns", timer.elapsed().as_millis()));
+      Neuron::logger().profiling(|| format!("OpenCL Tensor (init) = {}ns", timer.elapsed().as_millis()));
 
       return Some(TensorOCL {
         buffer: Arc::new(Mutex::new(ocl_buffer)),
