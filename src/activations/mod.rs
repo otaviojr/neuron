@@ -128,7 +128,7 @@ impl Activation for SoftMax {
 
   fn backward(&self, value: &Tensor) -> Result<Tensor, String> {
     let softmax = self.forward(value)?;
-    let softmax_1 = Tensor::from_data(softmax.rows(), softmax.cols(), vec![1.0; softmax.rows()*softmax.cols()]);
+    let mut softmax_1 = Tensor::from_data(softmax.rows(), softmax.cols(), vec![1.0; softmax.rows()*softmax.cols()]);
     
     let mut ret = softmax.mul(&softmax_1.sub(&softmax)?)?;
     
