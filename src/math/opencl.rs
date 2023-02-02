@@ -5,9 +5,9 @@ use crate::Neuron;
 use super::{MatrixMathExecutor, Tensor, MatrixMathExecutorEnum};
 
 const PROGRAM_SOURCE: &str = r#"
-__kernel void add(__global float *a, __global float *b, __global float *c, int width) {
+__kernel void add(__global float *a, __global float *b, int width) {
   int gid = get_global_id(0);
-  c[gid] = a[gid] + b[gid];
+  a[gid] = a[gid] + b[gid];
 }
 
 __kernel void add_bulk(__global float *a, __global float *b, int blocks, int len, int width, int height) {
