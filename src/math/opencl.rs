@@ -37,9 +37,9 @@ __kernel void div(__global float *a, __global float *b, __global float *c, int w
   c[gid] = a[gid] / b[gid];
 }
 
-__kernel void mul_wise(__global float *a, __global float *b, __global float *c, int width) {
+__kernel void mul_wise(__global float *a, __global float *b, int width) {
   int gid = get_global_id(0);
-  c[gid] = a[gid] * b[gid];
+  a[gid] = a[gid] * b[gid];
 }
 
 __kernel void mul(__global float *a, __global float *b, __global float *c, int width_a, int width_b, int width_c) {
