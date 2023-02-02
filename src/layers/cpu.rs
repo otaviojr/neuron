@@ -222,7 +222,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
         }
         dw_channel.push(dw);
       }
-      final_output.push(Box::new(config.activation.backward(&output.add_value(*b).unwrap()).unwrap()));
+      final_output.push(Box::new(&output.add_value(*b).unwrap()));
       final_db.push(db);
       final_dw.push(dw_channel);
     }

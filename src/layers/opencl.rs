@@ -4,29 +4,7 @@ use crate::{math::{Tensor, opencl::OCL, MatrixMathExecutorEnum}, Neuron};
 use super::{ConvLayerExecutor, cpu::{ConvLayerCPU, PoolingLayerCPU}, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig};
 
 const CONV_PROGRAM_SOURCE: &str = r#"
-__kernel void conv(__global float *input, __global float *filter, __global float *result, float bias, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
-  int gid = get_global_id(0);
-
-  int gid_y = gid / result_width;
-  int gid_x = gid % result_width;
-
-  int i = gid_y * stride;
-  int j = gid_x * stride;
-
-  float sum = bias;
-  for(int k = -padding; k < filter_height + padding; k++) {
-    for(int l = -padding; l < filter_width + padding; l++) {
-      int filter_index = (k + padding) * (filter_width + 2 * padding) + (l + padding);
-      int input_index = (i + k) * input_width + (j + l);
-      if (i + k >= 0 && j + l >= 0 && i + k < input_height && j + l < input_width) {
-        sum += input[input_index] * filter[filter_index];
-      }
-    }
-  }
-  result[gid] = sum;
-}
-
-__kernel void conv_full(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
+__kernel void conv(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
   int gid = get_global_id(0);
 
   int result_channel_size = result_width * result_height;
@@ -58,6 +36,9 @@ __kernel void conv_full(__global float *input, __global float *filter, __global 
     }
   }
   result[gid] = sum;
+}
+
+__kernel void conv_back(__global float *input, __global float *filter, __global float *bias, __global float *result, int n_channels, int input_width, int input_height, int filter_width, int filter_height, int result_width, int result_height, int stride, int padding) {
 }
 "#;
 
@@ -91,7 +72,7 @@ __kernel void pooling(__global float *input, __global float *result, int input_w
 }
 "#;
 
-const KERNEL_FULL_CONV_NAME: &str = "conv_full";
+const KERNEL_CONV_NAME: &str = "conv";
 const KERNEL_POOLING_NAME: &str = "pooling";
 
 pub struct ConvLayerOCL {
@@ -122,7 +103,7 @@ impl ConvLayerOCL {
 }
 
 impl ConvLayerOCL{
-  fn do_full_conv(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f32>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+  fn do_conv(&self, input: &Vec<Box<Tensor>>, filters: Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: Vec<f32>, config: &ConvLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
     
     let timer = Instant::now();
     
@@ -169,7 +150,7 @@ impl ConvLayerOCL{
         
             let write_event = unsafe { matrix_ocl.get_ocl_queue().unwrap().enqueue_write_buffer(&mut bias_buffer, CL_NON_BLOCKING, 0, &bias, &[]).unwrap() };
       
-            kernel = Kernel::create(&program, KERNEL_FULL_CONV_NAME).unwrap();
+            kernel = Kernel::create(&program, KERNEL_CONV_NAME).unwrap();
   
             kernel_event = unsafe {
               ExecuteKernel::new(&kernel)
@@ -253,74 +234,13 @@ impl ConvLayerExecutor for ConvLayerOCL {
     Neuron::logger().debug(|| format!("CNN Filter Size (Forward) = {}x{}x{}", filters[0][0].rows(), filters[0][0].cols(), filters[0].len()));
     Neuron::logger().debug(|| format!("CNN Filter (Forward) = {:?}", filters));
 
-    let (z1, result) = self.do_full_conv(input, filters, filter_size, bias, config).unwrap();
+    let (z1, result) = self.do_conv(input, filters, filter_size, bias, config).unwrap();
 
     Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", result[0].rows(), result[0].cols(), result.len()));
     Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", result));
 
     Some((input.clone(), z1, result))
 
-    /*let result_height = (((input[0].rows() as f32 + 2.0* config.padding as f32 - filter_size.0 as f32)/config.stride as f32) + 1.0).floor() as usize;
-    let result_width = (((input[0].cols() as f32 + 2.0* config.padding as f32 - filter_size.1 as f32)/config.stride as f32) + 1.0).floor() as usize;
-
-
-    let mut result_final = Vec::new();
-    let mut z1_final = Vec::new();
-
-    Neuron::logger().debug(|| format!("CNN Input Size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
-    Neuron::logger().debug(|| format!("CNN Input (Forward) = {:?}", input));
-
-    for (f,b) in filters.iter().zip(bias.iter()) {
-      let mut result_channels = Vec::new();
-      let mut z1_channels = Vec::new();
-      
-      for (inp,fc) in input.iter().zip(f.iter()) {
-        let mut result = Tensor::new(result_height, result_width);
-
-        self.do_conv(inp, fc, b, &mut result, config);
-
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Activation) = {}ns", timer.elapsed().as_millis()));
-        let z1 = config.activation.forward(&mut result).unwrap();
-        Neuron::logger().profiling(|| format!("ConvLayer Forward Time (After Activation) = {}ns", timer.elapsed().as_millis()));
-
-        result_channels.push(z1.clone());
-        z1_channels.push(result);
-      }
-      result_final.push(result_channels); 
-      z1_final.push(z1_channels); 
-    }
-
-    Neuron::logger().profiling(|| format!("ConvLayer Forward Time (Before Sum) = {}ns", timer.elapsed().as_millis()));
-
-    let mut output = Vec::new();
-    let mut z1 = Vec::new();
-
-    let executor = Neuron::matrix();
-    if let MatrixMathExecutorEnum::OCL(ref matrix_ocl) = **executor {
-      let ret = matrix_ocl.add_ocl_bulk(result_final.len(),result_final.iter_mut().flatten().collect::<Vec<_>>());
-      let chucks = ret.data().chunks(result_final[0][0].rows() * result_final[0][0].cols());
-      for chuck in chucks {
-        let new_tensor = Tensor::from_data(result_final[0][0].rows(), result_final[0][0].cols(), chuck.to_vec());
-        output.push(Box::new(new_tensor));
-      }
-
-      let ret = matrix_ocl.add_ocl_bulk(z1_final.len(), z1_final.iter_mut().flatten().collect::<Vec<_>>());
-      let chucks = ret.data().chunks(z1_final[0][0].rows() * z1_final[0][0].cols());
-      for chuck in chucks {
-        let new_tensor = Tensor::from_data(z1_final[0][0].rows(), z1_final[0][0].cols(), chuck.to_vec());
-        z1.push(Box::new(new_tensor));
-      }
-    }
-
-    let last_input = input.clone();
-    let last_z1 = z1.clone();
-
-    Neuron::logger().debug(|| format!("CNN Output size (Forward) = {}x{}x{}", output[0].rows(), output[0].cols(), output.len()));
-    Neuron::logger().debug(|| format!("CNN Output (Forward) = {:?}", output));
-
-    Neuron::logger().profiling(|| format!("ConvLayer Forward Time = {}ns", timer.elapsed().as_millis()));
-
-    Some((last_input, last_z1, output))*/
   }
 
   fn backward(&self, input: &Vec<Box<Tensor>>, forward_input: &Vec<Box<Tensor>>, last_z1: &Vec<Box<Tensor>>, filters: &mut Vec<Vec<Tensor>>, filter_size: (usize, usize), bias: &mut Vec<f32>, activate: bool, config: &ConvLayerConfig) -> Option<Vec<Box<Tensor>>> {
