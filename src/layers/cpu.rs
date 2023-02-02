@@ -483,11 +483,11 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
     }
 
     gamma.iter_mut().zip(d_gama.iter_mut()).for_each(|(g,d_g)| {
-      *g = Box::new(g.sub(&d_g.mul_value(config.learn_rate).unwrap()).unwrap());
+      g.sub(&d_g.mul_value(config.learn_rate).unwrap()).unwrap();
     });
 
     beta.iter_mut().zip(d_beta.iter_mut()).for_each(|(b,d_b)| {
-      *b = Box::new(b.sub(&d_b.mul_value(config.learn_rate).unwrap()).unwrap());
+      b.sub(&d_b.mul_value(config.learn_rate).unwrap()).unwrap();
     });
 
     Neuron::logger().debug(|| format!("PoolingLayer Output (Backward) = {:?}", d_x_hat));
