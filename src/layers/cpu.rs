@@ -67,7 +67,7 @@ impl DenseLayerExecutor for DenseLayerCPU {
   
       let dz;
       if activate {
-        dz = input.mul_wise(&config.activation.backward(&last_z1).unwrap()).unwrap();
+        dz = input.clone().as_mut().mul_wise(&config.activation.backward(&last_z1).unwrap()).unwrap();
       } else {
         dz = Tensor::from_data(input.rows(), input.cols(), input.data().to_owned());
       }
@@ -78,7 +78,7 @@ impl DenseLayerExecutor for DenseLayerCPU {
 
       Neuron::logger().debug(|| format!("forward_input size = {}x{}", forward_input.rows(), forward_input.cols()));
 
-      let dw = dz.mul(&forward_input.transpose().unwrap()).unwrap().div_value(forward_input.cols() as f32).unwrap();
+      let mut dw = dz.mul(&forward_input.transpose().unwrap()).unwrap().div_value(forward_input.cols() as f32).unwrap();
 
       Neuron::logger().debug(|| format!("dw size = {}x{}", dw.rows(), dw.cols()));
 
@@ -205,7 +205,7 @@ impl ConvLayerExecutor for ConvLayerCPU {
       let mut db = 0.0;
       for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
-        let dz = inp.mul_wise(&config.activation.backward(&z1).unwrap()).unwrap();
+        let dz = inp.clone().as_mut().mul_wise(&config.activation.backward(&z1).unwrap()).unwrap();
         let mut dw = Tensor::new(fc.rows(), fc.cols());
 
         for i in (0..fi.rows()-filter_size.0).step_by(config.stride) {
@@ -478,11 +478,11 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
       d_x_hat.push(Box::new(d_x_hat_tensor));
     }
 
-    gamma.iter_mut().zip(d_gama.iter()).for_each(|(g,d_g)| {
+    gamma.iter_mut().zip(d_gama.iter_mut()).for_each(|(g,d_g)| {
       *g = Box::new(g.sub(&d_g.mul_value(config.learn_rate).unwrap()).unwrap());
     });
 
-    beta.iter_mut().zip(d_beta.iter()).for_each(|(b,d_b)| {
+    beta.iter_mut().zip(d_beta.iter_mut()).for_each(|(b,d_b)| {
       *b = Box::new(b.sub(&d_b.mul_value(config.learn_rate).unwrap()).unwrap());
     });
 

@@ -65,17 +65,16 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
-  fn mul_wise(&self, a: &Tensor, b: &Tensor) -> Tensor {
+  fn mul_wise(&self, a: &mut Tensor, b: &Tensor) -> Tensor {
     // Check that the tensors are compatible for multiplication
     assert!(a.rows == b.rows && a.cols == b.cols);
 
-    let data: Vec<f32> = a.data()
-    .iter()
-    .zip(b.data().iter())
-    .map(|(v1, v2)| v1 * v2).collect();
+    let data = a.mut_data();
+    for (v1, v2) in data.iter_mut().zip(b.data().iter()) {
+      *v1 *= v2;
+    }
 
-    
-    Tensor::from_data(a.rows, a.cols, data)
+    a.clone()
   }
 
   fn div(&self, a: &Tensor, b: &Tensor) -> Tensor {
@@ -123,46 +122,38 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
-  fn add_value(&self, a: &Tensor, value: f32) -> Tensor {
-    // Create a new tensor to store the result
-    let mut result = Tensor::new(a.rows, a.cols);
-
+  fn add_value(&self, a: &mut Tensor, value: f32) -> Tensor {
     for i in 0..a.rows {
       for j in 0..a.cols {
         let val = a.get(i, j);
-        result.set(i, j, val + value);
+        a.set(i, j, val + value);
       }
     }
 
-    result
+    a.clone()
   }
 
-  fn div_value(&self, a: &Tensor, value: f32) -> Tensor {
+  fn div_value(&self, a: &mut Tensor, value: f32) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::new(a.rows, a.cols);
-
     for i in 0..a.rows {
       for j in 0..a.cols {
         let val = a.get(i, j);
-        result.set(i, j, val/value);
+        a.set(i, j, val/value);
       }
     }
 
-    result
+    a.clone()
   }
 
-  fn mul_value(&self, a: &Tensor, value: f32) -> Tensor {
+  fn mul_value(&self, a: &mut Tensor, value: f32) -> Tensor {
     // Create a new tensor to store the result
-    let mut result = Tensor::new(a.rows, a.cols);
-
     for i in 0..a.rows {
       for j in 0..a.cols {
         let val = a.get(i, j);
-        result.set(i, j, val*value);
+        a.set(i, j, val*value);
       }
     }
-
-    result
+    a.clone()
   }
 
   fn sum_row(&self, a:&Tensor) -> Tensor {
