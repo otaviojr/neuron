@@ -99,19 +99,18 @@ impl MatrixMathExecutor for MatrixMathCPU {
     result
   }
 
-  fn transpose(&self, a: &mut Tensor) -> Tensor {
+  fn transpose(&self, a: &Tensor) -> Tensor {
+    // Create a new tensor to store the result
+    let mut result = Tensor::new(a.cols, a.rows);
+
     // Transpose the matrix
     for i in 0..a.rows {
         for j in 0..a.cols {
-            if i < j {
-                let temp = a.get(i, j);
-                a.set(i, j, a.get(j, i));
-                a.set(j, i, temp);
-            }
+            result.set(j, i, a.get(i, j));
         }
     }
 
-    a.reshape(a.cols, a.rows).clone()
+    result
   }
 
   fn add_value(&self, a: &mut Tensor, value: f32) -> Tensor {

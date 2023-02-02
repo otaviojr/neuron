@@ -22,7 +22,7 @@ pub trait MatrixMathExecutor: Any + Send + Sync {
   fn mul_wise(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
   fn div(&self, a: &mut Tensor, b: &Tensor) -> Tensor;
   fn dot(&self, a: &Tensor, b: &Tensor) -> f32;
-  fn transpose(&self, a: &mut Tensor) -> Tensor;
+  fn transpose(&self, a: &Tensor) -> Tensor;
 
   fn add_value(&self, a: &mut Tensor, b: f32) -> Tensor;
   fn div_value(&self, a: &mut Tensor, b: f32) -> Tensor;
@@ -239,7 +239,7 @@ impl Tensor {
   }
 
   // Transpose the tensor
-  pub fn transpose(&mut self) -> Result<Tensor, String> {
+  pub fn transpose(&self) -> Result<Tensor, String> {
     if let Some(executor) = Neuron::matrix().getExecutor() {
       return Ok(executor.transpose(self));
     }
