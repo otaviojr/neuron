@@ -379,7 +379,7 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       let f_sum:f32 = inp.data().iter().sum();
       let f_mean = f_sum / batch_size;
 
-      let f_var: f32 = inp.data().iter().map(|x| (x - f_mean).powi(2)).sum::<f32>() / batch_size;
+      let f_var: f32 = inp.data().iter().map(|x| (x - f_mean).powi(2)).sum::<f32>() / (batch_size - 1.0);
 
       let sub_x_hat: Vec<f32> = inp.data().iter().map(|x| (*x - f_mean) / (f_var + config.epsilon).sqrt()).collect();
 
