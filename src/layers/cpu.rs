@@ -368,7 +368,7 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
     Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Input (Forward) = {:?}", input));
     Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
 
-    let batch_size = input[0].cols() as f32;
+    let batch_size = input[0].data().len() as f32;
 
     let mut mean = Vec::new();
     let mut var = Vec::new();
