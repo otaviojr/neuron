@@ -445,8 +445,8 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       dx_hat.push(Box::new(dx));
     }
 
-    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output (Backward) = {:?}", d_x_hat));
-    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output size (Backward) = {}x{}x{}", d_x_hat[0].rows(), d_x_hat[0].cols(), d_x_hat.len()));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output (Backward) = {:?}", dx_hat));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output size (Backward) = {}x{}x{}", dx_hat[0].rows(), dx_hat[0].cols(), d_x_hat.len()));
 
     Neuron::logger().profiling(|| format!("ConvBatchNormalizationLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
 
