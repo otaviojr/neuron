@@ -420,7 +420,8 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       let f_std = (f_var + config.epsilon).sqrt();
 
       let f_d_beta:f32 = inp.data().iter().sum::<f32>() / batch_size;
-      let f_d_gamma: f32 = x_hat.mul(inp).unwrap().data().iter().sum::<f32>() / batch_size;
+      let f_d_gamma: f32 = x_hat.clone().mul_wise(inp).unwrap().data().iter().sum::<f32>() / batch_size;
+
       let mut dx = *inp.clone();
       dx = dx.mul_value(gamma[0].get(idx,0)).unwrap();
 
@@ -436,6 +437,7 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
 
       let new_gamma = gamma[0].get(idx,0) - config.learn_rate * f_d_gamma;
       let new_beta = beta[0].get(idx,0) - config.learn_rate * f_d_beta;
+
       gamma[0].set(idx,0, new_gamma);
       beta[0].set(idx,0, new_beta);
 
