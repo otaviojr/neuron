@@ -426,17 +426,17 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       let mut dx = *inp.clone();
       dx = dx.mul_value(gamma[0].get(idx,0)).unwrap();
       let divar: f32 = inp.data().iter().zip(dx.data().iter()).map(|(x,dx)| dx * (x - f_mean)).sum();
-      dx.mut_data().iter_mut().zip(x_hat.data().iter()).for_each(|(dx,x)| *dx = *dx * ivar);
+      dx.mut_data().iter_mut().for_each(|dx| *dx = *dx * ivar);
 
-      let dsqrtvar = -1.0 / f_std.powi(2) * divar;
-      let dvar = 0.5 * (1.0 / f_std) * dsqrtvar;
+      let dsqrtvar = - divar / f_std.powi(2);
+      let dvar = 0.5 * (dsqrtvar / f_std);
 
-      let dsq: Vec<f32> = vec![1.0, batch_size].iter().map(|x| 1.0/batch_size * x * dvar).collect();
+      let dsq: Vec<f32> = vec![1.0, batch_size].iter().map(|x| (x * dvar)/batch_size).collect();
       dx.mut_data().iter_mut().zip(x_hat.data().iter()).zip(dsq.iter()).for_each(|((dx,x),dsq)| *dx = *dx + 2.0*(x-f_mean)*dsq);
 
       let dmu:f32 = dx.data().iter().sum::<f32>() * -1.0;
 
-      dx.mut_data().iter_mut().for_each(|x| *x = *x + 1.0/batch_size * dmu);
+      dx.mut_data().iter_mut().for_each(|x| *x = *x + dmu/batch_size);
 
       let new_gamma = gamma[0].get(idx,0) - config.learn_rate * f_d_gamma;
       let new_beta = beta[0].get(idx,0) - config.learn_rate * f_d_beta;
