@@ -400,7 +400,7 @@ pub trait ConvBatchNormalizationLayerExecutor {
 impl ConvBatchNormalizationLayer {
   pub fn new(name: String, nodes: usize, config: ConvBatchNormalizationLayerConfig) -> Self {
     let gamma = vec![Box::new(Tensor::from_data(nodes,1, vec![1.0; nodes]))];
-    let beta = vec![Box::new(Tensor::from_data(nodes,1,vec![0.0; nodes]))];
+    let beta = vec![Box::new(Tensor::from_data(nodes,1,vec![1.0; nodes]))];
 
     ConvBatchNormalizationLayer {
       name,
