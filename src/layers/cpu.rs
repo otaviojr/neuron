@@ -430,7 +430,7 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       let dvar = 0.5 * (1.0 / f_std) * dsqrtvar;
 
       let dsq: Vec<f32> = vec![1.0, batch_size].iter().map(|x| 1.0/batch_size * x * dvar).collect();
-      dx.mut_data().iter_mut().zip(dsq.iter()).for_each(|(x,dsq)| *x = *x + 2.0*f_mean*dsq);
+      dx.mut_data().iter_mut().zip(x_hat.data().iter()).zip(dsq.iter()).for_each(|((dx,x),dsq)| *dx = *dx + 2.0*(x-f_mean)*dsq);
 
       let dmu:f32 = dx.data().iter().sum::<f32>() * -1.0;
 
