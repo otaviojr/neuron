@@ -428,14 +428,13 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       let dstd_tensor = Tensor::from_data(x_hat.rows(), x_hat.cols(), sub_dstd);
       let dstd = dx.mul(&dstd_tensor).unwrap();
 
-      let d_var = dx.mul_value(-0.5 * (f_var.powf(2.0)) / batch_size).unwrap().mul(&dstd).unwrap();
-      let mut d_mean = dx.mul_value(1.0 / (batch_size * f_std)).unwrap();
-      let d_mean_var: Vec<f32> = x_hat.data().iter().zip(d_mean.data().iter()).map(|(x, mean)| (x - mean) / batch_size).collect();
-      let d_mean_var = Tensor::from_data(x_hat.rows(), x_hat.cols(), d_mean_var).mul(&d_var).unwrap();
-      d_mean = d_mean.add(&d_mean_var).unwrap();
+      let d_var = -0.5 * (f_var.powf(2.0)) / batch_size;
+      let mut d_mean = 1.0 / (batch_size * f_std);
+      let d_mean_var: f32 = x_hat.data().iter().map(|x| (x - d_mean) / batch_size).sum();
+      d_mean = d_mean + d_mean_var;
 
-      dx.mut_data().iter_mut().zip(d_mean.data().iter()).zip(d_var.data().iter()).zip(x_hat.data().iter()).for_each(|(((dx, dmean), dvar), x_hat)| {
-        *dx = (1.0/batch_size) * (f_std * *dx) + (2.0/batch_size) * (x_hat - f_std) * dvar + 1.0/batch_size * dmean;
+      dx.mut_data().iter_mut().zip(x_hat.data().iter()).for_each(|(dx, x_hat)| {
+        *dx = (1.0/batch_size) * (f_std * *dx) + (2.0/batch_size) * (x_hat - f_std) * d_var + 1.0/batch_size * d_mean;
       });
 
       let new_gamma = gamma[0].get(idx,0) - config.learn_rate * f_d_gamma;
