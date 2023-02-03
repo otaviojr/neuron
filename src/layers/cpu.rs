@@ -200,10 +200,10 @@ impl ConvLayerExecutor for ConvLayerCPU {
 
     for (((f,inp), b),z1) in filters.iter_mut().zip(input.iter()).zip(bias.iter()).zip(last_z1.iter()) {
       let mut dw_channel = Vec::new();
-      //let row_pad = (forward_input[0].rows() - inp.rows())/2;
-      //let col_pad = (forward_input[0].cols() - inp.cols())/2;
-      //let mut output = inp.pad(row_pad, col_pad).unwrap();
-      let mut output = Tensor::new(forward_input[0].rows(), forward_input[0].cols()).zero().unwrap();
+      let row_pad = (forward_input[0].rows() - inp.rows())/2;
+      let col_pad = (forward_input[0].cols() - inp.cols())/2;
+      let mut output = inp.pad(row_pad, col_pad).unwrap();
+      //let mut output = Tensor::new(forward_input[0].rows(), forward_input[0].cols()).zero().unwrap();
       let mut db = 0.0;
       for (fi,fc) in forward_input.iter().zip(f.iter_mut()) {
 
@@ -426,7 +426,7 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
 
       let divar = dx_hat.data().iter().zip(x_hat.data().iter()).map(|(dx_hat,x_hat)| (x_hat - f_mean) * dx_hat).sum::<f32>();
       let mut dxu1 = dx_hat.clone();
-      dxu1.mut_data().iter_mut().for_each(|dx| *dx = *dx * ivar);
+      dxu1.mut_data().iter_mut().for_each(|dx| *dx *= ivar);
 
       let dsqrtvar = - divar / f_std.powi(2);
       let dvar = 0.5 * (dsqrtvar / f_std);
@@ -435,7 +435,7 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       let dxu2: Vec<f32> = x_hat.data().iter().zip(dsq.iter()).map(|(x,dsq)| 2.0*(x-f_mean)*dsq).collect();
 
       let du:f32 = dxu1.data().iter().zip(dxu2.iter()).map(|(dxu1,dxu2)| dxu1 + dxu2).sum::<f32>() * - 1.0;
-      let dx1: Vec<f32> = dxu1.data().iter().zip(dxu2.iter()).map(|(x1,x2)| x1 + x2).collect();
+      let dx1: Vec<f32> = dxu1.data().iter().zip(dxu2.iter()).map(|(dx1,dx2)| dx1 + dx2).collect();
 
       let dx2: Vec<f32> = vec![1.0; batch_size as usize].iter().map(|x| x*du/batch_size).collect();
 
