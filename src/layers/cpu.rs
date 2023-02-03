@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::{math::Tensor, Neuron};
 
-use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig, BatchNormalizationLayerExecutor, BatchNormalizationLayerConfig};
+use super::{DenseLayerExecutor, DenseLayerConfig, ConvLayerExecutor, ConvLayerConfig, PoolingLayerExecutor, PoolingLayerConfig, ConvBatchNormalizationLayerExecutor, ConvBatchNormalizationLayerConfig};
 
 pub struct DenseLayerCPU;
 
@@ -352,21 +352,21 @@ impl PoolingLayerExecutor for PoolingLayerCPU {
   }
 }
 
-pub struct BatchNormalizationLayerCPU;
+pub struct ConvBatchNormalizationLayerCPU;
 
-impl BatchNormalizationLayerCPU {
+impl ConvBatchNormalizationLayerCPU {
   pub fn init() -> Self {
-    BatchNormalizationLayerCPU
+    ConvBatchNormalizationLayerCPU
   }
 }
 
-impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
-  fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
+impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
+  fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &ConvBatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)> {
 
     let timer = Instant::now();
 
-    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input (Forward) = {:?}", input));
-    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Input (Forward) = {:?}", input));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Input size (Forward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
 
     let batch_size = input[0].cols() as f32;
 
@@ -374,121 +374,77 @@ impl BatchNormalizationLayerExecutor for BatchNormalizationLayerCPU {
     let mut var = Vec::new();
     let mut x_hat = Vec::new();
     let mut result = Vec::new();
+
     for (idx,inp) in input.iter().enumerate() {
-      let mut sub_mean = Vec::new();
-      for i in 0 .. inp.rows() {
-        let mut sum = 0.0;
-        for j in 0 .. inp.cols() {
-          sum += inp.get(i,j);
-        }
-        sub_mean.push(sum / batch_size);
-      }
-      let mean_tensor = Tensor::from_data(inp.rows(), 1, sub_mean);
+      let f_sum:f32 = inp.data().iter().sum();
+      let f_mean = f_sum / batch_size;
 
-      let mut sub_var = Vec::new();
-      for i in 0 .. inp.rows() {
-        let mut sum = 0.0;
-        for j in 0 .. inp.cols() {
-          sum += (inp.get(i,j) - mean_tensor.get(i,0)).powi(2);
-        }
-        sub_var.push(sum/ batch_size);
-      }
-      let var_tensor = Tensor::from_data(inp.rows(), 1, sub_var);
+      let f_var: f32 = inp.data().iter().map(|x| (x - f_mean).powi(2)).sum();
 
-      let mut sub_x_hat = Vec::new();
-      for i in 0 .. inp.rows() {
-        for j in 0 .. inp.cols() {
-          let r = (inp.get(i,j) - mean_tensor.get(i,0)) / (var_tensor.get(i,0) + config.epsilon).sqrt();
-          sub_x_hat.push(r);
-        }
-      }
+      let sub_x_hat: Vec<f32> = inp.data().iter().map(|x| (*x - f_mean) / (f_var + config.epsilon).sqrt()).collect();
+
+      let f_result = sub_x_hat.iter().map(|x| x * gamma[0].get(idx,0) + beta[0].get(idx, 0)).collect();
+      let result_tensor = Tensor::from_data(inp.rows(), inp.cols(), f_result);
+
+      mean.push(f_mean);
+      var.push(f_var);
       let x_hat_tensor = Tensor::from_data(inp.rows(), inp.cols(), sub_x_hat);
-
-      let mut sub_result = Vec::new();
-      for i in 0 .. inp.rows() {
-        for j in 0 .. inp.cols() {
-          let r = gamma[idx].get(i,0) * x_hat_tensor.get(i,j) + beta[idx].get(i,0);
-          sub_result.push(r);
-        }
-      }
-
-      mean.push(mean_tensor);
-      var.push(Box::new(var_tensor));
       x_hat.push(Box::new(x_hat_tensor));
-
-      let result_tensor = Tensor::from_data(inp.rows(), inp.cols(), sub_result);
       result.push(Box::new(result_tensor));
     }
 
-    Neuron::logger().debug(|| format!("BatchNormalizationLayer Output (Forward) = {:?}", result));
-    Neuron::logger().profiling(|| format!("BatchNormalizationLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output (Forward) = {:?}", result));
+    Neuron::logger().profiling(|| format!("ConvBatchNormalizationLayer Forward Time = {}ns", timer.elapsed().as_nanos()));
 
-    Some((result,x_hat, var))
+    let var = vec![Box::new(Tensor::from_data(input.len(),1,var))];
+    let mean = vec![Box::new(Tensor::from_data(input.len(),1,mean))];
+
+    Some((result, x_hat, var, mean))
   }
 
-  fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, var: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>> {
+  fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, var: &Vec<Box<Tensor>>, mean: &Vec<Box<Tensor>>, config: &ConvBatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>> {
 
     let timer = Instant::now();
 
-    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input (Backward) = {:?}", input));
-    Neuron::logger().debug(|| format!("BatchNormalizationLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Input (Backward) = {:?}", input));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
 
-    let batch_size = input[0].cols() as f32;
-    let mut d_gama = Vec::new();
-    let mut d_beta = Vec::new();
+    let batch_size = input[0].data().len() as f32;
+
     let mut d_x_hat = Vec::new();
-    for (idx,inp) in input.iter().enumerate() {
 
-      let mut sub_mean = Vec::new();
-      for i in 0 .. inp.rows() {
-        let mut sum = 0.0;
-        for j in 0 .. inp.cols() {
-          sum += inp.get(i,j);
-        }
-        sub_mean.push(sum / batch_size);
-      }
-      let mean_tensor = Tensor::from_data(inp.rows(), 1, sub_mean);
+    for ((idx,inp), x_hat) in input.iter().enumerate().zip(input_x_hat.iter()) {
 
-      let mut sub_d_beta = Vec::new();
-      for i in 0 .. inp.rows() {
-        let mut sum = 0.0;
-        for j in 0 .. inp.cols() {
-          sum += inp.get(i,j);
-        }
-        sub_d_beta.push(sum / batch_size);
-      }
-      let d_beta_tensor = Tensor::from_data(inp.rows(), 1, sub_d_beta);
+      let f_d_beta:f32 = inp.data().iter().sum();
+      let f_mean = f_d_beta / batch_size;
+      let f_var: f32 = inp.data().iter().map(|x| (x - f_mean).powi(2)).sum();
+      let f_std = (f_var + config.epsilon).sqrt();
 
-      let mut sub_d_gama = Vec::new();
-      for i in 0 .. inp.rows() {
-        let mut sum = 0.0;
-        for j in 0 .. inp.cols() {
-          sum += inp.get(i,j) * input_x_hat[idx].get(i,0);
-        }
-        sub_d_gama.push(sum / batch_size);
-      }
-      let d_gama_tensor = Tensor::from_data(inp.rows(), 1, sub_d_gama);
+      let f_d_gamma: f32 = x_hat.mul(inp).unwrap().data().iter().sum();
+      let mut dx = *inp.clone();
+      dx = dx.mul_value(gamma[0].get(idx,0)).unwrap();
 
-      let mut sub_d_x_hat = Vec::new();
-      for i in 0 .. inp.rows() {
-        for j in 0 .. inp.cols() {
-          sub_d_x_hat.push(((inp.get(i,j)-mean_tensor.get(i,0)) - input_x_hat[idx].get(i,j) * d_gama_tensor.get(i,0)) * (gamma[idx].get(i,0) / ((var[idx].get(i,0) + config.epsilon).sqrt())));
-        }
-      }
-      let d_x_hat_tensor = Tensor::from_data(inp.rows(), inp.cols(), sub_d_x_hat);
+      let sub_dstd: Vec<f32> = x_hat.data().iter().map(|x| (x - f_mean) / (f_std + config.epsilon).sqrt()).collect();
+      let dstd_tensor = Tensor::from_data(x_hat.rows(), x_hat.cols(), sub_dstd);
+      let dstd = dx.mul(&dstd_tensor).unwrap();
 
-      d_gama.push(d_gama_tensor);
-      d_beta.push(d_beta_tensor);
-      d_x_hat.push(Box::new(d_x_hat_tensor));
+      let d_var = dx.mul_value(-0.5 * (f_var.powf(2.0)) / batch_size).unwrap().mul(&dstd).unwrap();
+      let mut d_mean = dx.mul_value(1.0 / (batch_size * f_std)).unwrap();
+      let d_mean_var: Vec<f32> = x_hat.data().iter().zip(d_mean.data().iter()).map(|(x, mean)| (x - mean) / batch_size).collect();
+      let d_mean_var = Tensor::from_data(x_hat.rows(), x_hat.cols(), d_mean_var).mul(&d_var).unwrap();
+      d_mean = d_mean.add(&d_mean_var).unwrap();
+
+      dx.mut_data().iter_mut().zip(d_mean.data().iter()).zip(d_var.data().iter()).zip(x_hat.data().iter()).for_each(|(((dx, dmean), dvar), x_hat)| {
+        *dx = (1.0/batch_size) * (f_std * *dx) + (2.0/batch_size) * (x_hat - f_std) * dvar + 1.0/batch_size * dmean;
+      });
+
+      let new_gamma = gamma[0].get(idx,0) - config.learn_rate * f_d_gamma;
+      let new_beta = beta[0].get(idx,0) - config.learn_rate * f_d_beta;
+      gamma[0].set(idx,0, new_gamma);
+      beta[0].set(idx,0, new_beta);
+
+      d_x_hat.push(Box::new(dx));
     }
-
-    gamma.iter_mut().zip(d_gama.iter_mut()).for_each(|(g,d_g)| {
-      g.sub(&d_g.mul_value(config.learn_rate).unwrap()).unwrap();
-    });
-
-    beta.iter_mut().zip(d_beta.iter_mut()).for_each(|(b,d_b)| {
-      b.sub(&d_b.mul_value(config.learn_rate).unwrap()).unwrap();
-    });
 
     Neuron::logger().debug(|| format!("PoolingLayer Output (Backward) = {:?}", d_x_hat));
     Neuron::logger().debug(|| format!("PoolingLayer Output size (Backward) = {}x{}x{}", d_x_hat[0].rows(), d_x_hat[0].cols(), d_x_hat.len()));

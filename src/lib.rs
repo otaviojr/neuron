@@ -7,7 +7,7 @@ pub mod util;
 
 use std::{sync::{Mutex}, any::Any, io::{Write, Read}, fs::File};
 
-use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU, PoolingLayerCPU, BatchNormalizationLayerCPU}, ConvLayerExecutor, PoolingLayerExecutor, BatchNormalizationLayerExecutor};
+use layers::{DenseLayerExecutor, cpu::{DenseLayerCPU, ConvLayerCPU, PoolingLayerCPU, ConvBatchNormalizationLayerCPU}, ConvLayerExecutor, PoolingLayerExecutor, ConvBatchNormalizationLayerExecutor};
 use math::{Tensor, cpu::MatrixMathCPU};
 use once_cell::sync::Lazy;
 use util::Logger;
@@ -23,7 +23,7 @@ pub struct Executors {
   dense: Box<dyn DenseLayerExecutor + Send + Sync>,
   conv: Box<dyn ConvLayerExecutor + Send + Sync>,
   pooling: Box<dyn PoolingLayerExecutor + Send + Sync>,
-  batchNorm: Box<dyn BatchNormalizationLayerExecutor + Send + Sync>
+  batchNorm: Box<dyn ConvBatchNormalizationLayerExecutor + Send + Sync>
 }
 
 static mut MATRIX_EXECUTOR: Lazy<Box<MatrixMathExecutorEnum>> = Lazy::new(|| Box::new(MatrixMathExecutorEnum::CPU(MatrixMathCPU::init())));
@@ -31,7 +31,7 @@ static mut EXECUTORS: Lazy<Box<Executors>> = Lazy::new(|| Box::new(Executors {
   dense: Box::new(DenseLayerCPU::init()),
   conv: Box::new(ConvLayerCPU::init()),
   pooling: Box::new(PoolingLayerCPU::init()),
-  batchNorm: Box::new(BatchNormalizationLayerCPU::init())
+  batchNorm: Box::new(ConvBatchNormalizationLayerCPU::init())
 }));
 
 static mut LOGGER: Lazy<Box<Logger>> = Lazy::new(||Box::new(Logger::new(util::LogLevel::Error)));
@@ -101,7 +101,7 @@ impl Neuron {
         dense: Box::new(DenseLayerCPU::init()),
         conv: Box::new(ConvLayerOCL::init()),
         pooling: Box::new(PoolingLayerOCL::init()),
-        batchNorm: Box::new(BatchNormalizationLayerCPU::init())
+        batchNorm: Box::new(ConvBatchNormalizationLayerCPU::init())
       }); 
     }
   }

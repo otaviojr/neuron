@@ -377,45 +377,44 @@ impl Propagation for PoolingLayer {
 unsafe impl Send for PoolingLayer {}
 unsafe impl Sync for PoolingLayer {}
 
-pub struct BatchNormalizationLayerConfig {
+pub struct ConvBatchNormalizationLayerConfig {
   pub learn_rate: f32,
   pub epsilon: f32,
 }
 
-pub struct BatchNormalizationLayer {
+pub struct ConvBatchNormalizationLayer {
   name: String,
-  config: BatchNormalizationLayerConfig,
+  config: ConvBatchNormalizationLayerConfig,
   beta: Vec<Box<Tensor>>,
   gamma: Vec<Box<Tensor>>,
   last_x_hat: Option<Vec<Box<Tensor>>>,
   last_var: Option<Vec<Box<Tensor>>>,
+  last_mean: Option<Vec<Box<Tensor>>>,
 }
 
-pub trait BatchNormalizationLayerExecutor {
-  fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
-  fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, var: &Vec<Box<Tensor>>, config: &BatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>>;
+pub trait ConvBatchNormalizationLayerExecutor {
+  fn forward(&self, input: &Vec<Box<Tensor>>, beta: &Vec<Box<Tensor>>, gamma: &Vec<Box<Tensor>>, config: &ConvBatchNormalizationLayerConfig) -> Option<(Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>, Vec<Box<Tensor>>)>;
+  fn backward(&self, input: &Vec<Box<Tensor>>, beta: &mut Vec<Box<Tensor>>, gamma: &mut Vec<Box<Tensor>>, input_x_hat: &Vec<Box<Tensor>>, var: &Vec<Box<Tensor>>, mean: &Vec<Box<Tensor>>, config: &ConvBatchNormalizationLayerConfig) -> Option<Vec<Box<Tensor>>>;
 }
 
-impl BatchNormalizationLayer {
-  pub fn new(name: String, nodes: usize, input_size: (usize,usize), config: BatchNormalizationLayerConfig) -> Self {
-    let mut gamma = Vec::new();
-    let mut beta = Vec::new();
-    for _ in 0 .. nodes {
-      gamma.push(Box::new(Tensor::randomHE(input_size.0,1, input_size.0)));
-      beta.push(Box::new(Tensor::randomHE(input_size.0,1, input_size.0)));
-    }
-    BatchNormalizationLayer {
+impl ConvBatchNormalizationLayer {
+  pub fn new(name: String, nodes: usize, config: ConvBatchNormalizationLayerConfig) -> Self {
+    let gamma = vec![Box::new(Tensor::randomHE(nodes,1, nodes))];
+    let beta = vec![Box::new(Tensor::randomHE(nodes,1, nodes))];
+
+    ConvBatchNormalizationLayer {
       name,
       gamma,
       beta,
       config: config,
       last_x_hat: None,
       last_var: None,
+      last_mean: None,
     }
   }
 }
 
-impl Loader for BatchNormalizationLayer {
+impl Loader for ConvBatchNormalizationLayer {
   fn get_name(&self) -> String {
     self.name.clone()
   }
@@ -438,12 +437,13 @@ impl Loader for BatchNormalizationLayer {
   }
 }
 
-impl Propagation for BatchNormalizationLayer {
+impl Propagation for ConvBatchNormalizationLayer {
   fn forward(&mut self, input: &Vec<Box<Tensor>>) -> Option<Vec<Box<Tensor>>> {
 
-    if let Some((ret,x_hat, var)) = Neuron::executors().batchNorm.forward(input, &self.beta, &self.gamma, &self.config) {
+    if let Some((ret,x_hat, var, mean)) = Neuron::executors().batchNorm.forward(input, &self.beta, &self.gamma, &self.config) {
       self.last_x_hat = Some(x_hat);
       self.last_var = Some(var);
+      self.last_mean = Some(mean);
       return Some(ret);
     }
     None
@@ -452,7 +452,9 @@ impl Propagation for BatchNormalizationLayer {
   fn backward(&mut self, input: &Vec<Box<Tensor>>, _: bool) -> Option<Vec<Box<Tensor>>> {
     if let Some(last_x_hat) = self.last_x_hat.take() {
       if let Some(last_var) = self.last_var.take() {
-        return Neuron::executors().batchNorm.backward(input, &mut self.beta, &mut self.gamma, &last_x_hat, &last_var,  &self.config);
+        if let Some(last_mean) = self.last_mean.take() {
+          return Neuron::executors().batchNorm.backward(input, &mut self.beta, &mut self.gamma, &last_x_hat, &last_var,  &last_mean, &self.config);
+        }
       }
     }    
     None
@@ -468,5 +470,5 @@ impl Propagation for BatchNormalizationLayer {
   }
 }
 
-unsafe impl Send for BatchNormalizationLayer {}
-unsafe impl Sync for BatchNormalizationLayer {}
+unsafe impl Send for ConvBatchNormalizationLayer {}
+unsafe impl Sync for ConvBatchNormalizationLayer {}
