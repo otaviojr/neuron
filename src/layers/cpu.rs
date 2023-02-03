@@ -214,11 +214,11 @@ impl ConvLayerExecutor for ConvLayerCPU {
           for j in (0 .. fi.cols()-filter_size.1).step_by(config.stride) {
             for k in 0 .. filter_size.0 {
               for l in 0 .. filter_size.1 {
-                output.set(i/config.stride,j/config.stride,output.get(i/config.stride,j/config.stride) + (dz.get(i/config.stride,j/config.stride) * fc.get(k,l)));
-                dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * dz.get(i/config.stride,j/config.stride));
+                output.set(i/config.stride,j/config.stride,output.get(i/config.stride,j/config.stride) + (inp.get(i/config.stride,j/config.stride) * fc.get(k,l)));
+                dw.set(k,l,dw.get(k,l) + fi.get(i+k, j+l) * inp.get(i/config.stride,j/config.stride));
               }
             }
-            db += dz.get(i/config.stride,j/config.stride);
+            db += inp.get(i/config.stride,j/config.stride);
           }
         }
         dw_channel.push(dw);
