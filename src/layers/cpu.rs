@@ -409,7 +409,7 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
     Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Input size (Backward) = {}x{}x{}", input[0].rows(), input[0].cols(), input.len()));
 
     let batch_size = input[0].data().len() as f32;
-    let mut dx_hat = Vec::new();
+    let mut dx_hat_ret = Vec::new();
 
     for ((idx, inp), x_hat) in input.iter().enumerate().zip(input_x_hat.iter()) {
 
@@ -421,20 +421,25 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       let f_d_beta:f32 = inp.data().iter().sum::<f32>();
       let f_d_gamma: f32 = x_hat.clone().mul(inp).unwrap().data().iter().sum::<f32>();
 
-      let mut dx = *inp.clone();
-      dx = dx.mul_value(gamma[0].get(idx,0)).unwrap();
-      let divar = dx.data().iter().zip(x_hat.data().iter()).map(|(x,x_hat)| (x - f_mean) * x_hat).sum::<f32>() / batch_size;
-      dx.mut_data().iter_mut().for_each(|dx| *dx = *dx * ivar);
+      let mut dx_hat = *inp.clone();
+      dx_hat = dx_hat.mul_value(gamma[0].get(idx,0)).unwrap();
+
+      let divar = dx_hat.data().iter().zip(x_hat.data().iter()).map(|(dx_hat,x_hat)| (x_hat - f_mean) * dx_hat).sum::<f32>();
+      let mut dxu1 = dx_hat.clone();
+      dxu1.mut_data().iter_mut().for_each(|dx| *dx = *dx * ivar);
 
       let dsqrtvar = - divar / f_std.powi(2);
       let dvar = 0.5 * (dsqrtvar / f_std);
 
-      let dsq = (1.0 + batch_size) * dvar / (batch_size * batch_size);
-      dx.mut_data().iter_mut().zip(x_hat.data().iter()).for_each(|(dx,x)| *dx = *dx + 2.0*(x-f_mean)*dsq);
+      let dsq: Vec<f32> = vec![1.0; batch_size as usize].iter().map(|x| x*dvar/batch_size).collect();
+      let dxu2: Vec<f32> = x_hat.data().iter().zip(dsq.iter()).map(|(x,dsq)| 2.0*(x-f_mean)*dsq).collect();
 
-      let dmu = dx.data().iter().sum::<f32>() * -1.0 / batch_size;
+      let du:f32 = dxu1.data().iter().zip(dxu2.iter()).map(|(dxu1,dxu2)| dxu1 + dxu2).sum::<f32>() * - 1.0;
+      let dx1: Vec<f32> = dxu1.data().iter().zip(dxu2.iter()).map(|(x1,x2)| x1 + x2).collect();
 
-      dx.mut_data().iter_mut().for_each(|x| *x = *x + dmu);
+      let dx2: Vec<f32> = vec![1.0; batch_size as usize].iter().map(|x| x*du/batch_size).collect();
+
+      let dx: Vec<f32> = dx1.iter().zip(dx2.iter()).map(|(x1,x2)| x1 + x2).collect();
         
       let new_gamma = gamma[0].get(idx,0) - config.learn_rate * f_d_gamma;
       let new_beta = beta[0].get(idx,0) - config.learn_rate * f_d_beta;
@@ -442,14 +447,14 @@ impl ConvBatchNormalizationLayerExecutor for ConvBatchNormalizationLayerCPU {
       gamma[0].set(idx,0, new_gamma);
       beta[0].set(idx,0, new_beta);
 
-      dx_hat.push(Box::new(dx));
+      dx_hat_ret.push(Box::new(Tensor::from_data(inp.rows(), inp.cols(), dx)));
     }
 
-    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output (Backward) = {:?}", dx_hat));
-    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output size (Backward) = {}x{}x{}", dx_hat[0].rows(), dx_hat[0].cols(), dx_hat.len()));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output (Backward) = {:?}", dx_hat_ret));
+    Neuron::logger().debug(|| format!("ConvBatchNormalizationLayer Output size (Backward) = {}x{}x{}", dx_hat_ret[0].rows(), dx_hat_ret[0].cols(), dx_hat_ret.len()));
 
     Neuron::logger().profiling(|| format!("ConvBatchNormalizationLayer Backward Time = {}ns", timer.elapsed().as_nanos()));
 
-    Some(dx_hat)
+    Some(dx_hat_ret)
   }
 }
